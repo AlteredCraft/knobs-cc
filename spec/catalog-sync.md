@@ -1,199 +1,111 @@
-# Catalog sync harness — spec
+# Catalog sync — spec
 
-`docs/inventory.md` is the data model knobs.cc will render. Claude Code ships frequently; the inventory will drift from upstream within days of neglect. This document specifies a harness that **harvests**, **diffs**, and **verifies** our catalog against the upstream docs, driven on cadence by the Claude Code changelog RSS feed.
+Status: **partial implementation.** `sync-settings.js` shipped 2026-04-28; `sync-env-vars.js` is the next planned script.
 
-Status: **spec only**. No code yet. Nothing in this doc prescribes a language or CI system.
+## Intent
 
-## Goals
+Every Claude Code config surface (settings, env vars, hooks, MCP, …) has an authoritative upstream representation — usually a docs page, sometimes a JSON Schema. For each surface we want a small, idempotent script that pulls that upstream form and reshapes it into a flat JSON file the desktop app consumes via its planned `read_catalog` Tauri command.
 
-1. **Catch drift automatically.** Any settings field / env var / hook event / permission mode / CLI flag that appears, disappears, or changes shape in the upstream docs is surfaced as a concrete diff against our inventory.
-2. **Make the inventory auditable.** Every row in `inventory.md` should be traceable to a specific line in a specific upstream doc snapshot.
-3. **Stay cheap and idempotent.** Re-running the harness on an unchanged upstream is a no-op.
-4. **Stay spec-stable while the project is pre-code.** A human running the harness manually in a terminal is a valid v0; CI automation is a later layer.
+This spec replaces a deliberately heavier earlier draft (5-phase harness, snapshot files, RSS-driven cadence, diff/report artifacts). That elaborate design isn't worth the carry cost while the project is pre-release. Git is a perfectly good diff tool; PR review is a perfectly good change report.
 
-## Non-goals
+## Design principles
 
-- Parsing upstream prose for behavioural descriptions. The harness verifies *identity* (field exists, type is `string`, enum has these values) — not *semantics*.
-- Deep-linking into the eventual desktop app. The harness writes static artifacts; the app reads them later (or doesn't).
-- Auto-committing changes to `inventory.md`. Sync proposes; humans merge.
-- Keeping third-party MCP servers / community plugins in sync — only the Claude-Code-published surface.
+- **One script per upstream source.** Independent, runnable solo, easy to delete or replace.
+- **Stdlib only where possible.** Node's built-in `fetch`, `node:test`, and `--experimental-test-coverage` cover the work. No new deps unless a parser genuinely needs one.
+- **The output is the contract.** Each script produces `catalog/<source>.json` with a flat array of records under a small envelope (`{ source, fetchedAt, count, <records> }`).
+- **Idempotent.** Re-running on unchanged upstream produces a one-line diff (`fetchedAt` only). Records are sorted by a stable key.
+- **Reshape on the way in, not on the way out.** Flatten nested schemas to dotted-key rows, drop fields the consumer doesn't use. The committed catalog should be ergonomic for the UI even if the upstream form isn't.
+- **Provenance is part of the data.** `source` URL and `fetchedAt` timestamp ride with every catalog file.
+- **Git is the diff tool.** No watermarks, no snapshots, no `verify.md` artifact. PR review surfaces drift.
 
-## Upstream sources
+## Repo layout
 
-All are served as plain Markdown when `.md` is appended to the URL. The RSS feed drives cadence.
+```
+scripts/
+├── sync-settings.js          # implemented
+├── sync-settings.test.js     # 15 tests, ~93% branch coverage
+└── sync-env-vars.js          # planned
 
-| URL | Role in the harness |
+catalog/
+├── settings.json             # written by sync-settings.js
+└── env-vars.json             # written by sync-env-vars.js (planned)
+```
+
+## Sources
+
+### Settings — implemented
+
+| | |
 | --- | --- |
-| `https://code.claude.com/docs/en/changelog/rss.xml` | Cadence trigger. Each `<item>` with a publish date newer than our last-synced watermark kicks off a fetch cycle. |
-| `https://code.claude.com/docs/en/changelog.md` | Human-readable change log. Parsed loosely (keyword scan) to flag items that likely touched a config surface. |
-| `https://code.claude.com/docs/en/settings.md` | Source of truth for §1, §2, §4, §13 of the inventory. |
-| `https://code.claude.com/docs/en/env-vars.md` | Source of truth for §3. |
-| `https://code.claude.com/docs/en/hooks.md` | Source of truth for §5. |
-| `https://code.claude.com/docs/en/slash-commands.md` | Source of truth for §6 (user-authored commands). |
-| `https://code.claude.com/docs/en/skills.md` | Source of truth for §6 (skills frontmatter). |
-| `https://code.claude.com/docs/en/sub-agents.md` | Source of truth for §7. |
-| `https://code.claude.com/docs/en/plugins.md`, `plugin-marketplaces.md` | Source of truth for §8. |
-| `https://code.claude.com/docs/en/mcp.md` | Source of truth for §9. |
-| `https://code.claude.com/docs/en/memory.md` | Source of truth for §10. |
-| `https://code.claude.com/docs/en/keybindings.md` | Source of truth for §11. |
-| `https://code.claude.com/docs/en/statusline.md` | Source of truth for §12. |
-| `https://code.claude.com/docs/en/cli-reference.md` | Source of truth for §15. |
-| `https://code.claude.com/docs/en/iam.md` | Permission-rule semantics, supplemental to §4. |
-| `https://code.claude.com/docs/en/vs-code.md`, `jetbrains.md` | Source of truth for §14. |
+| Source | `https://json.schemastore.org/claude-code-settings.json` |
+| Output | `catalog/settings.json` (~155 entries) |
+| Script | `scripts/sync-settings.js` |
+| Run | `npm run sync:settings` |
 
-The URL list lives in a version-controlled manifest (`docs/sync/sources.yaml` or similar) so new/moved pages can be added without touching the harness code.
+**Why the JSON Schema, not `settings.md`:** the schemastore document has explicit `type`, `default`, `enum`, `description`, and recursive `properties` for object-typed settings (`permissions`, `sandbox`, `statusLine`, …). The markdown page buries those in a 3-column `Key | Description | Example` table where defaults and enum values live in prose and types must be inferred from the example. The schema is a higher-fidelity source for the same data.
 
-## Architecture
+**Output shape per record:**
 
-Five phases, each producing a file committed to (or diffable against) the repo. Everything is content-addressed by the SHA of the raw Markdown, so a stable upstream yields stable outputs.
-
-```
-  1. FETCH      2. PARSE       3. NORMALIZE   4. DIFF        5. REPORT
-  ─────────    ──────────    ────────────   ──────────    ──────────
-  raw .md   →  structured   → canonical   →  per-section →  verify.md
-  snapshot     AST-ish        catalog        delta          (or exit 1
-                                                             in CI)
-```
-
-### Phase 1 — Fetch
-
-- For each URL in the manifest, GET the `.md` endpoint with a conditional `If-None-Match` / `If-Modified-Since` where available.
-- Write the raw body to `docs/sync/snapshots/<slug>.md`. These files are **committed** so diffs across syncs show up in `git log` of the repo itself.
-- Record a fetch manifest `docs/sync/snapshots/manifest.json` with `{url, fetchedAt, etag, sha256}` per entry.
-- The RSS feed is fetched the same way; its latest `<pubDate>` becomes the watermark written to `docs/sync/watermark.txt`.
-
-### Phase 2 — Parse
-
-Each source type gets a dedicated parser. Parsers are small, readable, and intentionally dumb — they extract identity, not meaning.
-
-- `settings.md` → walk the "settings fields" table(s), yield `{name, type, validValues?, managedOnly, purpose_text}` records.
-- `env-vars.md` → walk env-var tables, yield `{name, purpose_text, group?}` records.
-- `hooks.md` → enumerate event names and handler types as string sets.
-- `cli-reference.md` → parse flag definitions into `{flag, equivalentSetting?, acceptsArg}`.
-- etc.
-
-Each parser writes a JSON file to `docs/sync/catalog/<section>.json`.
-
-### Phase 3 — Normalize
-
-All per-section JSON files are merged into a single canonical catalog:
-
-```
-docs/sync/catalog/catalog.json
-```
-
-Schema (informal):
-
-```
+```json
 {
-  "version": "<git sha or timestamp>",
-  "fetchedAt": "<iso8601>",
-  "settingsFields": [ { "name": "...", "type": "...", "managedOnly": false, ... } ],
-  "envVars":        [ { "name": "...", "group": "auth", ... } ],
-  "hookEvents":     [ "PreToolUse", "PostToolUse", ... ],
-  "hookHandlers":   [ "command", "prompt", ... ],
-  "permissionModes":[ "default", "acceptEdits", "plan", ... ],
-  "cliFlags":       [ { "flag": "--model", "equivalentSetting": "model" } ],
-  ...
+  "key": "permissions.defaultMode",
+  "type": "string",
+  "enum": ["acceptEdits", "bypassPermissions", "default", "delegate", "dontAsk", "plan", "auto"],
+  "description": "..."
 }
 ```
 
-This file is **committed**. It's the version we compare against.
+Nested object schemas are flattened: `permissions` and `permissions.defaultMode` are sibling rows. A small allowlist of fields (`type`, `const`, `enum`, `default`, `minimum`, `maximum`, `pattern`, `examples`, `description`, `$ref`, `anyOf`/`oneOf`/`allOf`, plus a recursive summary of `items` for arrays) is preserved; everything else is dropped to keep upstream JSON Schema metadata churn out of the catalog.
 
-### Phase 4 — Diff
+### Env vars — planned
 
-Diff the new `catalog.json` against the committed one. Output categories:
+| | |
+| --- | --- |
+| Source | `https://code.claude.com/docs/en/env-vars.md` |
+| Output | `catalog/env-vars.json` (~130 entries expected) |
+| Script | `scripts/sync-env-vars.js` (TBD) |
+| Run | `npm run sync:env-vars` (TBD) |
 
-- **Added** — present upstream, absent in our inventory.
-- **Removed** — present in our inventory, absent upstream.
-- **Changed** — same identity, different shape (type changed, new enum value, etc.).
-- **Unchanged** — no-op.
+No JSON Schema sibling exists, so the script parses the markdown directly. The page is structurally simple: one 2-column table (`Variable | Purpose`) covering all variables. Defaults, ranges, and constraints are *not* in a dedicated column — they're embedded as prose inside Purpose (`default: 600000, or 10 minutes; maximum: 2147483647`).
 
-A second diff pass compares `catalog.json` against claims made in `inventory.md` itself — because the inventory is hand-written prose, its claims can drift from even our own canonical catalog. Extraction from `inventory.md` uses a lightweight convention: fields listed in tables under known H2/H3 headers.
+**Approach:**
 
-### Phase 5 — Report
+1. `fetch()` the `.md` URL.
+2. Parse the markdown table. Hand-rolled is fine — the page is one table with backtick-wrapped names in column 1 and free-form prose in column 2. Reach for a markdown parser only if the page structure changes.
+3. For each row, extract `name`, `purpose`, and a best-effort `default` (regex `default: (\S+)` from the purpose text — record `null` when not present rather than guessing).
+4. Sort by `name`, wrap with the standard envelope, write to `catalog/env-vars.json`.
 
-Write `docs/sync/verify.md`:
+**Output shape per record:**
 
-```markdown
-# Catalog verify report — <date>
-
-## Upstream vs our catalog
-- Added: settings.foo (string)
-- Removed: settings.bar
-- Changed: permissions.defaultMode — new enum value "strict"
-
-## Our inventory vs our catalog
-- inventory.md §2.1 lists `availableModels` as boolean; catalog says array. FIX.
-- inventory.md §4 lists `mcpPermissions` as a field; catalog says not present. REMOVE.
-
-## Changelog entries since last sync (<watermark>)
-- 2026-04-21 — "Add skills.disable-model-invocation" → likely touches §6
-- 2026-04-18 — "Rework permissions.defaultMode" → likely touches §4
+```json
+{
+  "name": "API_TIMEOUT_MS",
+  "purpose": "Timeout for API requests in milliseconds — default: 600000, or 10 minutes; maximum: 2147483647",
+  "default": "600000"
+}
 ```
 
-In CI this report is the human output. Exit status is non-zero iff any diff is non-empty.
+Pragmatic acceptance criteria: every row in the upstream table appears in the output; defaults extracted when present; no entry silently dropped. Lossy parsing (e.g. for vars whose purpose mentions multiple numbers) is acceptable as long as raw `purpose` is preserved verbatim — the consumer can re-parse if needed.
 
-## Changelog integration
+**Test plan:** mirror `sync-settings.test.js`. Pure functions (table parser, default extractor) get unit tests with small fixture strings; `main()` stays uncovered.
 
-The RSS feed is the cheap signal; the full doc pages are the expensive verification.
+## Future sources (not committed)
 
-- **Cron** (daily is plenty): fetch RSS. If no new entries since `watermark.txt`, exit.
-- **On new entry**: run phases 1–5 end-to-end. Attach the report to an auto-generated issue (or a PR that bumps `catalog.json`), with the changelog snippets quoted inline so the reviewer sees "why we re-synced".
-- **Keyword heuristic**: changelog items containing any of `settings`, `env`, `hook`, `permission`, `plugin`, `mcp`, `skill`, `agent`, `memory`, `CLAUDE.md`, `keybinding`, `statusline`, `sandbox`, `--<flag>`, `/<command>` are flagged as "likely touches config".
-- **Changelog items without any keyword**: still trigger a full sync, but the report says "changelog touched no obvious config surface — diff should be empty".
+Each gets the same recipe: one script, one catalog file, one test file. Likely candidates in rough priority order: `hooks.md`, `mcp.md`, `sub-agents.md`, `permissions` doc, `keybindings.md`, `cli-reference.md`. None are committed scope today.
 
-## Repo layout the harness assumes
+## Future automation (not committed)
 
-```
-docs/
-├── inventory.md               # human-authored, the thing we ship
-├── catalog-sync.md            # this file
-└── sync/
-    ├── sources.yaml           # URL manifest, human-edited
-    ├── watermark.txt          # last RSS pubDate processed
-    ├── snapshots/
-    │   ├── manifest.json      # fetch metadata per source
-    │   ├── settings.md
-    │   ├── env-vars.md
-    │   └── …                  # raw .md, one per source
-    ├── catalog/
-    │   ├── settings-fields.json
-    │   ├── env-vars.json
-    │   └── …                  # per-section parsed JSON
-    ├── catalog.json           # merged canonical catalog
-    └── verify.md              # latest diff report
-```
+- **CI on cron.** A GitHub Actions workflow could run `npm run sync:settings && npm run sync:env-vars` on a schedule and open a PR when `catalog/` changes. Cheap to add when there's a reason; nothing about the current scripts blocks it.
+- **Coverage thresholds.** `--test-coverage-lines` / `--test-coverage-branches` to fail the run below a target. Premature now; reasonable when there are several scripts.
 
-## Failure modes the spec must account for
+## What this spec explicitly is not
 
-1. **Upstream moves a page.** A 404 is a hard failure — the harness must not silently skip. `sources.yaml` is the place to patch the URL.
-2. **Upstream removes a field without announcing it.** The diff will flag it; the verify report distinguishes "removed without changelog mention" from "removed per changelog `<x>`".
-3. **Upstream changes a field's type.** Flagged as a "Changed" entry with before/after types.
-4. **Upstream adds a field via prose, not a table.** Parsers are table-driven by design; prose additions leak through. Mitigation: the second pass (inventory-vs-catalog) surfaces the inverse — we claim things not in the catalog — but prose-only upstream additions will only be caught by a human reading the changelog entry. Live with it; don't try to parse prose.
-5. **RSS feed changes format.** Fetch with a tolerant parser; log and keep the old watermark if parsing fails; don't throw the watermark away.
-6. **Network / rate-limit transient errors.** Retry with backoff, cap at N tries, fail loudly rather than writing a partial snapshot.
-7. **Upstream doc switches renderer and introduces cosmetic diff churn.** SHA-based change detection will over-trigger. Mitigation: before hashing, strip HTML entities and collapse whitespace in raw bodies.
-
-## What the harness does NOT do
-
-- Does not write to `inventory.md`. Sync proposes diffs; the humans who edit `inventory.md` decide whether/how to reflect them. Preserving the prose voice of the inventory matters more than automation throughput.
-- Does not validate that a real Claude Code installation honours the settings described. That's a separate system — a "live probe" that reads `~/.claude/settings.json`, starts a subprocess, and introspects `/status`. Out of scope here.
-- Does not publish to `knobs.cc/`. The eventual landing page and desktop app are separate renderers that may consume `catalog.json`; their build pipelines are not this harness.
-- Does not replace human judgment about deprecations. If upstream removes a field, the harness flags it; we decide whether to drop it from the inventory or keep it with a "removed in v2.1.xxx" marker.
-
-## Phasing
-
-- **v0 (manual).** A developer runs the harness locally, inspects `verify.md`, edits `inventory.md` accordingly, commits. No CI. Stack undecided.
-- **v1 (scripted).** Same behaviour, but exposed as a single command. Still no CI.
-- **v2 (CI on cron).** GitHub Actions cron hits the RSS feed daily; on drift, opens a PR titled "catalog sync: <date>" with updated snapshots + `catalog.json` + `verify.md`. Humans merge.
-- **v3 (alerting).** If a keyword-flagged changelog entry appears and no drift is detected after 24h, nudge a maintainer — either upstream changed prose (that our parsers miss) or our `sources.yaml` needs a new page.
-
-The spec is intentionally silent on the implementation stack. The Tauri 2 app will use Rust at the local boundary (commands registered via `#[tauri::command]` and `generate_handler![]`), which makes Rust a strong candidate for shared catalog/parsing code, but nothing here requires that.
+- Not a multi-phase harness with snapshots and watermarks. The earlier draft of this file proposed `docs/sync/snapshots/`, `manifest.json`, `watermark.txt`, `verify.md`, an RSS-driven trigger, and per-section then merged JSON. All cut. If we need any of that back, it's a real change request, not a defaulting-back.
+- Not a write path to upstream or to `spec/inventory.md`. Catalog flows in one direction: upstream → script → `catalog/<source>.json` → app.
+- Not a substitute for human review. The catalog is the *current* upstream truth; whether to surface a new field, hide a deprecated one, or annotate a quirk is a UI decision in the Tauri app, not a sync concern.
 
 ## Open questions
 
-- **Where does `catalog.json` actually live?** Repo vs separate artifact branch vs GitHub Releases. Committing it into `main` means every sync is a visible diff — probably the right default, but it bloats `git log`.
-- **How do we represent "deprecated but not yet removed" in the catalog?** Needs a `status` field on each record — at least `current` / `deprecated` / `removed`.
-- **Do we need a second upstream — source code of Claude Code itself?** The settings doc is reliably current for documented fields, but undocumented / experimental fields exist. If we ever want to surface those, we need a different source. Defer.
-- **Parsing HTML vs Markdown.** The `.md` endpoint is cleaner, but not all pages may offer it. Fall back to HTML + pandoc if needed — not today's problem.
+- **`spec/inventory.md`'s future.** Once `catalog/settings.json` and `catalog/env-vars.json` exist, the sections of `inventory.md` they cover are largely redundant. Decision deferred — but the inventory's hand-edited prose is *not* something this harness should try to regenerate.
+- **`$ref` resolution.** `catalog/settings.json` preserves `$ref` strings (`#/$defs/permissionRule`) without expanding them. If a consumer needs the resolved schema (e.g. to validate a permission-rule string), we can either expand at sync time or expose `$defs` as a sibling block in the envelope.
+- **Schema staleness signal.** `json.schemastore.org/claude-code-settings.json` has no embedded version or `updated` timestamp. If we want change-detection beyond "did the file content differ," ETag or content hash on fetch is the obvious move.

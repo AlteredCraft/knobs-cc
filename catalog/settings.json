@@ -1,0 +1,1702 @@
+{
+  "source": "https://json.schemastore.org/claude-code-settings.json",
+  "schemaId": "https://json.schemastore.org/claude-code-settings.json",
+  "fetchedAt": "2026-04-28T21:49:41.856Z",
+  "count": 155,
+  "settings": [
+    {
+      "key": "$schema",
+      "type": "string",
+      "description": "JSON Schema reference for Claude Code settings"
+    },
+    {
+      "key": "agent",
+      "type": "string",
+      "minLength": 1,
+      "description": "Name of an agent (built-in or custom) to use for the main thread. Applies the agent's system prompt, tool restrictions, and model. See https://code.claude.com/docs/en/sub-agents"
+    },
+    {
+      "key": "allowedChannelPlugins",
+      "type": "array",
+      "description": "(Managed settings only) Allowlist of plugin IDs whose MCP servers may advertise channel notifications when channelsEnabled is true. When set, only the listed plugins can push inbound messages. See https://code.claude.com/docs/en/mcp",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    {
+      "key": "allowedHttpHookUrls",
+      "type": "array",
+      "examples": [
+        [
+          "https://hooks.example.com/*",
+          "http://localhost:*"
+        ]
+      ],
+      "description": "Allowlist of URL patterns that HTTP hooks may target. Supports * as a wildcard. When set, hooks with non-matching URLs are blocked. Undefined = no restriction, empty array = block all HTTP hooks. Arrays merge across settings sources. See https://code.claude.com/docs/en/settings#hook-configuration",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    {
+      "key": "allowedMcpServers",
+      "type": "array",
+      "description": "Enterprise allowlist of MCP servers that can be used. Applies to all scopes including enterprise servers from managed-mcp.json. If undefined, all servers are allowed. If empty array, no servers are allowed. Denylist takes precedence - if a server is on both lists, it is denied. See https://code.claude.com/docs/en/mcp#restriction-options",
+      "items": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "serverName": {
+                "type": "string",
+                "pattern": "^[a-zA-Z0-9_-]+$",
+                "description": "Name of the MCP server that users are allowed to configure"
+              }
+            },
+            "required": [
+              "serverName"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "serverCommand": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Exact command and arguments used to start stdio servers"
+              }
+            },
+            "required": [
+              "serverCommand"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "serverUrl": {
+                "type": "string",
+                "description": "URL pattern for remote servers, supports wildcards (e.g., https://*.example.com/*)"
+              }
+            },
+            "required": [
+              "serverUrl"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      }
+    },
+    {
+      "key": "allowManagedHooksOnly",
+      "type": "boolean",
+      "description": "(Managed settings only) Prevent loading of user, project, and plugin hooks. Only allows managed hooks and SDK hooks. See https://code.claude.com/docs/en/settings#hook-configuration"
+    },
+    {
+      "key": "allowManagedMcpServersOnly",
+      "type": "boolean",
+      "description": "(Managed settings only) Only allowedMcpServers from managed settings are respected. deniedMcpServers still merges from all sources. Users can still add their own MCP servers, but only the admin-defined allowlist applies."
+    },
+    {
+      "key": "allowManagedPermissionRulesOnly",
+      "type": "boolean",
+      "description": "(Managed settings only) Prevent user and project settings from defining allow, ask, or deny permission rules. Only rules in managed settings apply. See https://code.claude.com/docs/en/settings#permission-settings"
+    },
+    {
+      "key": "alwaysThinkingEnabled",
+      "type": "boolean",
+      "description": "Enable extended thinking by default for all sessions. Typically configured via the /config command rather than editing directly. See https://code.claude.com/docs/en/common-workflows#use-extended-thinking-thinking-mode"
+    },
+    {
+      "key": "apiKeyHelper",
+      "type": "string",
+      "minLength": 1,
+      "examples": [
+        "/bin/generate_temp_api_key.sh"
+      ],
+      "description": "Path to a script that outputs authentication values"
+    },
+    {
+      "key": "attribution",
+      "type": "object",
+      "description": "Customize attribution for git commits and pull requests. See https://code.claude.com/docs/en/settings#attribution-settings"
+    },
+    {
+      "key": "attribution.commit",
+      "type": "string",
+      "description": "Attribution for git commits, including any trailers. Empty string hides commit attribution"
+    },
+    {
+      "key": "attribution.pr",
+      "type": "string",
+      "description": "Attribution for pull request descriptions. Empty string hides pull request attribution"
+    },
+    {
+      "key": "autoMemoryDirectory",
+      "type": "string",
+      "minLength": 1,
+      "description": "Custom directory path for auto-memory storage. Supports ~/ prefix for home-directory expansion. Ignored if set in checked-in project settings (.claude/settings.json) for security. Defaults to ~/.claude/projects/<sanitized-cwd>/memory/ when unset. See https://code.claude.com/docs/en/memory"
+    },
+    {
+      "key": "autoMemoryEnabled",
+      "type": "boolean",
+      "default": true,
+      "description": "Enable automatic memory saves that capture useful context to .claude/memory/. Also configurable via CLAUDE_CODE_DISABLE_AUTO_MEMORY environment variable (set to 1 to disable, 0 to enable). See https://code.claude.com/docs/en/memory#auto-memory"
+    },
+    {
+      "key": "autoMode",
+      "type": "object",
+      "description": "Customization for the auto mode classifier prompt. Typically configured in managed settings to tune the allow/deny rules used when permissions.defaultMode is \"auto\". By default, allow, soft_deny, and environment REPLACE the corresponding built-in classifier section entirely. Include the literal string \"$defaults\" as an array entry (added in v2.1.118) to splice the built-in defaults in at that position alongside your custom rules. See https://code.claude.com/docs/en/permissions"
+    },
+    {
+      "key": "autoMode.allow",
+      "type": "array",
+      "description": "Rules for the auto mode classifier allow section. Replaces the built-in allow rules entirely unless the literal string \"$defaults\" is included as an entry, which splices the built-in defaults in at that position.",
+      "items": {
+        "type": "string"
+      }
+    },
+    {
+      "key": "autoMode.environment",
+      "type": "array",
+      "description": "Entries for the auto mode classifier environment section. Replaces the built-in environment context entirely unless the literal string \"$defaults\" is included as an entry, which splices the built-in defaults in at that position.",
+      "items": {
+        "type": "string"
+      }
+    },
+    {
+      "key": "autoMode.soft_deny",
+      "type": "array",
+      "description": "Rules for the auto mode classifier soft-deny section. Replaces the built-in soft-deny rules entirely unless the literal string \"$defaults\" is included as an entry, which splices the built-in defaults in at that position.",
+      "items": {
+        "type": "string"
+      }
+    },
+    {
+      "key": "autoUpdatesChannel",
+      "type": "string",
+      "enum": [
+        "stable",
+        "latest"
+      ],
+      "default": "latest",
+      "description": "Release channel to follow for updates. Use \"stable\" for a version that is typically about one week old and skips versions with major regressions, or \"latest\" (default) for the most recent release. Set DISABLE_AUTOUPDATER=1 to disable background auto-updates, or DISABLE_UPDATES=1 (added in v2.1.118) to block all update paths including manual `claude update`."
+    },
+    {
+      "key": "availableModels",
+      "type": "array",
+      "examples": [
+        [
+          "sonnet",
+          "haiku"
+        ]
+      ],
+      "description": "Restrict which models users can select. When defined at multiple settings levels (user, project, etc.), arrays are merged and deduplicated. See https://code.claude.com/docs/en/model-config#restrict-model-selection",
+      "items": {
+        "type": "string"
+      }
+    },
+    {
+      "key": "awsAuthRefresh",
+      "type": "string",
+      "minLength": 1,
+      "examples": [
+        "aws sso login --profile myprofile"
+      ],
+      "description": "Path to a script that refreshes AWS authentication"
+    },
+    {
+      "key": "awsCredentialExport",
+      "type": "string",
+      "minLength": 1,
+      "examples": [
+        "/bin/generate_aws_grant.sh"
+      ],
+      "description": "Path to a script that exports AWS credentials"
+    },
+    {
+      "key": "blockedMarketplaces",
+      "type": "array",
+      "description": "(Managed settings only) Blocklist of marketplace sources. These exact sources are blocked from being added as marketplaces. The check happens before downloading, so blocked sources never touch the filesystem.",
+      "items": {
+        "anyOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "source": {
+                "type": "string",
+                "const": "url",
+                "description": "Block marketplace fetched from direct URL"
+              },
+              "url": {
+                "type": "string",
+                "format": "uri",
+                "description": "Direct URL to marketplace.json file"
+              },
+              "headers": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "description": "Custom HTTP headers (e.g., for authentication)"
+              }
+            },
+            "required": [
+              "source",
+              "url"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "source": {
+                "type": "string",
+                "const": "github",
+                "description": "Block marketplace from GitHub repository"
+              },
+              "repo": {
+                "type": "string",
+                "description": "GitHub repository in owner/repo format"
+              },
+              "ref": {
+                "type": "string",
+                "description": "Git branch or tag to use"
+              },
+              "path": {
+                "type": "string",
+                "description": "Path to marketplace.json within repo"
+              }
+            },
+            "required": [
+              "source",
+              "repo"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "source": {
+                "type": "string",
+                "const": "git",
+                "description": "Block marketplace from git repository URL"
+              },
+              "url": {
+                "type": "string",
+                "pattern": ".*\\.git$",
+                "description": "Full git repository URL"
+              },
+              "ref": {
+                "type": "string",
+                "description": "Git branch or tag to use"
+              },
+              "path": {
+                "type": "string",
+                "description": "Path to marketplace.json within repo"
+              }
+            },
+            "required": [
+              "source",
+              "url"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "source": {
+                "type": "string",
+                "const": "npm",
+                "description": "Block marketplace from NPM package"
+              },
+              "package": {
+                "type": "string",
+                "description": "NPM package containing marketplace.json"
+              }
+            },
+            "required": [
+              "source",
+              "package"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "source": {
+                "type": "string",
+                "const": "file",
+                "description": "Block marketplace from local file"
+              },
+              "path": {
+                "type": "string",
+                "description": "Local file path to marketplace.json"
+              }
+            },
+            "required": [
+              "source",
+              "path"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "source": {
+                "type": "string",
+                "const": "directory",
+                "description": "Block marketplace from local directory"
+              },
+              "path": {
+                "type": "string",
+                "description": "Local directory containing .claude-plugin/marketplace.json"
+              }
+            },
+            "required": [
+              "source",
+              "path"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "source": {
+                "type": "string",
+                "const": "hostPattern",
+                "description": "Block marketplace by host pattern matching"
+              },
+              "hostPattern": {
+                "type": "string",
+                "description": "Regex pattern to match the host/domain extracted from any marketplace source type"
+              }
+            },
+            "required": [
+              "source",
+              "hostPattern"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "source": {
+                "type": "string",
+                "const": "pathPattern",
+                "description": "Block marketplace by file/directory path pattern matching"
+              },
+              "pathPattern": {
+                "type": "string",
+                "description": "Regex pattern to match file or directory paths for marketplace sources"
+              }
+            },
+            "required": [
+              "source",
+              "pathPattern"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "key": "channelsEnabled",
+      "type": "boolean",
+      "default": false,
+      "description": "(Teams/Enterprise) Opt-in for channel notifications — MCP servers with the claude/channel capability pushing inbound messages. Default off. When true, users can select servers via --channels. See https://code.claude.com/docs/en/mcp"
+    },
+    {
+      "key": "claudeMdExcludes",
+      "type": "array",
+      "examples": [
+        [
+          "**/monorepo/CLAUDE.md",
+          "/home/user/monorepo/other-team/.claude/rules/**"
+        ]
+      ],
+      "description": "Glob patterns for CLAUDE.md files to exclude from loading. Useful in monorepos to skip irrelevant instructions from other teams. Patterns match against absolute file paths. Arrays merge across settings layers. Managed policy CLAUDE.md files cannot be excluded. See https://code.claude.com/docs/en/memory#exclude-specific-claude-md-files",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    {
+      "key": "cleanupPeriodDays",
+      "type": "integer",
+      "default": 30,
+      "minimum": 1,
+      "examples": [
+        20,
+        30,
+        60
+      ],
+      "description": "Number of days to retain sessions, orphaned subagent worktrees, tasks, shell snapshots, and backups. Minimum is 1; setting 0 is rejected with a validation error. See https://code.claude.com/docs/en/settings"
+    },
+    {
+      "key": "companyAnnouncements",
+      "type": "array",
+      "description": "Company announcements to display at startup (one will be randomly selected if multiple are provided)",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    {
+      "key": "defaultShell",
+      "type": "string",
+      "enum": [
+        "bash",
+        "powershell"
+      ],
+      "description": "Default shell for input-box ! commands. Default: bash. Using \"powershell\" routes ! commands through PowerShell on Windows and requires CLAUDE_CODE_USE_POWERSHELL_TOOL=1 with pwsh on PATH. See https://code.claude.com/docs/en/settings"
+    },
+    {
+      "key": "deniedMcpServers",
+      "type": "array",
+      "description": "Enterprise denylist of MCP servers that are explicitly blocked. If a server is on the denylist, it will be blocked across all scopes including enterprise. Denylist takes precedence over allowlist - if a server is on both lists, it is denied. See https://code.claude.com/docs/en/mcp#restriction-options",
+      "items": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "serverName": {
+                "type": "string",
+                "pattern": "^[a-zA-Z0-9_-]+$",
+                "description": "Name of the MCP server that is explicitly blocked"
+              }
+            },
+            "required": [
+              "serverName"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "serverCommand": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Exact command and arguments used to start stdio servers"
+              }
+            },
+            "required": [
+              "serverCommand"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "serverUrl": {
+                "type": "string",
+                "description": "URL pattern for remote servers, supports wildcards (e.g., https://*.example.com/*)"
+              }
+            },
+            "required": [
+              "serverUrl"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      }
+    },
+    {
+      "key": "disableAllHooks",
+      "type": "boolean",
+      "description": "Disable all hooks and statusLine execution. When true in managed settings, user and project-level disableAllHooks cannot override it. See https://code.claude.com/docs/en/hooks#disable-or-remove-hooks"
+    },
+    {
+      "key": "disableDeepLinkRegistration",
+      "type": "string",
+      "enum": [
+        "disable"
+      ],
+      "description": "Set to \"disable\" to prevent Claude Code from registering the `claude://` deep-link protocol handler on startup. Most useful in managed settings where users cannot override it. See https://code.claude.com/docs/en/settings"
+    },
+    {
+      "key": "disabledMcpjsonServers",
+      "type": "array",
+      "examples": [
+        [
+          "filesystem"
+        ]
+      ],
+      "description": "List of rejected MCP servers from .mcp.json. See https://code.claude.com/docs/en/mcp",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    {
+      "key": "disableSkillShellExecution",
+      "type": "boolean",
+      "description": "Disable inline shell execution for `` !`...` `` and ` ```! ` blocks in skills and custom slash commands from user, project, plugin, or additional-directory sources. Commands are replaced with [shell command execution disabled by policy] instead of being run. Bundled and managed skills are not affected. Most useful in managed settings where users cannot override it. See https://code.claude.com/docs/en/settings"
+    },
+    {
+      "key": "effortLevel",
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max"
+      ],
+      "description": "Persist adaptive reasoning effort across sessions. Effort is supported on Opus 4.7, Opus 4.6, and Sonnet 4.6. Opus 4.7 supports low/medium/high/xhigh/max (xhigh sits between high and max, added in v2.1.111); Opus 4.6 and Sonnet 4.6 support low/medium/high/max (xhigh falls back to high). Defaults: Opus 4.6 and Sonnet 4.6 default to high on all plans (Pro/Max raised from medium to high in v2.1.117); Opus 4.7 defaults to xhigh on Max plan. The max value is session-only unless set via CLAUDE_CODE_EFFORT_LEVEL. Use /effort auto to reset to model default. Also configurable via CLAUDE_CODE_EFFORT_LEVEL environment variable. See https://code.claude.com/docs/en/model-config#adjust-effort-level"
+    },
+    {
+      "key": "enableAllProjectMcpServers",
+      "type": "boolean",
+      "examples": [
+        true
+      ],
+      "description": "Whether to automatically approve all MCP servers in the project. See https://code.claude.com/docs/en/mcp"
+    },
+    {
+      "key": "enabledMcpjsonServers",
+      "type": "array",
+      "examples": [
+        [
+          "memory",
+          "github"
+        ]
+      ],
+      "description": "List of approved MCP servers from .mcp.json. See https://code.claude.com/docs/en/mcp",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    {
+      "key": "enabledPlugins",
+      "type": "object",
+      "description": "Enabled plugins using plugin-id@marketplace-id format. Example: { \"formatter@anthropic-tools\": true }. See https://code.claude.com/docs/en/plugins"
+    },
+    {
+      "key": "env",
+      "type": "object",
+      "default": {},
+      "examples": [
+        {
+          "ANTHROPIC_MODEL": "claude-opus-4-1",
+          "ANTHROPIC_SMALL_FAST_MODEL": "claude-3-5-haiku-latest"
+        }
+      ],
+      "description": "Environment variables to set for Claude Code sessions. Many environment variables provide settings dimensions not available as dedicated settings.json properties (e.g., thinking tokens, prompt caching, bash timeouts, shell configuration). See https://code.claude.com/docs/en/settings#environment-variables for the full list.\nUNDOCUMENTED: CLAUDE_CODE_PLUGIN_GIT_TIMEOUT_MS (plugin marketplace git timeout in ms, default 120000, see https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md#2151).\nUNDOCUMENTED: ENABLE_CLAUDEAI_MCP_SERVERS (set to false to opt out of claude.ai MCP servers, see https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md#2163)."
+    },
+    {
+      "key": "extraKnownMarketplaces",
+      "type": "object",
+      "description": "Additional marketplaces to make available for this repository. Typically used in repository .claude/settings.json to ensure team members have required plugin sources. See https://code.claude.com/docs/en/plugin-marketplaces"
+    },
+    {
+      "key": "fastMode",
+      "type": "boolean",
+      "default": false,
+      "description": "Enable fast mode for Opus 4.6 (research preview). Fast mode uses the same model with 2.5x faster output at higher per-token cost. Requires extra usage enabled. Alternatively, toggle with /fast command. See https://code.claude.com/docs/en/fast-mode"
+    },
+    {
+      "key": "fastModePerSessionOptIn",
+      "type": "boolean",
+      "default": false,
+      "description": "Require per-session opt-in for fast mode. When true, fast mode does not persist across sessions and users must enable it with /fast each session. Useful for controlling costs. See https://code.claude.com/docs/en/fast-mode"
+    },
+    {
+      "key": "feedbackSurveyRate",
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "examples": [
+        0.05
+      ],
+      "description": "Probability (0–1) that the session quality survey appears when eligible. A value of 0.05 means 5% of eligible sessions. See https://code.claude.com/docs/en/settings"
+    },
+    {
+      "key": "fileSuggestion",
+      "type": "object",
+      "examples": [
+        {
+          "type": "command",
+          "command": "~/.claude/file-suggestion.sh"
+        }
+      ],
+      "description": "Configure a custom script for @ file autocomplete. See https://code.claude.com/docs/en/settings#file-suggestion-settings"
+    },
+    {
+      "key": "fileSuggestion.command",
+      "type": "string",
+      "description": "Shell command to execute for file suggestions"
+    },
+    {
+      "key": "fileSuggestion.type",
+      "type": "string",
+      "const": "command",
+      "description": "The type of file suggestion handler; must be set to \"command\" to execute a custom shell script that generates file suggestions for the @ file picker."
+    },
+    {
+      "key": "forceLoginMethod",
+      "type": "string",
+      "enum": [
+        "claudeai",
+        "console"
+      ],
+      "examples": [
+        "claudeai"
+      ],
+      "description": "Force a specific login method: \"claudeai\" for Claude Pro/Max, \"console\" for Console billing"
+    },
+    {
+      "key": "forceLoginOrgUUID",
+      "type": "string",
+      "minLength": 1,
+      "examples": [
+        "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+      ],
+      "description": "Organization UUID to use for OAuth login"
+    },
+    {
+      "key": "forceRemoteSettingsRefresh",
+      "type": "boolean",
+      "description": "(Managed settings only) Block CLI startup until remote managed settings are freshly fetched from the server. If the fetch fails, the CLI exits (fail-closed) rather than continuing with cached settings. When not set, startup continues without waiting for remote settings. See https://code.claude.com/docs/en/server-managed-settings"
+    },
+    {
+      "key": "hooks",
+      "type": "object",
+      "examples": [
+        {
+          "PostToolUse": [
+            {
+              "matcher": "Edit|Write",
+              "hooks": [
+                {
+                  "type": "command",
+                  "command": "prettier --write",
+                  "timeout": 5
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "description": "Custom commands to run before/after tool executions. See https://code.claude.com/docs/en/hooks"
+    },
+    {
+      "key": "hooks.ConfigChange",
+      "type": "array",
+      "description": "Hooks that run when settings, managed settings, or skill files change during a session. Supports matchers: user_settings, project_settings, local_settings, policy_settings, skills. Command handlers only. Exit code 2 blocks the change (except policy_settings which is audit-only). See https://code.claude.com/docs/en/hooks#configchange",
+      "items": {
+        "$ref": "#/$defs/hookMatcher"
+      }
+    },
+    {
+      "key": "hooks.CwdChanged",
+      "type": "array",
+      "description": "Hooks that run when the working directory changes. Provides cwd (new directory) and previous_cwd. Matchers are ignored; fires on every directory change. See https://code.claude.com/docs/en/hooks#cwdchanged",
+      "items": {
+        "$ref": "#/$defs/hookMatcher"
+      }
+    },
+    {
+      "key": "hooks.Elicitation",
+      "type": "array",
+      "description": "Hooks that run when an MCP server requests user input during a tool call. See https://code.claude.com/docs/en/hooks",
+      "items": {
+        "$ref": "#/$defs/hookMatcher"
+      }
+    },
+    {
+      "key": "hooks.ElicitationResult",
+      "type": "array",
+      "description": "Hooks that run after a user responds to an MCP elicitation, before the response is sent back to the server. See https://code.claude.com/docs/en/hooks",
+      "items": {
+        "$ref": "#/$defs/hookMatcher"
+      }
+    },
+    {
+      "key": "hooks.FileChanged",
+      "type": "array",
+      "description": "Hooks that run when a watched file is created, modified, or deleted. Supports filename matchers. Provides file_path and file_event_type (created, modified, deleted). See https://code.claude.com/docs/en/hooks#filechanged",
+      "items": {
+        "$ref": "#/$defs/hookMatcher"
+      }
+    },
+    {
+      "key": "hooks.InstructionsLoaded",
+      "type": "array",
+      "description": "Hooks that run when a CLAUDE.md or .claude/rules/*.md file is loaded into context. Fires at session start and when files are lazily loaded (e.g., nested traversal, path glob match). No decision control; used for audit logging and observability. Does not support matchers. See https://code.claude.com/docs/en/hooks#instructionsloaded",
+      "items": {
+        "$ref": "#/$defs/hookMatcher"
+      }
+    },
+    {
+      "key": "hooks.Notification",
+      "type": "array",
+      "description": "Hooks that trigger on notifications",
+      "items": {
+        "$ref": "#/$defs/hookMatcher"
+      }
+    },
+    {
+      "key": "hooks.PermissionRequest",
+      "type": "array",
+      "description": "Hooks that run when a permission dialog appears",
+      "items": {
+        "$ref": "#/$defs/hookMatcher"
+      }
+    },
+    {
+      "key": "hooks.PostCompact",
+      "type": "array",
+      "description": "Hooks that run after the context is compacted. See https://code.claude.com/docs/en/hooks",
+      "items": {
+        "$ref": "#/$defs/hookMatcher"
+      }
+    },
+    {
+      "key": "hooks.PostToolUse",
+      "type": "array",
+      "description": "Hooks that run after tool completion",
+      "items": {
+        "$ref": "#/$defs/hookMatcher"
+      }
+    },
+    {
+      "key": "hooks.PostToolUseFailure",
+      "type": "array",
+      "description": "Hooks that run after a tool fails",
+      "items": {
+        "$ref": "#/$defs/hookMatcher"
+      }
+    },
+    {
+      "key": "hooks.PreCompact",
+      "type": "array",
+      "description": "Hooks that run before the context is compacted",
+      "items": {
+        "$ref": "#/$defs/hookMatcher"
+      }
+    },
+    {
+      "key": "hooks.PreToolUse",
+      "type": "array",
+      "description": "Hooks that run before tool calls",
+      "items": {
+        "$ref": "#/$defs/hookMatcher"
+      }
+    },
+    {
+      "key": "hooks.SessionEnd",
+      "type": "array",
+      "description": "Hooks that run when a session ends",
+      "items": {
+        "$ref": "#/$defs/hookMatcher"
+      }
+    },
+    {
+      "key": "hooks.SessionStart",
+      "type": "array",
+      "description": "Hooks that run when a new session starts",
+      "items": {
+        "$ref": "#/$defs/hookMatcher"
+      }
+    },
+    {
+      "key": "hooks.Setup",
+      "type": "array",
+      "description": "UNDOCUMENTED. Hooks that run during repository initialization (--init, --init-only) or maintenance (--maintenance)",
+      "items": {
+        "$ref": "#/$defs/hookMatcher"
+      }
+    },
+    {
+      "key": "hooks.Stop",
+      "type": "array",
+      "description": "Hooks that run when agents finish responding. Does not run on user interrupt",
+      "items": {
+        "$ref": "#/$defs/hookMatcher"
+      }
+    },
+    {
+      "key": "hooks.StopFailure",
+      "type": "array",
+      "description": "Hooks that run when a turn ends due to an API error (e.g., rate_limit, authentication_failed, billing_error, invalid_request, server_error, max_output_tokens, unknown). Matcher can scope to specific error types. Hook output and exit code are ignored. See https://code.claude.com/docs/en/hooks",
+      "items": {
+        "$ref": "#/$defs/hookMatcher"
+      }
+    },
+    {
+      "key": "hooks.SubagentStart",
+      "type": "array",
+      "description": "Hooks that run when a subagent is spawned",
+      "items": {
+        "$ref": "#/$defs/hookMatcher"
+      }
+    },
+    {
+      "key": "hooks.SubagentStop",
+      "type": "array",
+      "description": "Hooks that run when subagents finish responding",
+      "items": {
+        "$ref": "#/$defs/hookMatcher"
+      }
+    },
+    {
+      "key": "hooks.TaskCompleted",
+      "type": "array",
+      "description": "Hooks that run when a task is being marked as completed. Exit code 2 prevents completion and sends feedback. Does not support matchers. See https://code.claude.com/docs/en/hooks#taskcompleted",
+      "items": {
+        "$ref": "#/$defs/hookMatcher"
+      }
+    },
+    {
+      "key": "hooks.TeammateIdle",
+      "type": "array",
+      "description": "Hooks that run when an agent team teammate is about to go idle. Exit code 2 sends feedback and keeps the teammate working. Does not support matchers. Agent teams are experimental. See https://code.claude.com/docs/en/hooks#teammateidle",
+      "items": {
+        "$ref": "#/$defs/hookMatcher"
+      }
+    },
+    {
+      "key": "hooks.UserPromptSubmit",
+      "type": "array",
+      "description": "Hooks that run when a user submits a prompt",
+      "items": {
+        "$ref": "#/$defs/hookMatcher"
+      }
+    },
+    {
+      "key": "hooks.WorktreeCreate",
+      "type": "array",
+      "description": "Hooks that run when a worktree is created via --worktree or isolation: \"worktree\" in subagents. Command handlers only, no matchers. Hook must print absolute path to created worktree on stdout; non-zero exit fails creation. See https://code.claude.com/docs/en/hooks#worktreecreate",
+      "items": {
+        "$ref": "#/$defs/hookMatcher"
+      }
+    },
+    {
+      "key": "hooks.WorktreeRemove",
+      "type": "array",
+      "description": "Hooks that run when a worktree is being removed at session exit or when a subagent finishes. Command handlers only, no matchers. Used for cleanup tasks; cannot block removal. See https://code.claude.com/docs/en/hooks#worktreeremove",
+      "items": {
+        "$ref": "#/$defs/hookMatcher"
+      }
+    },
+    {
+      "key": "httpHookAllowedEnvVars",
+      "type": "array",
+      "examples": [
+        [
+          "MY_TOKEN",
+          "HOOK_SECRET"
+        ]
+      ],
+      "description": "Allowlist of environment variable names HTTP hooks may interpolate into headers. When set, each hook's effective allowedEnvVars is the intersection with this list. Undefined = no restriction. Arrays merge across settings sources. See https://code.claude.com/docs/en/settings#hook-configuration",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    {
+      "key": "includeCoAuthoredBy",
+      "type": "boolean",
+      "default": true,
+      "description": "DEPRECATED. Use 'attribution' instead. Whether to include the co-authored-by Claude byline in git commits and pull requests (default: true)"
+    },
+    {
+      "key": "includeGitInstructions",
+      "type": "boolean",
+      "default": true,
+      "description": "Include built-in git commit and PR workflow instructions in Claude's system prompt. Also configurable via CLAUDE_CODE_DISABLE_GIT_INSTRUCTIONS environment variable (set to 1 to disable). See https://code.claude.com/docs/en/settings#available-settings"
+    },
+    {
+      "key": "language",
+      "type": "string",
+      "examples": [
+        "japanese",
+        "spanish",
+        "french"
+      ],
+      "description": "Preferred language for Claude's responses"
+    },
+    {
+      "key": "minimumVersion",
+      "type": "string",
+      "minLength": 1,
+      "examples": [
+        "2.1.0"
+      ],
+      "description": "Minimum Claude Code version to stay on. Prevents downgrades when switching release channels. See https://code.claude.com/docs/en/settings"
+    },
+    {
+      "key": "model",
+      "type": "string",
+      "description": "Override the default model used by Claude Code. For finer control, use environment variables: ANTHROPIC_MODEL (runtime override), ANTHROPIC_DEFAULT_OPUS_MODEL, ANTHROPIC_DEFAULT_SONNET_MODEL, ANTHROPIC_DEFAULT_HAIKU_MODEL (per-class pinning), CLAUDE_CODE_SUBAGENT_MODEL (subagent model). See https://code.claude.com/docs/en/model-config"
+    },
+    {
+      "key": "modelOverrides",
+      "type": "object",
+      "examples": [
+        {
+          "claude-opus-4-6": "arn:aws:bedrock:us-east-2:123456789012:application-inference-profile/opus-prod"
+        }
+      ],
+      "description": "Map Anthropic model IDs to provider-specific model IDs such as Bedrock inference profile ARNs, Vertex AI version names, or Foundry deployment names. Each model picker entry uses its mapped value when calling the provider API. Unknown keys are ignored. See https://code.claude.com/docs/en/model-config#override-model-ids-per-version"
+    },
+    {
+      "key": "otelHeadersHelper",
+      "type": "string",
+      "minLength": 1,
+      "description": "Path to a script that outputs OpenTelemetry headers"
+    },
+    {
+      "key": "outputStyle",
+      "type": "string",
+      "minLength": 1,
+      "examples": [
+        "default",
+        "Explanatory",
+        "Learning"
+      ],
+      "description": "Controls the output style for assistant responses. Built-in styles: default, Explanatory, Learning. Custom styles can be added in ~/.claude/output-styles/ or .claude/output-styles/. See https://code.claude.com/docs/en/output-styles"
+    },
+    {
+      "key": "permissions",
+      "type": "object",
+      "examples": [
+        {
+          "allow": [
+            "Bash(git add:*)"
+          ],
+          "ask": [
+            "Bash(gh pr create:*)",
+            "Bash(git commit:*)"
+          ],
+          "deny": [
+            "Read(*.env)",
+            "Bash(rm:*)",
+            "Bash(curl:*)"
+          ],
+          "defaultMode": "default"
+        }
+      ],
+      "description": "Tool usage permissions configuration.\nSee https://code.claude.com/docs/en/permissions and https://code.claude.com/docs/en/settings#permission-settings\nSee https://code.claude.com/docs/en/tools-reference for full list of tools available to Claude."
+    },
+    {
+      "key": "permissions.additionalDirectories",
+      "type": "array",
+      "examples": [
+        [
+          "//Users/alice/Documents",
+          "~/projects"
+        ]
+      ],
+      "description": "Additional directories to include in the permission scope",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    {
+      "key": "permissions.allow",
+      "type": "array",
+      "description": "List of permission rules for allowed operations",
+      "items": {
+        "$ref": "#/$defs/permissionRule"
+      }
+    },
+    {
+      "key": "permissions.ask",
+      "type": "array",
+      "description": "List of permission rules that should always prompt for confirmation",
+      "items": {
+        "$ref": "#/$defs/permissionRule"
+      }
+    },
+    {
+      "key": "permissions.defaultMode",
+      "type": "string",
+      "enum": [
+        "acceptEdits",
+        "bypassPermissions",
+        "default",
+        "delegate",
+        "dontAsk",
+        "plan",
+        "auto"
+      ],
+      "description": "Default permission mode.\n\"default\": prompts on first use.\n\"acceptEdits\": auto-accepts file edits.\n\"plan\": read-only, no modifications.\nUNDOCUMENTED. \"delegate\": coordination-only for agent team leads (agent teams are experimental; enable via CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS).\n\"dontAsk\": auto-denies unless pre-approved via permissions.\n\"bypassPermissions\": skips all prompts (use only in isolated environments).\n\"auto\": auto-approves tool calls with background safety checks that verify actions align with your request.\nSee https://code.claude.com/docs/en/permissions"
+    },
+    {
+      "key": "permissions.deny",
+      "type": "array",
+      "description": "List of permission rules for denied operations",
+      "items": {
+        "$ref": "#/$defs/permissionRule"
+      }
+    },
+    {
+      "key": "permissions.disableAutoMode",
+      "type": "string",
+      "enum": [
+        "disable"
+      ],
+      "description": "Set to \"disable\" to prevent auto mode from being activated. Removes `auto` from the Shift+Tab cycle and rejects `--permission-mode auto` at startup. Most useful in managed settings where users cannot override it. See https://code.claude.com/docs/en/permissions"
+    },
+    {
+      "key": "permissions.disableBypassPermissionsMode",
+      "type": "string",
+      "enum": [
+        "disable"
+      ],
+      "description": "Disable the ability to bypass permission prompts"
+    },
+    {
+      "key": "plansDirectory",
+      "type": "string",
+      "default": "~/.claude/plans",
+      "examples": [
+        "./plans"
+      ],
+      "description": "Customize where plan files are stored. Path is relative to project root (default: ~/.claude/plans)"
+    },
+    {
+      "key": "pluginConfigs",
+      "type": "object",
+      "description": "Per-plugin configuration including MCP server user configs and plugin options, keyed by plugin ID (plugin@marketplace format). See https://code.claude.com/docs/en/plugins"
+    },
+    {
+      "key": "pluginTrustMessage",
+      "type": "string",
+      "minLength": 1,
+      "description": "(Managed settings only) Custom message appended to the plugin trust warning shown before installation. Use to provide organization-specific context about approved plugins. See https://code.claude.com/docs/en/settings#plugin-settings"
+    },
+    {
+      "key": "prefersReducedMotion",
+      "type": "boolean",
+      "default": false,
+      "description": "Reduce or disable UI animations (spinners, shimmer, flash effects) for accessibility"
+    },
+    {
+      "key": "prUrlTemplate",
+      "type": "string",
+      "examples": [
+        "https://reviews.example.com/{owner}/{repo}/pull/{number}"
+      ],
+      "description": "URL template for the PR badge shown in the footer and in tool-result summaries. Substitutes placeholders {host}, {owner}, {repo}, {number}, {url} from the gh-reported PR URL. Use this to point PR links at an internal code-review tool instead of github.com. Does not affect #123 autolinks in Claude's prose. See https://code.claude.com/docs/en/settings"
+    },
+    {
+      "key": "respectGitignore",
+      "type": "boolean",
+      "default": true,
+      "description": "Control whether the @ file picker respects .gitignore patterns. When true (default), files matching .gitignore patterns are excluded from suggestions"
+    },
+    {
+      "key": "sandbox",
+      "type": "object",
+      "description": "Sandbox execution configuration. See https://code.claude.com/docs/en/sandboxing"
+    },
+    {
+      "key": "sandbox.allowUnsandboxedCommands",
+      "type": "boolean",
+      "description": "Allow commands to run outside the sandbox via the dangerouslyDisableSandbox parameter. When false, the dangerouslyDisableSandbox parameter is completely ignored and all commands must run sandboxed. Default: true."
+    },
+    {
+      "key": "sandbox.autoAllowBashIfSandboxed",
+      "type": "boolean",
+      "default": true,
+      "description": "Automatically allow bash commands without prompting when they run in the sandbox. Only applies to commands that will run sandboxed."
+    },
+    {
+      "key": "sandbox.enabled",
+      "type": "boolean",
+      "description": "Enable sandboxed bash"
+    },
+    {
+      "key": "sandbox.enableWeakerNestedSandbox",
+      "type": "boolean",
+      "description": "Enable weaker sandbox mode for unprivileged docker environments where --proc mounting fails. This significantly reduces the strength of the sandbox and should only be used when this risk is acceptable.Default: false (secure)."
+    },
+    {
+      "key": "sandbox.enableWeakerNetworkIsolation",
+      "type": "boolean",
+      "default": false,
+      "description": "macOS only. Allow access to the system TLS trust service (com.apple.trustd.agent) in the sandbox. Required for Go-based tools like gh, gcloud, and terraform to verify TLS certificates when using httpProxyPort with a MITM proxy and custom CA. Reduces security by opening a potential data exfiltration path. Default: false. See https://code.claude.com/docs/en/settings#sandbox-settings"
+    },
+    {
+      "key": "sandbox.excludedCommands",
+      "type": "array",
+      "description": "Commands that should never run in the sandbox (e.g., [\"git\", \"docker\"])",
+      "items": {
+        "type": "string"
+      }
+    },
+    {
+      "key": "sandbox.filesystem",
+      "type": "object",
+      "description": "Filesystem access control for sandboxed commands. See https://code.claude.com/docs/en/sandboxing#filesystem-isolation"
+    },
+    {
+      "key": "sandbox.filesystem.allowManagedReadPathsOnly",
+      "type": "boolean",
+      "description": "When true (managed settings only), only allowRead paths from managed settings are used"
+    },
+    {
+      "key": "sandbox.filesystem.allowRead",
+      "type": "array",
+      "description": "Paths to re-allow reading within denyRead regions. Takes precedence over denyRead for matching paths",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    {
+      "key": "sandbox.filesystem.allowWrite",
+      "type": "array",
+      "description": "Paths where subprocesses are allowed to write. Supports prefixes: // (absolute), ~/ (home directory), / (relative to settings file), ./ or no prefix (relative path)",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    {
+      "key": "sandbox.filesystem.denyRead",
+      "type": "array",
+      "description": "Paths where subprocesses are explicitly denied read access",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    {
+      "key": "sandbox.filesystem.denyWrite",
+      "type": "array",
+      "description": "Paths where subprocesses are explicitly denied write access. Takes precedence over allowWrite",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    {
+      "key": "sandbox.ignoreViolations",
+      "type": "object",
+      "description": "Map of command patterns to filesystem paths to ignore violations for. Use \"*\" to match all commands"
+    },
+    {
+      "key": "sandbox.network",
+      "type": "object",
+      "description": "Configures network isolation settings for the sandboxed bash environment, including domain restrictions, Unix socket access, and custom proxy configuration."
+    },
+    {
+      "key": "sandbox.network.allowAllUnixSockets",
+      "type": "boolean",
+      "description": "Allow all Unix domain socket connections. If true, this overrides allowUnixSockets"
+    },
+    {
+      "key": "sandbox.network.allowedDomains",
+      "type": "array",
+      "description": "Allowlist of network domains for sandboxed commands. Supports wildcard patterns like *.example.com",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    {
+      "key": "sandbox.network.allowLocalBinding",
+      "type": "boolean",
+      "description": "Allow binding to local network addresses (e.g., localhost ports). Defaults to false if not specified"
+    },
+    {
+      "key": "sandbox.network.allowMachLookup",
+      "type": "array",
+      "examples": [
+        [
+          "com.apple.coresimulator.*"
+        ]
+      ],
+      "description": "macOS only. Additional XPC/Mach service names the sandbox may look up. Supports a single trailing * for prefix matching. Needed for tools that communicate via XPC such as the iOS Simulator or Playwright. See https://code.claude.com/docs/en/settings",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    {
+      "key": "sandbox.network.allowManagedDomainsOnly",
+      "type": "boolean",
+      "description": "(Managed settings only) Only allowedDomains and WebFetch(domain:...) allow rules from managed settings are respected. User, project, local, and flag settings domains are ignored. Denied domains are still respected from all sources. Non-allowed domains are automatically blocked without user prompts."
+    },
+    {
+      "key": "sandbox.network.allowUnixSockets",
+      "type": "array",
+      "description": "Allow Unix domain sockets for local IPC (SSH agent, Docker, etc.). Provide an array of specific paths. Defaults to blocking if not specified",
+      "items": {
+        "type": "string"
+      }
+    },
+    {
+      "key": "sandbox.network.deniedDomains",
+      "type": "array",
+      "description": "Blocklist of network domains for sandboxed commands. Blocks specific domains even when a broader allowedDomains wildcard would otherwise permit them. Supports wildcard patterns like *.example.com. See https://code.claude.com/docs/en/sandboxing",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    {
+      "key": "sandbox.network.httpProxyPort",
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 65535,
+      "description": "HTTP proxy port to use for network filtering. If not specified, a proxy server will be started automatically"
+    },
+    {
+      "key": "sandbox.network.socksProxyPort",
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 65535,
+      "description": "SOCKS proxy port to use for network filtering. If not specified, a proxy server will be started automatically"
+    },
+    {
+      "key": "sandbox.ripgrep",
+      "type": "object",
+      "description": "Custom ripgrep configuration for Claude Code's bundled ripgrep support. Overrides the bundled binary and arguments."
+    },
+    {
+      "key": "sandbox.ripgrep.args",
+      "type": "array",
+      "description": "Additional arguments to pass to the ripgrep binary",
+      "items": {
+        "type": "string"
+      }
+    },
+    {
+      "key": "sandbox.ripgrep.command",
+      "type": "string",
+      "minLength": 1,
+      "description": "Path to the ripgrep binary to use"
+    },
+    {
+      "key": "showClearContextOnPlanAccept",
+      "type": "boolean",
+      "default": false,
+      "description": "When true, the plan-approval dialog offers a \"clear context\" option. Defaults to false."
+    },
+    {
+      "key": "showThinkingSummaries",
+      "type": "boolean",
+      "default": false,
+      "description": "Show thinking summaries in the transcript view (Ctrl+O). Thinking summaries are not generated by default in interactive sessions; set to true to restore. See https://code.claude.com/docs/en/settings"
+    },
+    {
+      "key": "showTurnDuration",
+      "type": "boolean",
+      "default": true,
+      "description": "Show turn duration messages after responses (e.g., \"Cooked for 1m 6s\"). Set to false to hide these messages (default: true)"
+    },
+    {
+      "key": "skipDangerousModePermissionPrompt",
+      "type": "boolean",
+      "description": "Whether the user has accepted the bypass permissions mode dialog. Typically managed by the CLI rather than set by hand."
+    },
+    {
+      "key": "skippedMarketplaces",
+      "type": "array",
+      "description": "List of marketplace names the user has chosen not to install when prompted",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    {
+      "key": "skippedPlugins",
+      "type": "array",
+      "description": "List of plugin IDs (plugin@marketplace format) the user has chosen not to install when prompted",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    {
+      "key": "skipWebFetchPreflight",
+      "type": "boolean",
+      "description": "Skip the WebFetch blocklist check for enterprise environments with restrictive security policies"
+    },
+    {
+      "key": "spinnerTipsEnabled",
+      "type": "boolean",
+      "default": true,
+      "description": "Show tips in the spinner while Claude is working. Set to false to disable tips (default: true)"
+    },
+    {
+      "key": "spinnerTipsOverride",
+      "type": "object",
+      "description": "Customize the tips displayed in the spinner while Claude is working. See https://code.claude.com/docs/en/settings#available-settings"
+    },
+    {
+      "key": "spinnerTipsOverride.excludeDefault",
+      "type": "boolean",
+      "default": false,
+      "description": "If true, only show custom tips. If false or absent, custom tips merge with built-in tips"
+    },
+    {
+      "key": "spinnerTipsOverride.tips",
+      "type": "array",
+      "description": "Custom tip strings to display in the spinner",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    {
+      "key": "spinnerVerbs",
+      "type": "object",
+      "description": "Customize the verbs shown in spinner progress messages"
+    },
+    {
+      "key": "spinnerVerbs.mode",
+      "type": "string",
+      "enum": [
+        "append",
+        "replace"
+      ],
+      "description": "How to combine custom verbs with default spinner verbs: 'append' adds custom verbs to the default list, 'replace' uses only custom verbs"
+    },
+    {
+      "key": "spinnerVerbs.verbs",
+      "type": "array",
+      "description": "Custom verbs used in spinner progress text",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    {
+      "key": "statusLine",
+      "type": "object",
+      "examples": [
+        {
+          "type": "command",
+          "command": "~/.claude/statusline.sh"
+        }
+      ],
+      "description": "Custom status line display configuration. See https://code.claude.com/docs/en/statusline"
+    },
+    {
+      "key": "statusLine.command",
+      "type": "string",
+      "description": "A shell command or path to a script that displays session information (context usage, costs, git status, etc.) by reading JSON data from stdin and writing output to stdout. See https://code.claude.com/docs/en/statusline"
+    },
+    {
+      "key": "statusLine.padding",
+      "type": "number",
+      "description": "Optional number of extra horizontal spacing characters added to the status line content; defaults to 0."
+    },
+    {
+      "key": "statusLine.refreshInterval",
+      "type": "integer",
+      "minimum": 1,
+      "description": "Re-run the status line command every N seconds in addition to event-driven updates. Leave unset to run only on events. Useful for time-based data like clocks, or when background subagents change git state while the main session is idle. See https://code.claude.com/docs/en/statusline"
+    },
+    {
+      "key": "statusLine.type",
+      "type": "string",
+      "const": "command",
+      "description": "The type of status line handler; must be set to \"command\" to run a custom shell script that receives JSON session data via stdin."
+    },
+    {
+      "key": "strictKnownMarketplaces",
+      "type": "array",
+      "examples": [
+        [
+          {
+            "source": "github",
+            "repo": "acme-corp/approved-plugins"
+          },
+          {
+            "source": "npm",
+            "package": "@acme-corp/compliance-plugins"
+          }
+        ]
+      ],
+      "description": "(Managed settings only) Allowlist of plugin marketplaces users can add. Undefined = no restrictions, empty array = lockdown. Uses exact matching for source specifications. See https://code.claude.com/docs/en/settings#strictknownmarketplaces",
+      "items": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "source": {
+                "type": "string",
+                "description": "Identifies the marketplace source type",
+                "const": "hostPattern"
+              },
+              "hostPattern": {
+                "type": "string",
+                "description": "Git host pattern to trust for repositories in source specifications"
+              }
+            },
+            "required": [
+              "source",
+              "hostPattern"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "source": {
+                "type": "string",
+                "description": "Identifies the marketplace source type",
+                "const": "github"
+              },
+              "repo": {
+                "type": "string",
+                "description": "GitHub repository in owner/repo format"
+              },
+              "ref": {
+                "type": "string",
+                "description": "Git branch, tag, or SHA"
+              },
+              "path": {
+                "type": "string",
+                "description": "Subdirectory path"
+              }
+            },
+            "required": [
+              "source",
+              "repo"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "source": {
+                "type": "string",
+                "description": "Identifies the marketplace source type",
+                "const": "git"
+              },
+              "url": {
+                "type": "string",
+                "description": "Full git repository URL"
+              },
+              "ref": {
+                "type": "string",
+                "description": "Git branch, tag, or SHA"
+              },
+              "path": {
+                "type": "string",
+                "description": "Subdirectory path"
+              }
+            },
+            "required": [
+              "source",
+              "url"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "source": {
+                "type": "string",
+                "description": "Identifies the marketplace source type",
+                "const": "url"
+              },
+              "url": {
+                "type": "string",
+                "format": "uri",
+                "description": "Direct URL to marketplace.json"
+              },
+              "headers": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "description": "HTTP headers for authenticated access"
+              }
+            },
+            "required": [
+              "source",
+              "url"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "source": {
+                "type": "string",
+                "description": "Identifies the marketplace source type",
+                "const": "npm"
+              },
+              "package": {
+                "type": "string",
+                "description": "NPM package name (supports scoped packages)"
+              }
+            },
+            "required": [
+              "source",
+              "package"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "source": {
+                "type": "string",
+                "description": "Identifies the marketplace source type",
+                "const": "file"
+              },
+              "path": {
+                "type": "string",
+                "description": "Absolute path to marketplace.json file"
+              }
+            },
+            "required": [
+              "source",
+              "path"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "source": {
+                "type": "string",
+                "description": "Identifies the marketplace source type",
+                "const": "directory"
+              },
+              "path": {
+                "type": "string",
+                "description": "Absolute path to directory containing .claude-plugin/marketplace.json"
+              }
+            },
+            "required": [
+              "source",
+              "path"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "source": {
+                "type": "string",
+                "description": "Identifies the marketplace source type",
+                "const": "pathPattern"
+              },
+              "pathPattern": {
+                "type": "string",
+                "description": "Regex pattern to match file or directory paths for marketplace sources"
+              }
+            },
+            "required": [
+              "source",
+              "pathPattern"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      }
+    },
+    {
+      "key": "strictPluginOnlyCustomization",
+      "description": "(Managed settings) Block non-plugin customization sources for the listed surfaces. Array form locks specific surfaces (e.g., [\"skills\", \"hooks\"]); true locks all four; false is an explicit no-op. See https://code.claude.com/docs/en/plugins-reference",
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": [
+              "skills",
+              "agents",
+              "hooks",
+              "mcp"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "key": "teammateMode",
+      "type": "string",
+      "enum": [
+        "auto",
+        "in-process",
+        "tmux"
+      ],
+      "default": "auto",
+      "description": "How agent team teammates display: \"auto\" picks split panes in tmux or iTerm2, in-process otherwise. Agent teams are experimental and disabled by default. Enable them by adding CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS to your settings.json or environment. See https://code.claude.com/docs/en/agent-teams"
+    },
+    {
+      "key": "terminalProgressBarEnabled",
+      "type": "boolean",
+      "default": true,
+      "description": "Enable the terminal progress bar that shows progress in supported terminals like Windows Terminal and iTerm2 (default: true)"
+    },
+    {
+      "key": "tui",
+      "type": "string",
+      "enum": [
+        "fullscreen",
+        "default"
+      ],
+      "description": "TUI rendering mode. Use \"fullscreen\" for the flicker-free alt-screen renderer with virtualized scrollback; \"default\" for the classic main-screen renderer. Corresponds to the /tui command. See https://code.claude.com/docs/en/settings"
+    },
+    {
+      "key": "useAutoModeDuringPlan",
+      "type": "boolean",
+      "description": "When true, apply the auto mode classifier during plan mode to auto-approve safe read-only tool calls while planning. Has no effect unless permissions.defaultMode allows auto. See https://code.claude.com/docs/en/permissions"
+    },
+    {
+      "key": "viewMode",
+      "type": "string",
+      "enum": [
+        "default",
+        "verbose",
+        "focus"
+      ],
+      "description": "Transcript view mode. \"default\" shows standard interactive view; \"verbose\" shows expanded tool details; \"focus\" shows prompt, one-line tool summaries, and final response only (Ctrl+O toggle). See https://code.claude.com/docs/en/settings"
+    },
+    {
+      "key": "voiceEnabled",
+      "type": "boolean",
+      "description": "Enable push-to-talk voice dictation. Typically written automatically when /voice is used. Requires a Claude.ai account. See https://code.claude.com/docs/en/settings"
+    },
+    {
+      "key": "worktree",
+      "type": "object",
+      "description": "Configuration for --worktree sessions. See https://code.claude.com/docs/en/settings"
+    },
+    {
+      "key": "worktree.sparsePaths",
+      "type": "array",
+      "examples": [
+        [
+          "packages/my-app",
+          "shared/utils"
+        ]
+      ],
+      "description": "Directories to check out in each worktree via git sparse-checkout (cone mode). Only the listed paths are written to disk, which is faster in large monorepos.",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    {
+      "key": "wslInheritsWindowsSettings",
+      "type": "boolean",
+      "description": "(Windows managed settings only) When true, Claude Code on WSL reads managed settings from the Windows policy chain in addition to /etc/claude-code, with Windows sources taking priority. Only honored when set in the HKLM registry key or C:\\Program Files\\ClaudeCode\\managed-settings.json, both of which require Windows admin to write. For HKCU policy to also apply on WSL, the flag must additionally be set in HKCU itself. Has no effect on native Windows. See https://code.claude.com/docs/en/settings"
+    }
+  ]
+}

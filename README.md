@@ -57,6 +57,15 @@ npm run build          # type-check + build the frontend
 npm run tauri build    # build a native installer (DMG / .msi / AppImage)
 ```
 
+## Tests
+
+```sh
+npm test                 # run the unit test suite (Node's built-in test runner)
+npm run test:coverage    # run tests with a per-file coverage report
+```
+
+The catalog-sync script (`scripts/sync-settings.js`) is the only code under test today; its `main()` function (network fetch + filesystem write) is intentionally excluded from coverage.
+
 ## Contributing
 
 Early days — not accepting code PRs yet. If you've spotted a Claude Code knob the inventory is missing or has wrong, please open an issue. See [`CONTRIBUTING.md`](CONTRIBUTING.md).
