@@ -1,0 +1,192 @@
+# Settings display
+
+This spec describes how knobs.cc determines a user's effective Claude Code
+settings and renders them in the UI alongside their provenance ("where this
+value was set"). v1 is read-only; nothing in this spec writes back.
+
+The spec is a phased plan. Phase 1 is the only one being implemented now;
+later phases describe scope, not commitments.
+
+## Goals
+
+- For every setting Claude Code might read, show the **effective value** the
+  user's session would see, plus the **layer** that produced it.
+- Make "which layer wins, and why" debuggable without reading docs — the
+  precedence chain in `inventory.md:55` should be legible from the UI.
+- Stay inside the Tauri 2 read-only boundary: explicit `#[tauri::command]`
+  reads, no fs/shell/dialog plugin permissions, no write commands.
+
+## Non-goals (v1)
+
+- Editing settings.
+- Reading settings of an *active* `claude` session (CLI flags passed to a
+  running process, in particular).
+- Reasoning about plugin/skill/agent frontmatter as a settings source.
+
+## Layers (highest precedence first)
+
+Per `spec/inventory.md:55`, plus env vars folded in:
+
+| # | Layer                  | Source                                                            | Phase |
+|---|------------------------|-------------------------------------------------------------------|-------|
+| 1 | `managed`              | Server-managed > MDM (plist/registry) > file-based > HKCU         | 2 / 6 |
+| 2 | `cli`                  | Flags passed to `claude` (out of v1 scope — not inspectable)      | —     |
+| 3 | `env`                  | Process env + dotenv files Claude Code reads                      | 3     |
+| 4 | `project_local`        | `<project>/.claude/settings.local.json`                           | 1     |
+| 5 | `project`              | `<project>/.claude/settings.json`                                 | 1     |
+| 6 | `user`                 | `~/.claude/settings.json`                                         | 1     |
+| 7 | `default`              | Claude Code's compiled-in defaults (catalog-derived)              | 5     |
+
+CLI flags are listed for completeness but cannot be inspected from a separate
+process. The UI should display the slot with an explanatory empty state.
+
+## Merge semantics
+
+- **Scalars and objects:** last-wins by precedence (highest layer present).
+- **Array-merged fields:** concatenated and de-duplicated *across all layers*,
+  not replaced. Inventory calls this out in `inventory.md:58`. Known
+  array-merged fields include `permissions.allow`, `permissions.ask`,
+  `permissions.deny`, `permissions.additionalDirectories`,
+  `sandbox.filesystem.allowWrite`, and similar list-shaped permission fields.
+  For these, **each element carries its own provenance**; the field as a whole
+  has no single source.
+- **Managed-tier internal merge:** within the managed tier, only one source
+  applies (`inventory.md:50`); but file-based managed tier merges
+  `managed-settings.json` with `managed-settings.d/*.json` alphabetically.
+  This is collapsed into a single `managed` layer at the public API boundary.
+
+## Data shape (target)
+
+A single Tauri command returns one snapshot. The shape is stable across
+phases — later phases populate more fields but don't reshape existing ones.
+
+```ts
+type LayerSource =
+  | "managed" | "cli" | "env"
+  | "project_local" | "project" | "user"
+  | "default";
+
+interface LayerRead {
+  source: LayerSource;
+  // Absolute path that was read. Null for env/cli/default.
+  path: string | null;
+  // "ok" if parsed; "missing" if file absent; "error" if present but unreadable.
+  status: "ok" | "missing" | "error";
+  // Parsed JSON, or null if missing/error.
+  raw: unknown | null;
+  // Set when status === "error".
+  error: string | null;
+}
+
+interface ProvenancedValue {
+  // The effective value at this leaf.
+  value: unknown;
+  // Single source for scalars/objects. For array-merged fields, null at the
+  // field level; each element has its own source in `elements`.
+  source: LayerSource | null;
+  // Only set for array-merged fields.
+  elements?: { value: unknown; source: LayerSource }[];
+}
+
+interface SettingsSnapshot {
+  // Each layer that was attempted, in precedence order (highest first).
+  layers: LayerRead[];
+  // Effective tree, leaves replaced with ProvenancedValue.
+  effective: Record<string, unknown>;
+  // Project root used for resolution; null if not in a project.
+  project_root: string | null;
+  // Diagnostics not tied to a single layer (e.g., HOME unresolvable).
+  diagnostics: { level: "warn" | "error"; message: string }[];
+}
+```
+
+## Phases
+
+### Phase 1 — Local files + raw + last-wins effective tree (THIS PHASE)
+
+**Scope:** the three file-based layers a user always has on their own machine.
+
+- Backend: new `settings` module in `src-tauri/src/`. Tauri command
+  `read_settings_layers` registered alongside `greet`.
+- Read these files in this precedence order:
+  1. `<cwd>/.claude/settings.local.json` (`project_local`)
+  2. `<cwd>/.claude/settings.json` (`project`)
+  3. `~/.claude/settings.json` (`user`)
+- Project root for Phase 1 = the Tauri app's current working directory. Walking
+  up to find the nearest `.claude/` is Phase 4.
+- Each layer reports `ok` / `missing` / `error` independently — a malformed
+  user file does not block reading the project file.
+- `effective` is computed last-wins. Array-merge semantics are deferred to
+  Phase 3; for Phase 1, arrays follow the same last-wins rule and we accept
+  that this is *wrong* for `permissions.*`. The spec records the limitation
+  so it isn't forgotten.
+- `ProvenancedValue` is emitted for every leaf, with `elements` always unset.
+- Frontend: replace the boilerplate App with a minimal view that invokes
+  `read_settings_layers` on mount and renders the snapshot as syntax-shaped
+  JSON. No styling work yet — this is a vertical-slice smoke test that the
+  IPC, types, and path resolution all line up.
+
+**Out of phase 1:** managed sources, env vars, array merge, project-root
+discovery, catalog cross-reference, list/badge UI, refresh, file watcher.
+
+### Phase 2 — File-based managed sources
+
+- Resolve managed paths per OS (`inventory.md:46`–`48`).
+- Merge `managed-settings.d/*.json` alphabetically into `managed-settings.json`.
+- Add a `managed` layer to the snapshot (file-tier only; plist/registry in
+  Phase 6).
+- Surface `managed-mcp.json` as a sibling read (it's not part of the merge but
+  the UI should know it exists).
+
+### Phase 3 — Env vars + array-merge semantics
+
+- New module reads the env-var subset documented in `inventory.md` §3
+  (auth, endpoints, model selection, feature toggles, timeouts, shell/tooling).
+- Folded into the snapshot as the `env` layer. Env vars don't share a JSON
+  shape with settings.json, so the merge is per-knob: each catalog entry
+  records which env var (if any) maps to it.
+- Implement array-concat-dedup for the known array-merged fields. Populate
+  `elements` for those fields, set `source: null` at the field level.
+
+### Phase 4 — Settings list UI with provenance badges
+
+- Replace the JSON dump with a real component.
+- Flat searchable/sortable list of all known settings (driven by the catalog;
+  unset entries shown greyed).
+- Each row: key, effective value, source badge, "details" affordance.
+- Project-root discovery: walk up from cwd to find the nearest `.claude/`,
+  with a manual override.
+
+### Phase 5 — Layer-stack drawer + catalog cross-reference
+
+- Click a row → drawer showing every layer's contribution to that key, with
+  the winning layer highlighted.
+- For array-merged fields, render per-element provenance.
+- Pull description, type, default, deprecation, and `verify` flag from
+  `catalog.json` (when the catalog-sync harness produces one) or from a
+  hand-extracted subset of `inventory.md` until then.
+- "Default" layer becomes meaningful here — values not set anywhere fall
+  through to the catalog-declared default and are tagged `default`.
+
+### Phase 6 — OS-policy managed sources
+
+- macOS: read `com.anthropic.claudecode` managed-preferences plist.
+- Windows: read `HKLM\SOFTWARE\Policies\ClaudeCode` and
+  `HKCU\SOFTWARE\Policies\ClaudeCode`.
+- Apply managed-tier precedence (`inventory.md:50`) to pick the single
+  managed source that wins.
+
+### Phase 7 — Refresh, watch, diagnostics polish
+
+- File watcher (via Rust, not the fs plugin) for live updates when settings
+  files change on disk.
+- Surface malformed-JSON / permission-denied / missing-HOME diagnostics in
+  the UI.
+- Empty states for each layer slot, including the unreachable-by-design
+  `cli` slot.
+
+## Out of v1 entirely
+
+- Resolving CLI flags of a running `claude` process.
+- Plugin/skill/agent frontmatter as a settings source.
+- Any write path.
