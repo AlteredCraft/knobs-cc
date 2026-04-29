@@ -1,0 +1,1082 @@
+{
+  "source": "https://code.claude.com/docs/en/env-vars.md",
+  "fetchedAt": "2026-04-29T16:03:52.959Z",
+  "count": 215,
+  "envVars": [
+    {
+      "name": "ANTHROPIC_API_KEY",
+      "purpose": "API key sent as `X-Api-Key` header. When set, this key is used instead of your Claude Pro, Max, Team, or Enterprise subscription even if you are logged in. In non-interactive mode (`-p`), the key is always used when present. In interactive mode, you are prompted to approve the key once before it overrides your subscription. To use your subscription instead, run `unset ANTHROPIC_API_KEY`",
+      "default": null
+    },
+    {
+      "name": "ANTHROPIC_AUTH_TOKEN",
+      "purpose": "Custom value for the `Authorization` header (the value you set here will be prefixed with `Bearer `)",
+      "default": null
+    },
+    {
+      "name": "ANTHROPIC_BASE_URL",
+      "purpose": "Override the API endpoint to route requests through a proxy or gateway. When set to a non-first-party host, [MCP tool search](/en/mcp#scale-with-mcp-tool-search) is disabled by default. Set `ENABLE_TOOL_SEARCH=true` if your proxy forwards `tool_reference` blocks",
+      "default": null
+    },
+    {
+      "name": "ANTHROPIC_BEDROCK_BASE_URL",
+      "purpose": "Override the Bedrock endpoint URL. Use for custom Bedrock endpoints or when routing through an [LLM gateway](/en/llm-gateway). See [Amazon Bedrock](/en/amazon-bedrock)",
+      "default": null
+    },
+    {
+      "name": "ANTHROPIC_BEDROCK_MANTLE_BASE_URL",
+      "purpose": "Override the Bedrock Mantle endpoint URL. See [Mantle endpoint](/en/amazon-bedrock#use-the-mantle-endpoint)",
+      "default": null
+    },
+    {
+      "name": "ANTHROPIC_BEDROCK_SERVICE_TIER",
+      "purpose": "Bedrock [service tier](https://docs.aws.amazon.com/bedrock/latest/userguide/service-tiers-inference.html) (`default`, `flex`, or `priority`). Sent as the `X-Amzn-Bedrock-Service-Tier` header. See [Amazon Bedrock](/en/amazon-bedrock#service-tiers)",
+      "default": null
+    },
+    {
+      "name": "ANTHROPIC_BETAS",
+      "purpose": "Comma-separated list of additional `anthropic-beta` header values to include in API requests. Claude Code already sends the beta headers it needs; use this to opt into an [Anthropic API beta](https://platform.claude.com/docs/en/api/beta-headers) before Claude Code adds native support. Unlike the [`--betas` flag](/en/cli-reference#cli-flags), which requires API key authentication, this variable works with all auth methods including Claude.ai subscription",
+      "default": null
+    },
+    {
+      "name": "ANTHROPIC_CUSTOM_HEADERS",
+      "purpose": "Custom headers to add to requests (`Name: Value` format, newline-separated for multiple headers)",
+      "default": null
+    },
+    {
+      "name": "ANTHROPIC_CUSTOM_MODEL_OPTION",
+      "purpose": "Model ID to add as a custom entry in the `/model` picker. Use this to make a non-standard or gateway-specific model selectable without replacing built-in aliases. See [Model configuration](/en/model-config#add-a-custom-model-option)",
+      "default": null
+    },
+    {
+      "name": "ANTHROPIC_CUSTOM_MODEL_OPTION_DESCRIPTION",
+      "purpose": "Display description for the custom model entry in the `/model` picker. Defaults to `Custom model (<model-id>)` when not set",
+      "default": null
+    },
+    {
+      "name": "ANTHROPIC_CUSTOM_MODEL_OPTION_NAME",
+      "purpose": "Display name for the custom model entry in the `/model` picker. Defaults to the model ID when not set",
+      "default": null
+    },
+    {
+      "name": "ANTHROPIC_CUSTOM_MODEL_OPTION_SUPPORTED_CAPABILITIES",
+      "purpose": "See [Model configuration](/en/model-config#customize-pinned-model-display-and-capabilities)",
+      "default": null
+    },
+    {
+      "name": "ANTHROPIC_DEFAULT_HAIKU_MODEL",
+      "purpose": "See [Model configuration](/en/model-config#environment-variables)",
+      "default": null
+    },
+    {
+      "name": "ANTHROPIC_DEFAULT_HAIKU_MODEL_DESCRIPTION",
+      "purpose": "See [Model configuration](/en/model-config#customize-pinned-model-display-and-capabilities)",
+      "default": null
+    },
+    {
+      "name": "ANTHROPIC_DEFAULT_HAIKU_MODEL_NAME",
+      "purpose": "See [Model configuration](/en/model-config#customize-pinned-model-display-and-capabilities)",
+      "default": null
+    },
+    {
+      "name": "ANTHROPIC_DEFAULT_HAIKU_MODEL_SUPPORTED_CAPABILITIES",
+      "purpose": "See [Model configuration](/en/model-config#customize-pinned-model-display-and-capabilities)",
+      "default": null
+    },
+    {
+      "name": "ANTHROPIC_DEFAULT_OPUS_MODEL",
+      "purpose": "See [Model configuration](/en/model-config#environment-variables)",
+      "default": null
+    },
+    {
+      "name": "ANTHROPIC_DEFAULT_OPUS_MODEL_DESCRIPTION",
+      "purpose": "See [Model configuration](/en/model-config#customize-pinned-model-display-and-capabilities)",
+      "default": null
+    },
+    {
+      "name": "ANTHROPIC_DEFAULT_OPUS_MODEL_NAME",
+      "purpose": "See [Model configuration](/en/model-config#customize-pinned-model-display-and-capabilities)",
+      "default": null
+    },
+    {
+      "name": "ANTHROPIC_DEFAULT_OPUS_MODEL_SUPPORTED_CAPABILITIES",
+      "purpose": "See [Model configuration](/en/model-config#customize-pinned-model-display-and-capabilities)",
+      "default": null
+    },
+    {
+      "name": "ANTHROPIC_DEFAULT_SONNET_MODEL",
+      "purpose": "See [Model configuration](/en/model-config#environment-variables)",
+      "default": null
+    },
+    {
+      "name": "ANTHROPIC_DEFAULT_SONNET_MODEL_DESCRIPTION",
+      "purpose": "See [Model configuration](/en/model-config#customize-pinned-model-display-and-capabilities)",
+      "default": null
+    },
+    {
+      "name": "ANTHROPIC_DEFAULT_SONNET_MODEL_NAME",
+      "purpose": "See [Model configuration](/en/model-config#customize-pinned-model-display-and-capabilities)",
+      "default": null
+    },
+    {
+      "name": "ANTHROPIC_DEFAULT_SONNET_MODEL_SUPPORTED_CAPABILITIES",
+      "purpose": "See [Model configuration](/en/model-config#customize-pinned-model-display-and-capabilities)",
+      "default": null
+    },
+    {
+      "name": "ANTHROPIC_FOUNDRY_API_KEY",
+      "purpose": "API key for Microsoft Foundry authentication (see [Microsoft Foundry](/en/microsoft-foundry))",
+      "default": null
+    },
+    {
+      "name": "ANTHROPIC_FOUNDRY_BASE_URL",
+      "purpose": "Full base URL for the Foundry resource (for example, `https://my-resource.services.ai.azure.com/anthropic`). Alternative to `ANTHROPIC_FOUNDRY_RESOURCE` (see [Microsoft Foundry](/en/microsoft-foundry))",
+      "default": null
+    },
+    {
+      "name": "ANTHROPIC_FOUNDRY_RESOURCE",
+      "purpose": "Foundry resource name (for example, `my-resource`). Required if `ANTHROPIC_FOUNDRY_BASE_URL` is not set (see [Microsoft Foundry](/en/microsoft-foundry))",
+      "default": null
+    },
+    {
+      "name": "ANTHROPIC_MODEL",
+      "purpose": "Name of the model setting to use (see [Model Configuration](/en/model-config#environment-variables))",
+      "default": null
+    },
+    {
+      "name": "ANTHROPIC_SMALL_FAST_MODEL",
+      "purpose": "\\[DEPRECATED] Name of [Haiku-class model for background tasks](/en/costs)",
+      "default": null
+    },
+    {
+      "name": "ANTHROPIC_SMALL_FAST_MODEL_AWS_REGION",
+      "purpose": "Override AWS region for the Haiku-class model when using Bedrock or Bedrock Mantle",
+      "default": null
+    },
+    {
+      "name": "ANTHROPIC_VERTEX_BASE_URL",
+      "purpose": "Override the Vertex AI endpoint URL. Use for custom Vertex endpoints or when routing through an [LLM gateway](/en/llm-gateway). See [Google Vertex AI](/en/google-vertex-ai)",
+      "default": null
+    },
+    {
+      "name": "ANTHROPIC_VERTEX_PROJECT_ID",
+      "purpose": "GCP project ID for Vertex AI. Required when using [Google Vertex AI](/en/google-vertex-ai)",
+      "default": null
+    },
+    {
+      "name": "API_TIMEOUT_MS",
+      "purpose": "Timeout for API requests in milliseconds (default: 600000, or 10 minutes; maximum: 2147483647). Increase this when requests time out on slow networks or when routing through a proxy. Values above the maximum overflow the underlying timer and cause requests to fail immediately",
+      "default": "600000"
+    },
+    {
+      "name": "AWS_BEARER_TOKEN_BEDROCK",
+      "purpose": "Bedrock API key for authentication (see [Bedrock API keys](https://aws.amazon.com/blogs/machine-learning/accelerate-ai-development-with-amazon-bedrock-api-keys/))",
+      "default": null
+    },
+    {
+      "name": "BASH_DEFAULT_TIMEOUT_MS",
+      "purpose": "Default timeout for long-running bash commands (default: 120000, or 2 minutes)",
+      "default": "120000"
+    },
+    {
+      "name": "BASH_MAX_OUTPUT_LENGTH",
+      "purpose": "Maximum number of characters in bash outputs before they are middle-truncated",
+      "default": null
+    },
+    {
+      "name": "BASH_MAX_TIMEOUT_MS",
+      "purpose": "Maximum timeout the model can set for long-running bash commands (default: 600000, or 10 minutes)",
+      "default": "600000"
+    },
+    {
+      "name": "CCR_FORCE_BUNDLE",
+      "purpose": "Set to `1` to force [`claude --remote`](/en/claude-code-on-the-web#send-local-repositories-without-github) to bundle and upload your local repository even when GitHub access is available",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_AGENT_SDK_DISABLE_BUILTIN_AGENTS",
+      "purpose": "Set to `1` to disable all built-in [subagent](/en/sub-agents) types such as Explore and Plan. Only applies in non-interactive mode (the `-p` flag). Useful for SDK users who want a blank slate",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_AGENT_SDK_MCP_NO_PREFIX",
+      "purpose": "Set to `1` to skip the `mcp__<server>__` prefix on tool names from SDK-created MCP servers. Tools use their original names. SDK usage only",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_AUTO_BACKGROUND_TASKS",
+      "purpose": "Set to `1` to force-enable automatic backgrounding of long-running agent tasks. When enabled, subagents are moved to the background after running for approximately two minutes",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE",
+      "purpose": "Set the percentage of context capacity (1-100) at which auto-compaction triggers. By default, auto-compaction triggers at approximately 95% capacity. Use lower values like `50` to compact earlier. Values above the default threshold have no effect. Applies to both main conversations and subagents. This percentage aligns with the `context_window.used_percentage` field available in [status line](/en/statusline)",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_BASH_MAINTAIN_PROJECT_WORKING_DIR",
+      "purpose": "Return to the original working directory after each Bash or PowerShell command in the main session",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_ACCESSIBILITY",
+      "purpose": "Set to `1` to keep the native terminal cursor visible and disable the inverted-text cursor indicator. Allows screen magnifiers like macOS Zoom to track cursor position",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD",
+      "purpose": "Set to `1` to load memory files from directories specified with `--add-dir`. Loads `CLAUDE.md`, `.claude/CLAUDE.md`, `.claude/rules/*.md`, and `CLAUDE.local.md`. By default, additional directories do not load memory files",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_API_KEY_HELPER_TTL_MS",
+      "purpose": "Interval in milliseconds at which credentials should be refreshed (when using [`apiKeyHelper`](/en/settings#available-settings))",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_ATTRIBUTION_HEADER",
+      "purpose": "Set to `0` to omit the attribution block (client version and prompt fingerprint) from the start of the system prompt. Disabling it improves prompt-cache hit rates when routing through an [LLM gateway](/en/llm-gateway). Anthropic API caching is unaffected",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_AUTO_COMPACT_WINDOW",
+      "purpose": "Set the context capacity in tokens used for auto-compaction calculations. Defaults to the model's context window: 200K for standard models or 1M for [extended context](/en/model-config#extended-context) models. Use a lower value like `500000` on a 1M model to treat the window as 500K for compaction purposes. The value is capped at the model's actual context window. `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` is applied as a percentage of this value. Setting this variable decouples the compaction threshold from the status line's `used_percentage`, which always uses the model's full context window",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_AUTO_CONNECT_IDE",
+      "purpose": "Override automatic [IDE connection](/en/vs-code). By default, Claude Code connects automatically when launched inside a supported IDE's integrated terminal. Set to `false` to prevent this. Set to `true` to force a connection attempt when auto-detection fails, such as when tmux obscures the parent terminal",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_CERT_STORE",
+      "purpose": "Comma-separated list of CA certificate sources for TLS connections. `bundled` is the Mozilla CA set shipped with Claude Code. `system` is the operating system trust store. Default is `bundled,system`. The native binary distribution is required for system store integration. On the Node.js runtime, only the bundled set is used regardless of this value",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_CLIENT_CERT",
+      "purpose": "Path to client certificate file for mTLS authentication",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_CLIENT_KEY",
+      "purpose": "Path to client private key file for mTLS authentication",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_CLIENT_KEY_PASSPHRASE",
+      "purpose": "Passphrase for encrypted CLAUDE\\_CODE\\_CLIENT\\_KEY (optional)",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_DEBUG_LOG_LEVEL",
+      "purpose": "Minimum log level written to the debug log file. Values: `verbose`, `debug` (default), `info`, `warn`, `error`. Set to `verbose` to include high-volume diagnostics like full status line command output, or raise to `error` to reduce noise",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_DEBUG_LOGS_DIR",
+      "purpose": "Override the debug log file path. Despite the name, this is a file path, not a directory. Requires debug mode to be enabled separately via `--debug` or `/debug`: setting this variable alone does not enable logging. The [`--debug-file`](/en/cli-reference#cli-flags) flag does both at once. Defaults to `~/.claude/debug/<session-id>.txt`",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_DISABLE_1M_CONTEXT",
+      "purpose": "Set to `1` to disable [1M context window](/en/model-config#extended-context) support. When set, 1M model variants are unavailable in the model picker. Useful for enterprise environments with compliance requirements",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_DISABLE_ADAPTIVE_THINKING",
+      "purpose": "Set to `1` to disable [adaptive reasoning](/en/model-config#adjust-effort-level) on Opus 4.6 and Sonnet 4.6 and fall back to the fixed thinking budget controlled by `MAX_THINKING_TOKENS`. {/* min-version: 2.1.111 */}Has no effect on Opus 4.7, which always uses adaptive reasoning",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_DISABLE_ATTACHMENTS",
+      "purpose": "Set to `1` to disable attachment processing. File mentions with `@` syntax are sent as plain text instead of being expanded into file content",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_DISABLE_AUTO_MEMORY",
+      "purpose": "Set to `1` to disable [auto memory](/en/memory#auto-memory). Set to `0` to force auto memory on during the gradual rollout. When disabled, Claude does not create or load auto memory files",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_DISABLE_BACKGROUND_TASKS",
+      "purpose": "Set to `1` to disable all background task functionality, including the `run_in_background` parameter on Bash and subagent tools, auto-backgrounding, and the Ctrl+B shortcut",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_DISABLE_CLAUDE_MDS",
+      "purpose": "Set to `1` to prevent loading any CLAUDE.md memory files into context, including user, project, and auto-memory files",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_DISABLE_CRON",
+      "purpose": "Set to `1` to disable [scheduled tasks](/en/scheduled-tasks). The `/loop` skill and cron tools become unavailable and any already-scheduled tasks stop firing, including tasks that are already running mid-session",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS",
+      "purpose": "Set to `1` to strip Anthropic-specific `anthropic-beta` request headers and beta tool-schema fields (such as `defer_loading` and `eager_input_streaming`) from API requests. Use this when a proxy gateway rejects requests with errors like \"Unexpected value(s) for the `anthropic-beta` header\" or \"Extra inputs are not permitted\". Standard fields (`name`, `description`, `input_schema`, `cache_control`) are preserved.",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_DISABLE_FAST_MODE",
+      "purpose": "Set to `1` to disable [fast mode](/en/fast-mode)",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY",
+      "purpose": "Set to `1` to disable the \"How is Claude doing?\" session quality surveys. Surveys are also disabled when `DISABLE_TELEMETRY` or `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` is set. See [Session quality surveys](/en/data-usage#session-quality-surveys)",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_DISABLE_FILE_CHECKPOINTING",
+      "purpose": "Set to `1` to disable file [checkpointing](/en/checkpointing). The `/rewind` command will not be able to restore code changes",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_DISABLE_GIT_INSTRUCTIONS",
+      "purpose": "Set to `1` to remove built-in commit and PR workflow instructions and the git status snapshot from Claude's system prompt. Useful when using your own git workflow skills. Takes precedence over the [`includeGitInstructions`](/en/settings#available-settings) setting when set",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_DISABLE_LEGACY_MODEL_REMAP",
+      "purpose": "Set to `1` to prevent automatic remapping of Opus 4.0 and 4.1 to the current Opus version on the Anthropic API. Use when you intentionally want to pin an older model. The remap does not run on Bedrock, Vertex, or Foundry",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_DISABLE_MOUSE",
+      "purpose": "Set to `1` to disable mouse tracking in [fullscreen rendering](/en/fullscreen). Keyboard scrolling with `PgUp` and `PgDn` still works. Use this to keep your terminal's native copy-on-select behavior",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC",
+      "purpose": "Equivalent of setting `DISABLE_AUTOUPDATER`, `DISABLE_FEEDBACK_COMMAND`, `DISABLE_ERROR_REPORTING`, and `DISABLE_TELEMETRY`",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_DISABLE_NONSTREAMING_FALLBACK",
+      "purpose": "Set to `1` to disable the non-streaming fallback when a streaming request fails mid-stream. Streaming errors propagate to the retry layer instead. Useful when a proxy or gateway causes the fallback to produce duplicate tool execution",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_DISABLE_OFFICIAL_MARKETPLACE_AUTOINSTALL",
+      "purpose": "Set to `1` to skip automatic addition of the official plugin marketplace on first run",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_DISABLE_POLICY_SKILLS",
+      "purpose": "Set to `1` to skip loading skills from the system-wide managed skills directory. Useful for container or CI sessions that should not load operator-provisioned skills",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_DISABLE_TERMINAL_TITLE",
+      "purpose": "Set to `1` to disable automatic terminal title updates based on conversation context",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_DISABLE_THINKING",
+      "purpose": "Set to `1` to force-disable [extended thinking](https://platform.claude.com/docs/en/build-with-claude/extended-thinking) regardless of model support or other settings. More direct than `MAX_THINKING_TOKENS=0`",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_DISABLE_VIRTUAL_SCROLL",
+      "purpose": "Set to `1` to disable virtual scrolling in [fullscreen rendering](/en/fullscreen) and render every message in the transcript. Use this if scrolling in fullscreen mode shows blank regions where messages should appear",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_EFFORT_LEVEL",
+      "purpose": "Set the effort level for supported models. Values: `low`, `medium`, `high`, `xhigh`, `max`, or `auto` to use the model default. Available levels depend on the model. Takes precedence over `/effort` and the `effortLevel` setting. See [Adjust effort level](/en/model-config#adjust-effort-level)",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_ENABLE_AWAY_SUMMARY",
+      "purpose": "Override [session recap](/en/interactive-mode#session-recap) availability. Set to `0` to force recaps off regardless of the `/config` toggle. Set to `1` to force recaps on when [`awaySummaryEnabled`](/en/settings#available-settings) is `false`. Takes precedence over the setting and `/config` toggle",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_ENABLE_BACKGROUND_PLUGIN_REFRESH",
+      "purpose": "Set to `1` to refresh plugin state at turn boundaries in [non-interactive mode](/en/headless) after a background install completes. Off by default because the refresh changes the system prompt mid-session, which invalidates [prompt caching](https://platform.claude.com/docs/en/build-with-claude/prompt-caching) for that turn",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_ENABLE_FINE_GRAINED_TOOL_STREAMING",
+      "purpose": "Set to `1` to force-enable fine-grained tool input streaming. Without this, the API buffers tool input parameters fully before sending delta events, which can delay display on large tool inputs. Anthropic API only: has no effect on Bedrock, Vertex, or Foundry",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_ENABLE_PROMPT_SUGGESTION",
+      "purpose": "Set to `false` to disable prompt suggestions (the \"Prompt suggestions\" toggle in `/config`). These are the grayed-out predictions that appear in your prompt input after Claude responds. See [Prompt suggestions](/en/interactive-mode#prompt-suggestions)",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_ENABLE_TASKS",
+      "purpose": "Set to `1` to enable the task tracking system in non-interactive mode (the `-p` flag). Tasks are on by default in interactive mode. See [Task list](/en/interactive-mode#task-list)",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_ENABLE_TELEMETRY",
+      "purpose": "Set to `1` to enable OpenTelemetry data collection for metrics and logging. Required before configuring OTel exporters. See [Monitoring](/en/monitoring-usage)",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_EXIT_AFTER_STOP_DELAY",
+      "purpose": "Time in milliseconds to wait after the query loop becomes idle before automatically exiting. Useful for automated workflows and scripts using SDK mode",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS",
+      "purpose": "Set to `1` to enable [agent teams](/en/agent-teams). Agent teams are experimental and disabled by default",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_EXTRA_BODY",
+      "purpose": "JSON object to merge into the top level of every API request body. Useful for passing provider-specific parameters that Claude Code does not expose directly",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_FILE_READ_MAX_OUTPUT_TOKENS",
+      "purpose": "Override the default token limit for file reads. Useful when you need to read larger files in full",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_FORK_SUBAGENT",
+      "purpose": "Set to `1` to enable [forked subagents](/en/sub-agents#fork-the-current-conversation). A forked subagent inherits the full conversation context from the main session instead of starting fresh. When enabled, `/fork` spawns a forked subagent rather than acting as an alias for [`/branch`](/en/commands), and all subagent spawns run in the background. Works in interactive mode and via the SDK or `claude -p`",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_GIT_BASH_PATH",
+      "purpose": "Windows only: path to the Git Bash executable (`bash.exe`). Use when Git Bash is installed but not in your PATH. See [Windows setup](/en/setup#set-up-on-windows)",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_GLOB_HIDDEN",
+      "purpose": "Set to `false` to exclude dotfiles from results when Claude invokes the [Glob tool](/en/tools-reference). Included by default. Does not affect `@` file autocomplete, `ls`, Grep, or Read",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_GLOB_NO_IGNORE",
+      "purpose": "Set to `false` to make the [Glob tool](/en/tools-reference) respect `.gitignore` patterns. By default, Glob returns all matching files including gitignored ones. Does not affect `@` file autocomplete, which has its own [`respectGitignore` setting](/en/settings#available-settings)",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_GLOB_TIMEOUT_SECONDS",
+      "purpose": "Timeout in seconds for Glob tool file discovery. Defaults to 20 seconds on most platforms and 60 seconds on WSL",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_HIDE_CWD",
+      "purpose": "Set to `1` to hide the working directory in the startup logo. Useful for screenshares or recordings where the path exposes your OS username",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_IDE_HOST_OVERRIDE",
+      "purpose": "Override the host address used to connect to the IDE extension. By default Claude Code auto-detects the correct address, including WSL-to-Windows routing",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_IDE_SKIP_AUTO_INSTALL",
+      "purpose": "Skip auto-installation of IDE extensions. Equivalent to setting [`autoInstallIdeExtension`](/en/settings#global-config-settings) to `false`",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_IDE_SKIP_VALID_CHECK",
+      "purpose": "Set to `1` to skip validation of IDE lockfile entries during connection. Use when auto-connect fails to find your IDE despite it running",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_MAX_CONTEXT_TOKENS",
+      "purpose": "Override the context window size Claude Code assumes for the active model. Only takes effect when `DISABLE_COMPACT` is also set. Use this when routing to a model through `ANTHROPIC_BASE_URL` whose context window does not match the built-in size for its name",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_MAX_OUTPUT_TOKENS",
+      "purpose": "Set the maximum number of output tokens for most requests. Defaults and caps vary by model; see [max output tokens](https://platform.claude.com/docs/en/about-claude/models/overview#latest-models-comparison). Increasing this value reduces the effective context window available before [auto-compaction](/en/costs#reduce-token-usage) triggers.",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_MAX_RETRIES",
+      "purpose": "Override the number of times to retry failed API requests (default: 10)",
+      "default": "10"
+    },
+    {
+      "name": "CLAUDE_CODE_MAX_TOOL_USE_CONCURRENCY",
+      "purpose": "Maximum number of read-only tools and subagents that can execute in parallel (default: 10). Higher values increase parallelism but consume more resources",
+      "default": "10"
+    },
+    {
+      "name": "CLAUDE_CODE_MCP_ALLOWLIST_ENV",
+      "purpose": "Set to `1` to spawn stdio MCP servers with only a safe baseline environment plus the server's configured `env`, instead of inheriting your shell environment",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_NEW_INIT",
+      "purpose": "Set to `1` to make `/init` run an interactive setup flow. The flow asks which files to generate, including CLAUDE.md, skills, and hooks, before exploring the codebase and writing them. Without this variable, `/init` generates a CLAUDE.md automatically without prompting.",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_NO_FLICKER",
+      "purpose": "Set to `1` to enable [fullscreen rendering](/en/fullscreen), a research preview that reduces flicker and keeps memory flat in long conversations. Equivalent to the [`tui`](/en/settings#available-settings) setting; you can also switch with `/tui fullscreen`",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_OAUTH_REFRESH_TOKEN",
+      "purpose": "OAuth refresh token for Claude.ai authentication. When set, `claude auth login` exchanges this token directly instead of opening a browser. Requires `CLAUDE_CODE_OAUTH_SCOPES`. Useful for provisioning authentication in automated environments",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_OAUTH_SCOPES",
+      "purpose": "Space-separated OAuth scopes the refresh token was issued with, such as `\"user:profile user:inference user:sessions:claude_code\"`. Required when `CLAUDE_CODE_OAUTH_REFRESH_TOKEN` is set",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_OAUTH_TOKEN",
+      "purpose": "OAuth access token for Claude.ai authentication. Alternative to `/login` for SDK and automated environments. Takes precedence over keychain-stored credentials. Generate one with [`claude setup-token`](/en/authentication#generate-a-long-lived-token)",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_OTEL_FLUSH_TIMEOUT_MS",
+      "purpose": "Timeout in milliseconds for flushing pending OpenTelemetry spans (default: 5000). See [Monitoring](/en/monitoring-usage)",
+      "default": "5000"
+    },
+    {
+      "name": "CLAUDE_CODE_OTEL_HEADERS_HELPER_DEBOUNCE_MS",
+      "purpose": "Interval for refreshing dynamic OpenTelemetry headers in milliseconds (default: 1740000 / 29 minutes). See [Dynamic headers](/en/monitoring-usage#dynamic-headers)",
+      "default": "1740000"
+    },
+    {
+      "name": "CLAUDE_CODE_OTEL_SHUTDOWN_TIMEOUT_MS",
+      "purpose": "Timeout in milliseconds for the OpenTelemetry exporter to finish on shutdown (default: 2000). Increase if metrics are dropped at exit. See [Monitoring](/en/monitoring-usage)",
+      "default": "2000"
+    },
+    {
+      "name": "CLAUDE_CODE_PERFORCE_MODE",
+      "purpose": "Set to `1` to enable Perforce-aware write protection. When set, Edit, Write, and NotebookEdit fail with a `p4 edit <file>` hint if the target file lacks the owner-write bit, which Perforce clears on synced files until `p4 edit` opens them. This prevents Claude Code from bypassing Perforce change tracking",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_PLUGIN_CACHE_DIR",
+      "purpose": "Override the plugins root directory. Despite the name, this sets the parent directory, not the cache itself: marketplaces and the plugin cache live in subdirectories under this path. Defaults to `~/.claude/plugins`",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_PLUGIN_GIT_TIMEOUT_MS",
+      "purpose": "Timeout in milliseconds for git operations when installing or updating plugins (default: 120000). Increase this value for large repositories or slow network connections. See [Git operations time out](/en/plugin-marketplaces#git-operations-time-out)",
+      "default": "120000"
+    },
+    {
+      "name": "CLAUDE_CODE_PLUGIN_KEEP_MARKETPLACE_ON_FAILURE",
+      "purpose": "Set to `1` to keep the existing marketplace cache when a `git pull` fails instead of wiping and re-cloning. Useful in offline or airgapped environments where re-cloning would fail the same way. See [Marketplace updates fail in offline environments](/en/plugin-marketplaces#marketplace-updates-fail-in-offline-environments)",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_PLUGIN_SEED_DIR",
+      "purpose": "Path to one or more read-only plugin seed directories, separated by `:` on Unix or `;` on Windows. Use this to bundle a pre-populated plugins directory into a container image. Claude Code registers marketplaces from these directories at startup and uses pre-cached plugins without re-cloning. See [Pre-populate plugins for containers](/en/plugin-marketplaces#pre-populate-plugins-for-containers)",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_PROXY_RESOLVES_HOSTS",
+      "purpose": "Set to `1` to allow the proxy to perform DNS resolution instead of the caller. Opt-in for environments where the proxy should handle hostname resolution",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_REMOTE",
+      "purpose": "Set automatically to `true` when Claude Code is running as a [cloud session](/en/claude-code-on-the-web). Read this from a hook or setup script to detect whether you are in a cloud environment",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_REMOTE_SESSION_ID",
+      "purpose": "Set automatically in [cloud sessions](/en/claude-code-on-the-web) to the current session's ID. Read this to construct a link back to the session transcript. See [Link artifacts back to the session](/en/claude-code-on-the-web#link-artifacts-back-to-the-session)",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_RESUME_INTERRUPTED_TURN",
+      "purpose": "Set to `1` to automatically resume if the previous session ended mid-turn. Used in SDK mode so the model continues without requiring the SDK to re-send the prompt",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_SCRIPT_CAPS",
+      "purpose": "JSON object limiting how many times specific scripts may be invoked per session when `CLAUDE_CODE_SUBPROCESS_ENV_SCRUB` is set. Keys are substrings matched against the command text; values are integer call limits. For example, `{\"deploy.sh\": 2}` allows `deploy.sh` to be called at most twice. Matching is substring-based so shell-expansion tricks like `./scripts/deploy.sh $(evil)` still count against the cap. Runtime fan-out via `xargs` or `find -exec` is not detected; this is a defense-in-depth control",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_SCROLL_SPEED",
+      "purpose": "Set the mouse wheel scroll multiplier in [fullscreen rendering](/en/fullscreen#mouse-wheel-scrolling). Accepts values from 1 to 20. Set to `3` to match `vim` if your terminal sends one wheel event per notch without amplification",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_SESSIONEND_HOOKS_TIMEOUT_MS",
+      "purpose": "Override the time budget in milliseconds for [SessionEnd](/en/hooks#sessionend) hooks. Applies to session exit, `/clear`, and switching sessions via interactive `/resume`. By default the budget is 1.5 seconds, automatically raised to the highest per-hook `timeout` configured in settings files, up to 60 seconds. Timeouts on plugin-provided hooks do not raise the budget",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_SHELL",
+      "purpose": "Override automatic shell detection. Useful when your login shell differs from your preferred working shell (for example, `bash` vs `zsh`)",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_SHELL_PREFIX",
+      "purpose": "Command prefix to wrap all bash commands (for example, for logging or auditing). Example: `/path/to/logger.sh` will execute `/path/to/logger.sh <command>`",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_SIMPLE",
+      "purpose": "Set to `1` to run with a minimal system prompt and only the Bash, file read, and file edit tools. MCP tools from `--mcp-config` are still available. Disables auto-discovery of hooks, skills, plugins, MCP servers, auto memory, and CLAUDE.md. The [`--bare`](/en/headless#start-faster-with-bare-mode) CLI flag sets this",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_SIMPLE_SYSTEM_PROMPT",
+      "purpose": "Set to `1` to use a shorter system prompt and abbreviated tool descriptions on Opus 4.7. Has no effect on other models. The full tool set, hooks, MCP servers, and CLAUDE.md discovery remain enabled",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_SKIP_BEDROCK_AUTH",
+      "purpose": "Skip AWS authentication for Bedrock (for example, when using an LLM gateway)",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_SKIP_FOUNDRY_AUTH",
+      "purpose": "Skip Azure authentication for Microsoft Foundry (for example, when using an LLM gateway)",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_SKIP_MANTLE_AUTH",
+      "purpose": "Skip AWS authentication for Bedrock Mantle (for example, when using an LLM gateway)",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_SKIP_PROMPT_HISTORY",
+      "purpose": "Set to `1` to skip writing prompt history and session transcripts to disk. Sessions started with this variable set do not appear in `--resume`, `--continue`, or up-arrow history. Useful for ephemeral scripted sessions",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_SKIP_VERTEX_AUTH",
+      "purpose": "Skip Google authentication for Vertex (for example, when using an LLM gateway)",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_SUBAGENT_MODEL",
+      "purpose": "See [Model configuration](/en/model-config)",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_SUBPROCESS_ENV_SCRUB",
+      "purpose": "Set to `1` to strip Anthropic and cloud provider credentials from subprocess environments (Bash tool, hooks, MCP stdio servers). The parent Claude process keeps these credentials for API calls, but child processes cannot read them, reducing exposure to prompt injection attacks that attempt to exfiltrate secrets via shell expansion. On Linux, this also runs Bash subprocesses in an isolated PID namespace so they cannot read host process environments via `/proc`; as a side effect, `ps`, `pgrep`, and `kill` cannot see or signal host processes. `claude-code-action` sets this automatically when `allowed_non_write_users` is configured",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_SYNC_PLUGIN_INSTALL",
+      "purpose": "Set to `1` in non-interactive mode (the `-p` flag) to wait for plugin installation to complete before the first query. Without this, plugins install in the background and may not be available on the first turn. Combine with `CLAUDE_CODE_SYNC_PLUGIN_INSTALL_TIMEOUT_MS` to bound the wait",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_SYNC_PLUGIN_INSTALL_TIMEOUT_MS",
+      "purpose": "Timeout in milliseconds for synchronous plugin installation. When exceeded, Claude Code proceeds without plugins and logs an error. No default: without this variable, synchronous installation waits until complete",
+      "default": "without"
+    },
+    {
+      "name": "CLAUDE_CODE_SYNTAX_HIGHLIGHT",
+      "purpose": "Set to `false` to disable syntax highlighting in diff output. Useful when colors interfere with your terminal setup",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_TASK_LIST_ID",
+      "purpose": "Share a task list across sessions. Set the same ID in multiple Claude Code instances to coordinate on a shared task list. See [Task list](/en/interactive-mode#task-list)",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_TEAM_NAME",
+      "purpose": "Name of the agent team this teammate belongs to. Set automatically on [agent team](/en/agent-teams) members",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_TMPDIR",
+      "purpose": "Override the temp directory used for internal temp files. Claude Code appends `/claude-{uid}/` (Unix) or `/claude/` (Windows) to this path. Default: `/tmp` on macOS, `os.tmpdir()` on Linux/Windows",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_TMUX_TRUECOLOR",
+      "purpose": "Set to `1` to allow 24-bit truecolor output inside tmux. By default, Claude Code clamps to 256 colors when `$TMUX` is set because tmux does not pass through truecolor escape sequences unless configured to. Set this after adding `set -ga terminal-overrides ',*:Tc'` to your `~/.tmux.conf`. See [Terminal configuration](/en/terminal-config) for other tmux settings",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_USE_BEDROCK",
+      "purpose": "Use [Bedrock](/en/amazon-bedrock)",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_USE_FOUNDRY",
+      "purpose": "Use [Microsoft Foundry](/en/microsoft-foundry)",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_USE_MANTLE",
+      "purpose": "Use the Bedrock [Mantle endpoint](/en/amazon-bedrock#use-the-mantle-endpoint)",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_USE_NATIVE_FILE_SEARCH",
+      "purpose": "Set to `1` to discover custom commands, subagents, and output styles using Node.js file APIs instead of ripgrep. Set this if the bundled ripgrep binary is unavailable or blocked in your environment. Does not affect the Grep or file search tools",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_USE_POWERSHELL_TOOL",
+      "purpose": "Controls the PowerShell tool. On Windows without Git Bash, the tool is enabled automatically; set to `0` to disable it. On Windows with Git Bash installed, the tool is rolling out progressively: set to `1` to opt in or `0` to opt out. On Linux, macOS, and WSL, set to `1` to enable it, which requires `pwsh` on your `PATH`. When enabled on Windows, Claude can run PowerShell commands natively instead of routing through Git Bash. See [PowerShell tool](/en/tools-reference#powershell-tool)",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_USE_VERTEX",
+      "purpose": "Use [Vertex](/en/google-vertex-ai)",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CONFIG_DIR",
+      "purpose": "Override the configuration directory (default: `~/.claude`). All settings, credentials, session history, and plugins are stored under this path. Useful for running multiple accounts side by side: for example, `alias claude-work='CLAUDE_CONFIG_DIR=~/.claude-work claude'`",
+      "default": "~/.claude"
+    },
+    {
+      "name": "CLAUDE_ENABLE_BYTE_WATCHDOG",
+      "purpose": "Set to `1` to force-enable the byte-level streaming idle watchdog, or set to `0` to force-disable it. When unset, the watchdog is enabled by default for Anthropic API connections. The byte watchdog aborts a connection when no bytes arrive on the wire for the duration set by `CLAUDE_STREAM_IDLE_TIMEOUT_MS`, with a minimum of 5 minutes, independent of the event-level watchdog",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_ENABLE_STREAM_WATCHDOG",
+      "purpose": "Set to `1` to enable the event-level streaming idle watchdog. Off by default. For Bedrock, Vertex, and Foundry, this is the only idle watchdog available. Configure the timeout with `CLAUDE_STREAM_IDLE_TIMEOUT_MS`",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_ENV_FILE",
+      "purpose": "Path to a shell script whose contents Claude Code runs before each Bash command in the same shell process, so exports in the file are visible to the command. Use to persist virtualenv or conda activation across commands. Also populated dynamically by [SessionStart](/en/hooks#persist-environment-variables), [Setup](/en/hooks#setup), [CwdChanged](/en/hooks#cwdchanged), and [FileChanged](/en/hooks#filechanged) hooks",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_REMOTE_CONTROL_SESSION_NAME_PREFIX",
+      "purpose": "Prefix for auto-generated [Remote Control](/en/remote-control) session names when no explicit name is provided. Defaults to your machine's hostname, producing names like `myhost-graceful-unicorn`. The `--remote-control-session-name-prefix` CLI flag sets the same value for a single invocation",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_STREAM_IDLE_TIMEOUT_MS",
+      "purpose": "Timeout in milliseconds before the streaming idle watchdog closes a stalled connection. For the byte-level watchdog on the Anthropic API: default and minimum `300000` (5 minutes); lower values are silently clamped to absorb extended thinking pauses and proxy buffering. For the event-level watchdog: default `90000` (90 seconds), no minimum. For third-party providers, requires `CLAUDE_ENABLE_STREAM_WATCHDOG=1`",
+      "default": null
+    },
+    {
+      "name": "CLAUDECODE",
+      "purpose": "Set to `1` in shell environments Claude Code spawns (Bash tool, tmux sessions). Not set in [hooks](/en/hooks) or [status line](/en/statusline) commands. Use to detect when a script is running inside a shell spawned by Claude Code",
+      "default": null
+    },
+    {
+      "name": "DISABLE_AUTO_COMPACT",
+      "purpose": "Set to `1` to disable automatic compaction when approaching the context limit. The manual `/compact` command remains available. Use when you want explicit control over when compaction occurs",
+      "default": null
+    },
+    {
+      "name": "DISABLE_AUTOUPDATER",
+      "purpose": "Set to `1` to disable automatic background updates. Manual `claude update` still works. Use `DISABLE_UPDATES` to block both",
+      "default": null
+    },
+    {
+      "name": "DISABLE_COMPACT",
+      "purpose": "Set to `1` to disable all compaction: both automatic compaction and the manual `/compact` command",
+      "default": null
+    },
+    {
+      "name": "DISABLE_COST_WARNINGS",
+      "purpose": "Set to `1` to disable cost warning messages",
+      "default": null
+    },
+    {
+      "name": "DISABLE_DOCTOR_COMMAND",
+      "purpose": "Set to `1` to hide the `/doctor` command. Useful for managed deployments where users should not run installation diagnostics",
+      "default": null
+    },
+    {
+      "name": "DISABLE_ERROR_REPORTING",
+      "purpose": "Set to `1` to opt out of Sentry error reporting",
+      "default": null
+    },
+    {
+      "name": "DISABLE_EXTRA_USAGE_COMMAND",
+      "purpose": "Set to `1` to hide the `/extra-usage` command that lets users purchase additional usage beyond rate limits",
+      "default": null
+    },
+    {
+      "name": "DISABLE_FEEDBACK_COMMAND",
+      "purpose": "Set to `1` to disable the `/feedback` command. The older name `DISABLE_BUG_COMMAND` is also accepted",
+      "default": null
+    },
+    {
+      "name": "DISABLE_INSTALL_GITHUB_APP_COMMAND",
+      "purpose": "Set to `1` to hide the `/install-github-app` command. Already hidden when using third-party providers (Bedrock, Vertex, or Foundry)",
+      "default": null
+    },
+    {
+      "name": "DISABLE_INSTALLATION_CHECKS",
+      "purpose": "Set to `1` to disable installation warnings. Use only when manually managing the installation location, as this can mask issues with standard installations",
+      "default": null
+    },
+    {
+      "name": "DISABLE_INTERLEAVED_THINKING",
+      "purpose": "Set to `1` to prevent sending the interleaved-thinking beta header. Useful when your LLM gateway or provider does not support [interleaved thinking](https://platform.claude.com/docs/en/build-with-claude/extended-thinking#interleaved-thinking)",
+      "default": null
+    },
+    {
+      "name": "DISABLE_LOGIN_COMMAND",
+      "purpose": "Set to `1` to hide the `/login` command. Useful when authentication is handled externally via API keys or `apiKeyHelper`",
+      "default": null
+    },
+    {
+      "name": "DISABLE_LOGOUT_COMMAND",
+      "purpose": "Set to `1` to hide the `/logout` command",
+      "default": null
+    },
+    {
+      "name": "DISABLE_PROMPT_CACHING",
+      "purpose": "Set to `1` to disable prompt caching for all models (takes precedence over per-model settings)",
+      "default": null
+    },
+    {
+      "name": "DISABLE_PROMPT_CACHING_HAIKU",
+      "purpose": "Set to `1` to disable prompt caching for Haiku models",
+      "default": null
+    },
+    {
+      "name": "DISABLE_PROMPT_CACHING_OPUS",
+      "purpose": "Set to `1` to disable prompt caching for Opus models",
+      "default": null
+    },
+    {
+      "name": "DISABLE_PROMPT_CACHING_SONNET",
+      "purpose": "Set to `1` to disable prompt caching for Sonnet models",
+      "default": null
+    },
+    {
+      "name": "DISABLE_TELEMETRY",
+      "purpose": "Set to `1` to opt out of Statsig telemetry (note that Statsig events do not include user data like code, file paths, or bash commands)",
+      "default": null
+    },
+    {
+      "name": "DISABLE_UPDATES",
+      "purpose": "Set to `1` to block all updates including manual `claude update` and `claude install`. Stricter than `DISABLE_AUTOUPDATER`. Use when distributing Claude Code through your own channels and users should not self-update",
+      "default": null
+    },
+    {
+      "name": "DISABLE_UPGRADE_COMMAND",
+      "purpose": "Set to `1` to hide the `/upgrade` command",
+      "default": null
+    },
+    {
+      "name": "ENABLE_CLAUDEAI_MCP_SERVERS",
+      "purpose": "Set to `false` to disable [claude.ai MCP servers](/en/mcp#use-mcp-servers-from-claude-ai) in Claude Code. Enabled by default for logged-in users",
+      "default": null
+    },
+    {
+      "name": "ENABLE_PROMPT_CACHING_1H",
+      "purpose": "Set to `1` to request a 1-hour prompt cache TTL instead of the default 5 minutes. Intended for API key, [Bedrock](/en/amazon-bedrock), [Vertex](/en/google-vertex-ai), and [Foundry](/en/microsoft-foundry) users. Subscription users receive 1-hour TTL automatically. 1-hour cache writes are billed at a higher rate",
+      "default": null
+    },
+    {
+      "name": "ENABLE_PROMPT_CACHING_1H_BEDROCK",
+      "purpose": "Deprecated. Use `ENABLE_PROMPT_CACHING_1H` instead",
+      "default": null
+    },
+    {
+      "name": "ENABLE_TOOL_SEARCH",
+      "purpose": "Controls [MCP tool search](/en/mcp#scale-with-mcp-tool-search). Unset: all MCP tools deferred by default, but loaded upfront on Vertex AI or when `ANTHROPIC_BASE_URL` points to a non-first-party host. Values: `true` (always defer including proxies and Vertex AI), `auto` (threshold mode: load upfront if tools fit within 10% of context), `auto:N` (custom threshold, e.g., `auto:5` for 5%), `false` (load all upfront)",
+      "default": null
+    },
+    {
+      "name": "FALLBACK_FOR_ALL_PRIMARY_MODELS",
+      "purpose": "Set to any non-empty value to trigger fallback to [`--fallback-model`](/en/cli-reference#cli-flags) after repeated overload errors on any primary model. By default, only Opus models trigger the fallback",
+      "default": null
+    },
+    {
+      "name": "FORCE_AUTOUPDATE_PLUGINS",
+      "purpose": "Set to `1` to force plugin auto-updates even when the main auto-updater is disabled via `DISABLE_AUTOUPDATER`",
+      "default": null
+    },
+    {
+      "name": "FORCE_PROMPT_CACHING_5M",
+      "purpose": "Set to `1` to force the 5-minute prompt cache TTL even when 1-hour TTL would otherwise apply. Overrides `ENABLE_PROMPT_CACHING_1H`",
+      "default": null
+    },
+    {
+      "name": "HTTP_PROXY",
+      "purpose": "Specify HTTP proxy server for network connections",
+      "default": null
+    },
+    {
+      "name": "HTTPS_PROXY",
+      "purpose": "Specify HTTPS proxy server for network connections",
+      "default": null
+    },
+    {
+      "name": "IS_DEMO",
+      "purpose": "Set to `1` to enable demo mode: hides your email and organization name from the header and `/status` output, and skips onboarding. Useful when streaming or recording a session",
+      "default": null
+    },
+    {
+      "name": "MAX_MCP_OUTPUT_TOKENS",
+      "purpose": "Maximum number of tokens allowed in MCP tool responses. Claude Code displays a warning when output exceeds 10,000 tokens. Tools that declare [`anthropic/maxResultSizeChars`](/en/mcp#raise-the-limit-for-a-specific-tool) use that character limit for text content instead, but image content from those tools is still subject to this variable (default: 25000)",
+      "default": "25000"
+    },
+    {
+      "name": "MAX_STRUCTURED_OUTPUT_RETRIES",
+      "purpose": "Number of times to retry when the model's response fails validation against the [`--json-schema`](/en/cli-reference#cli-flags) in non-interactive mode (the `-p` flag). Defaults to 5",
+      "default": null
+    },
+    {
+      "name": "MAX_THINKING_TOKENS",
+      "purpose": "Override the [extended thinking](https://platform.claude.com/docs/en/build-with-claude/extended-thinking) token budget. The ceiling is the model's [max output tokens](https://platform.claude.com/docs/en/about-claude/models/overview#latest-models-comparison) minus one. Set to `0` to disable thinking entirely. On models with [adaptive reasoning](/en/model-config#adjust-effort-level), the budget is ignored unless adaptive reasoning is disabled via `CLAUDE_CODE_DISABLE_ADAPTIVE_THINKING`",
+      "default": null
+    },
+    {
+      "name": "MCP_CLIENT_SECRET",
+      "purpose": "OAuth client secret for MCP servers that require [pre-configured credentials](/en/mcp#use-pre-configured-oauth-credentials). Avoids the interactive prompt when adding a server with `--client-secret`",
+      "default": null
+    },
+    {
+      "name": "MCP_CONNECTION_NONBLOCKING",
+      "purpose": "Set to `true` in non-interactive mode (`-p`) to skip the MCP connection wait entirely. Useful for scripted pipelines where MCP tools are not needed. Without this variable, the first query waits up to 5 seconds for `--mcp-config` server connections",
+      "default": null
+    },
+    {
+      "name": "MCP_OAUTH_CALLBACK_PORT",
+      "purpose": "Fixed port for the OAuth redirect callback, as an alternative to `--callback-port` when adding an MCP server with [pre-configured credentials](/en/mcp#use-pre-configured-oauth-credentials)",
+      "default": null
+    },
+    {
+      "name": "MCP_REMOTE_SERVER_CONNECTION_BATCH_SIZE",
+      "purpose": "Maximum number of remote MCP servers (HTTP/SSE) to connect in parallel during startup (default: 20)",
+      "default": "20"
+    },
+    {
+      "name": "MCP_SERVER_CONNECTION_BATCH_SIZE",
+      "purpose": "Maximum number of local MCP servers (stdio) to connect in parallel during startup (default: 3)",
+      "default": "3"
+    },
+    {
+      "name": "MCP_TIMEOUT",
+      "purpose": "Timeout in milliseconds for MCP server startup (default: 30000, or 30 seconds)",
+      "default": "30000"
+    },
+    {
+      "name": "MCP_TOOL_TIMEOUT",
+      "purpose": "Timeout in milliseconds for MCP tool execution (default: 100000000, about 28 hours)",
+      "default": "100000000"
+    },
+    {
+      "name": "NO_PROXY",
+      "purpose": "List of domains and IPs to which requests will be directly issued, bypassing proxy",
+      "default": null
+    },
+    {
+      "name": "OTEL_LOG_RAW_API_BODIES",
+      "purpose": "Emit Anthropic Messages API request and response JSON as `api_request_body` / `api_response_body` log events. Set to `1` for inline bodies truncated at 60 KB, or `file:<dir>` to write untruncated bodies to disk and emit a `body_ref` path instead. Disabled by default; bodies include the entire conversation history. See [Monitoring](/en/monitoring-usage#api-request-body-event)",
+      "default": null
+    },
+    {
+      "name": "OTEL_LOG_TOOL_CONTENT",
+      "purpose": "Set to `1` to include tool input and output content in OpenTelemetry span events. Disabled by default to protect sensitive data. See [Monitoring](/en/monitoring-usage)",
+      "default": null
+    },
+    {
+      "name": "OTEL_LOG_TOOL_DETAILS",
+      "purpose": "Set to `1` to include tool input arguments, MCP server names, raw error strings on tool failures, and other tool details in OpenTelemetry traces and logs. Disabled by default to protect PII. See [Monitoring](/en/monitoring-usage)",
+      "default": null
+    },
+    {
+      "name": "OTEL_LOG_USER_PROMPTS",
+      "purpose": "Set to `1` to include user prompt text in OpenTelemetry traces and logs. Disabled by default (prompts are redacted). See [Monitoring](/en/monitoring-usage)",
+      "default": null
+    },
+    {
+      "name": "OTEL_METRICS_INCLUDE_ACCOUNT_UUID",
+      "purpose": "Set to `false` to exclude account UUID from metrics attributes (default: included). See [Monitoring](/en/monitoring-usage)",
+      "default": "included"
+    },
+    {
+      "name": "OTEL_METRICS_INCLUDE_SESSION_ID",
+      "purpose": "Set to `false` to exclude session ID from metrics attributes (default: included). See [Monitoring](/en/monitoring-usage)",
+      "default": "included"
+    },
+    {
+      "name": "OTEL_METRICS_INCLUDE_VERSION",
+      "purpose": "Set to `true` to include Claude Code version in metrics attributes (default: excluded). See [Monitoring](/en/monitoring-usage)",
+      "default": "excluded"
+    },
+    {
+      "name": "SLASH_COMMAND_TOOL_CHAR_BUDGET",
+      "purpose": "Override the character budget for skill metadata shown to the [Skill tool](/en/skills#control-who-invokes-a-skill). The budget scales dynamically at 1% of the context window, with a fallback of 8,000 characters. Legacy name kept for backwards compatibility",
+      "default": null
+    },
+    {
+      "name": "TASK_MAX_OUTPUT_LENGTH",
+      "purpose": "Maximum number of characters in [subagent](/en/sub-agents) output before truncation (default: 32000, maximum: 160000). When truncated, the full output is saved to disk and the path is included in the truncated response",
+      "default": "32000"
+    },
+    {
+      "name": "USE_BUILTIN_RIPGREP",
+      "purpose": "Set to `0` to use system-installed `rg` instead of `rg` included with Claude Code",
+      "default": null
+    },
+    {
+      "name": "VERTEX_REGION_CLAUDE_3_5_HAIKU",
+      "purpose": "Override region for Claude 3.5 Haiku when using Vertex AI",
+      "default": null
+    },
+    {
+      "name": "VERTEX_REGION_CLAUDE_3_5_SONNET",
+      "purpose": "Override region for Claude 3.5 Sonnet when using Vertex AI",
+      "default": null
+    },
+    {
+      "name": "VERTEX_REGION_CLAUDE_3_7_SONNET",
+      "purpose": "Override region for Claude 3.7 Sonnet when using Vertex AI",
+      "default": null
+    },
+    {
+      "name": "VERTEX_REGION_CLAUDE_4_0_OPUS",
+      "purpose": "Override region for Claude 4.0 Opus when using Vertex AI",
+      "default": null
+    },
+    {
+      "name": "VERTEX_REGION_CLAUDE_4_0_SONNET",
+      "purpose": "Override region for Claude 4.0 Sonnet when using Vertex AI",
+      "default": null
+    },
+    {
+      "name": "VERTEX_REGION_CLAUDE_4_1_OPUS",
+      "purpose": "Override region for Claude 4.1 Opus when using Vertex AI",
+      "default": null
+    },
+    {
+      "name": "VERTEX_REGION_CLAUDE_4_5_OPUS",
+      "purpose": "Override region for Claude Opus 4.5 when using Vertex AI",
+      "default": null
+    },
+    {
+      "name": "VERTEX_REGION_CLAUDE_4_5_SONNET",
+      "purpose": "Override region for Claude Sonnet 4.5 when using Vertex AI",
+      "default": null
+    },
+    {
+      "name": "VERTEX_REGION_CLAUDE_4_6_OPUS",
+      "purpose": "Override region for Claude Opus 4.6 when using Vertex AI",
+      "default": null
+    },
+    {
+      "name": "VERTEX_REGION_CLAUDE_4_6_SONNET",
+      "purpose": "Override region for Claude Sonnet 4.6 when using Vertex AI",
+      "default": null
+    },
+    {
+      "name": "VERTEX_REGION_CLAUDE_4_7_OPUS",
+      "purpose": "{/* min-version: 2.1.111 */}Override region for Claude Opus 4.7 when using Vertex AI",
+      "default": null
+    },
+    {
+      "name": "VERTEX_REGION_CLAUDE_HAIKU_4_5",
+      "purpose": "Override region for Claude Haiku 4.5 when using Vertex AI",
+      "default": null
+    }
+  ]
+}
