@@ -1,0 +1,123 @@
+{
+  "source": "https://code.claude.com/docs/en/hooks.md",
+  "fetchedAt": "2026-04-29T16:32:53.149Z",
+  "count": 29,
+  "events": [
+    {
+      "name": "ConfigChange",
+      "when": "When a configuration file changes during a session"
+    },
+    {
+      "name": "CwdChanged",
+      "when": "When the working directory changes, for example when Claude executes a `cd` command. Useful for reactive environment management with tools like direnv"
+    },
+    {
+      "name": "Elicitation",
+      "when": "When an MCP server requests user input during a tool call"
+    },
+    {
+      "name": "ElicitationResult",
+      "when": "After a user responds to an MCP elicitation, before the response is sent back to the server"
+    },
+    {
+      "name": "FileChanged",
+      "when": "When a watched file changes on disk. The `matcher` field specifies which filenames to watch"
+    },
+    {
+      "name": "InstructionsLoaded",
+      "when": "When a CLAUDE.md or `.claude/rules/*.md` file is loaded into context. Fires at session start and when files are lazily loaded during a session"
+    },
+    {
+      "name": "Notification",
+      "when": "When Claude Code sends a notification"
+    },
+    {
+      "name": "PermissionDenied",
+      "when": "When a tool call is denied by the auto mode classifier. Return `{retry: true}` to tell the model it may retry the denied tool call"
+    },
+    {
+      "name": "PermissionRequest",
+      "when": "When a permission dialog appears"
+    },
+    {
+      "name": "PostCompact",
+      "when": "After context compaction completes"
+    },
+    {
+      "name": "PostToolBatch",
+      "when": "After a full batch of parallel tool calls resolves, before the next model call"
+    },
+    {
+      "name": "PostToolUse",
+      "when": "After a tool call succeeds"
+    },
+    {
+      "name": "PostToolUseFailure",
+      "when": "After a tool call fails"
+    },
+    {
+      "name": "PreCompact",
+      "when": "Before context compaction"
+    },
+    {
+      "name": "PreToolUse",
+      "when": "Before a tool call executes. Can block it"
+    },
+    {
+      "name": "SessionEnd",
+      "when": "When a session terminates"
+    },
+    {
+      "name": "SessionStart",
+      "when": "When a session begins or resumes"
+    },
+    {
+      "name": "Setup",
+      "when": "When you start Claude Code with `--init-only`, or with `--init` or `--maintenance` in `-p` mode. For one-time preparation in CI or scripts"
+    },
+    {
+      "name": "Stop",
+      "when": "When Claude finishes responding"
+    },
+    {
+      "name": "StopFailure",
+      "when": "When the turn ends due to an API error. Output and exit code are ignored"
+    },
+    {
+      "name": "SubagentStart",
+      "when": "When a subagent is spawned"
+    },
+    {
+      "name": "SubagentStop",
+      "when": "When a subagent finishes"
+    },
+    {
+      "name": "TaskCompleted",
+      "when": "When a task is being marked as completed"
+    },
+    {
+      "name": "TaskCreated",
+      "when": "When a task is being created via `TaskCreate`"
+    },
+    {
+      "name": "TeammateIdle",
+      "when": "When an [agent team](/en/agent-teams) teammate is about to go idle"
+    },
+    {
+      "name": "UserPromptExpansion",
+      "when": "When a user-typed command expands into a prompt, before it reaches Claude. Can block the expansion"
+    },
+    {
+      "name": "UserPromptSubmit",
+      "when": "When you submit a prompt, before Claude processes it"
+    },
+    {
+      "name": "WorktreeCreate",
+      "when": "When a worktree is being created via `--worktree` or `isolation: \"worktree\"`. Replaces default git behavior"
+    },
+    {
+      "name": "WorktreeRemove",
+      "when": "When a worktree is being removed, either at session exit or when a subagent finishes"
+    }
+  ]
+}
