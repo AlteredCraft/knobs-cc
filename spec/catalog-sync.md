@@ -1,6 +1,6 @@
 # Catalog sync — spec
 
-Status: **partial implementation.** `sync-settings.js` shipped 2026-04-28; `sync-env-vars.js` is the next planned script.
+Status: **partial implementation.** `sync-settings.js` shipped 2026-04-28; `sync-env-vars.js` shipped 2026-04-29; `sync-hooks.js` shipped 2026-04-29 (lifecycle table only — handler types and per-event input/output schemas are not yet captured).
 
 ## Intent
 
@@ -24,11 +24,15 @@ This spec replaces a deliberately heavier earlier draft (5-phase harness, snapsh
 scripts/
 ├── sync-settings.js          # implemented
 ├── sync-settings.test.js     # 15 tests, ~93% branch coverage
-└── sync-env-vars.js          # planned
+├── sync-env-vars.js          # implemented
+├── sync-env-vars.test.js
+├── sync-hooks.js             # implemented
+└── sync-hooks.test.js
 
 catalog/
 ├── settings.json             # written by sync-settings.js
-└── env-vars.json             # written by sync-env-vars.js (planned)
+├── env-vars.json             # written by sync-env-vars.js
+└── hooks.json                # written by sync-hooks.js
 ```
 
 ## Sources
@@ -57,14 +61,14 @@ catalog/
 
 Nested object schemas are flattened: `permissions` and `permissions.defaultMode` are sibling rows. A small allowlist of fields (`type`, `const`, `enum`, `default`, `minimum`, `maximum`, `pattern`, `examples`, `description`, `$ref`, `anyOf`/`oneOf`/`allOf`, plus a recursive summary of `items` for arrays) is preserved; everything else is dropped to keep upstream JSON Schema metadata churn out of the catalog.
 
-### Env vars — planned
+### Env vars — implemented
 
 | | |
 | --- | --- |
 | Source | `https://code.claude.com/docs/en/env-vars.md` |
-| Output | `catalog/env-vars.json` (~130 entries expected) |
-| Script | `scripts/sync-env-vars.js` (TBD) |
-| Run | `npm run sync:env-vars` (TBD) |
+| Output | `catalog/env-vars.json` (~215 entries) |
+| Script | `scripts/sync-env-vars.js` |
+| Run | `npm run sync:env-vars` |
 
 No JSON Schema sibling exists, so the script parses the markdown directly. The page is structurally simple: one 2-column table (`Variable | Purpose`) covering all variables. Defaults, ranges, and constraints are *not* in a dedicated column — they're embedded as prose inside Purpose (`default: 600000, or 10 minutes; maximum: 2147483647`).
 
@@ -89,13 +93,44 @@ Pragmatic acceptance criteria: every row in the upstream table appears in the ou
 
 **Test plan:** mirror `sync-settings.test.js`. Pure functions (table parser, default extractor) get unit tests with small fixture strings; `main()` stays uncovered.
 
+### Hooks — implemented (lifecycle table only)
+
+| | |
+| --- | --- |
+| Source | `https://code.claude.com/docs/en/hooks.md` |
+| Output | `catalog/hooks.json` (~29 entries) |
+| Script | `scripts/sync-hooks.js` |
+| Run | `npm run sync:hooks` |
+
+The page documents far more than just the event list — handler types (`command`, `http`, `mcp_tool`, `prompt`, `agent`), per-event input schemas, decision-control fields, exit-code semantics, and matcher rules — but those live under prose-heavy `###`/`####` sections, not in a single canonical table. The first cut captures only the lifecycle summary table (`| Event | When it fires |`) at the top of the page, which is the smallest useful artifact and the natural parallel to env-vars.
+
+**Approach:**
+
+1. `fetch()` the `.md` URL.
+2. Locate the lifecycle table by header signature `| Event | When it fires |` (case-insensitive). The page has other tables whose first column header is "Event" — the second column disambiguates.
+3. For each row, extract `name` (backtick-stripped) and `when` (cadence prose, preserved verbatim).
+4. Sort by `name`, wrap with the standard envelope, write to `catalog/hooks.json`.
+
+**Output shape per record:**
+
+```json
+{
+  "name": "PreToolUse",
+  "when": "Before a tool call executes. Can block it"
+}
+```
+
+Pragmatic acceptance criteria: every row in the upstream lifecycle table appears in the output; cadence prose preserved verbatim. Handler types and per-event JSON schemas are out of scope for this cut and remain candidates for follow-up work.
+
+**Test plan:** mirror `sync-env-vars.test.js`. Pure functions (`parseRow`, `parseTable`, `buildRecords`) get unit tests with small fixture strings; `main()` stays uncovered.
+
 ## Future sources (not committed)
 
-Each gets the same recipe: one script, one catalog file, one test file. Likely candidates in rough priority order: `hooks.md`, `mcp.md`, `sub-agents.md`, `permissions` doc, `keybindings.md`, `cli-reference.md`. None are committed scope today.
+Each gets the same recipe: one script, one catalog file, one test file. Likely candidates in rough priority order: `mcp.md`, `sub-agents.md`, `permissions` doc, `keybindings.md`, `cli-reference.md`. A second `hooks.md` pass to capture handler types and per-event input/output schemas also belongs on this list. None are committed scope today.
 
 ## Future automation (not committed)
 
-- **CI on cron.** A GitHub Actions workflow could run `npm run sync:settings && npm run sync:env-vars` on a schedule and open a PR when `catalog/` changes. Cheap to add when there's a reason; nothing about the current scripts blocks it.
+- **CI on cron.** A GitHub Actions workflow could run `npm run sync:settings && npm run sync:env-vars && npm run sync:hooks` on a schedule and open a PR when `catalog/` changes. Cheap to add when there's a reason; nothing about the current scripts blocks it.
 - **Coverage thresholds.** `--test-coverage-lines` / `--test-coverage-branches` to fail the run below a target. Premature now; reasonable when there are several scripts.
 
 ## What this spec explicitly is not
