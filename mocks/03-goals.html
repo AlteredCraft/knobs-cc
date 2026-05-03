@@ -1,0 +1,708 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>knobs.cc — goals</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  :root {
+    --bg-0: #0a0b0e;
+    --bg-1: #11131a;
+    --bg-2: #181b24;
+    --bg-3: #20242f;
+    --line: #232734;
+    --line-strong: #2e3342;
+    --text-1: #ecedf1;
+    --text-2: #b8bcc7;
+    --text-3: #797f8c;
+    --text-4: #4e5360;
+
+    /* per-goal hues */
+    --speed: #6dd3ff;
+    --speed-bg: rgba(109,211,255,0.07);
+    --speed-edge: rgba(109,211,255,0.18);
+    --cost: #f5c659;
+    --cost-bg: rgba(245,198,89,0.07);
+    --cost-edge: rgba(245,198,89,0.18);
+    --safe: #ff7a6b;
+    --safe-bg: rgba(255,122,107,0.07);
+    --safe-edge: rgba(255,122,107,0.20);
+
+    --ok: #4ec27a;
+    --warn: #f5c659;
+    --err: #ff7a6b;
+  }
+  html, body {
+    background: var(--bg-0);
+    color: var(--text-1);
+    font-family: 'Geist', system-ui, sans-serif;
+    font-feature-settings: "ss01", "ss03", "cv11";
+    letter-spacing: -0.011em;
+  }
+  .mono { font-family: 'Geist Mono', ui-monospace, monospace; letter-spacing: 0; }
+
+  /* Body backdrop: a barely-there grid of pinpricks */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      radial-gradient(circle at 1px 1px, rgba(255,255,255,0.025) 1px, transparent 0);
+    background-size: 32px 32px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Glow under top-of-page */
+  .pageglow {
+    position: absolute; left: 50%; top: -180px; transform: translateX(-50%);
+    width: 900px; height: 480px;
+    background: radial-gradient(ellipse at center, rgba(109,211,255,0.08), transparent 60%);
+    pointer-events: none; z-index: 0;
+  }
+
+  /* Card */
+  .card {
+    position: relative;
+    background: linear-gradient(180deg, var(--bg-2) 0%, var(--bg-1) 100%);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 26px 24px 22px;
+    overflow: hidden;
+    transition: transform 220ms cubic-bezier(.2,.8,.2,1), border-color 220ms;
+  }
+  .card:hover { transform: translateY(-2px); }
+  .card.speed { border-color: rgba(109,211,255,0.18); }
+  .card.cost  { border-color: rgba(245,198,89,0.18); }
+  .card.safe  { border-color: rgba(255,122,107,0.20); }
+
+  /* corner glow inside card */
+  .card::before {
+    content: ''; position: absolute; inset: 0;
+    background: radial-gradient(circle at 100% 0%, var(--card-glow, transparent) 0%, transparent 45%);
+    pointer-events: none;
+  }
+  .card.speed { --card-glow: rgba(109,211,255,0.14); }
+  .card.cost  { --card-glow: rgba(245,198,89,0.13); }
+  .card.safe  { --card-glow: rgba(255,122,107,0.16); }
+
+  /* top hairline accent */
+  .card::after {
+    content: ''; position: absolute; top: 0; left: 24px; right: 24px; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--card-line, transparent), transparent);
+  }
+  .card.speed { --card-line: rgba(109,211,255,0.5); }
+  .card.cost  { --card-line: rgba(245,198,89,0.5); }
+  .card.safe  { --card-line: rgba(255,122,107,0.5); }
+
+  /* Card icon halo */
+  .icon-disc {
+    width: 56px; height: 56px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 14px;
+    font-size: 28px; line-height: 1;
+    background: var(--icon-bg, var(--bg-3));
+    border: 1px solid var(--icon-border, var(--line-strong));
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.04), 0 0 28px var(--icon-glow, transparent);
+    position: relative;
+  }
+  .speed .icon-disc {
+    --icon-bg: rgba(109,211,255,0.08);
+    --icon-border: rgba(109,211,255,0.30);
+    --icon-glow: rgba(109,211,255,0.18);
+  }
+  .cost .icon-disc {
+    --icon-bg: rgba(245,198,89,0.08);
+    --icon-border: rgba(245,198,89,0.30);
+    --icon-glow: rgba(245,198,89,0.16);
+  }
+  .safe .icon-disc {
+    --icon-bg: rgba(255,122,107,0.08);
+    --icon-border: rgba(255,122,107,0.30);
+    --icon-glow: rgba(255,122,107,0.20);
+  }
+
+  /* Knob row inside card */
+  .knob {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 10px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .knob:last-child { border-bottom: none; }
+  .knob .name {
+    font-family: 'Geist Mono', monospace;
+    font-size: 13px;
+    color: var(--text-1);
+    font-weight: 500;
+  }
+  .knob .name .ns { color: var(--text-3); font-weight: 400; }
+  .knob .value {
+    font-family: 'Geist Mono', monospace;
+    font-size: 13px;
+    text-align: right;
+    color: var(--text-1);
+    font-weight: 500;
+  }
+  .knob .value.unset { color: var(--text-4); font-style: italic; }
+  .knob .hint {
+    font-size: 12.5px;
+    color: var(--text-3);
+    margin-top: 4px;
+    line-height: 1.5;
+    grid-column: 1 / -1;
+    display: flex; gap: 8px; align-items: flex-start;
+  }
+  .knob .hint::before {
+    content: ''; width: 12px; height: 12px; flex-shrink: 0;
+    margin-top: 4px;
+    background: var(--hint-color, var(--text-3));
+    mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'><circle cx='6' cy='6' r='5' fill='none' stroke='black' stroke-width='1.2'/><line x1='6' y1='3.5' x2='6' y2='6.5' stroke='black' stroke-width='1.2'/><circle cx='6' cy='8.5' r='0.6' fill='black'/></svg>") center / contain no-repeat;
+    -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'><circle cx='6' cy='6' r='5' fill='none' stroke='black' stroke-width='1.2'/><line x1='6' y1='3.5' x2='6' y2='6.5' stroke='black' stroke-width='1.2'/><circle cx='6' cy='8.5' r='0.6' fill='black'/></svg>") center / contain no-repeat;
+  }
+  .knob .hint.warn { --hint-color: var(--warn); color: #d4b96a; }
+  .knob .hint.alert { --hint-color: var(--err); color: #e7958a; }
+
+  /* Provenance chip */
+  .prov {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-family: 'Geist Mono', monospace;
+    font-size: 10.5px; font-weight: 500;
+    padding: 2px 7px;
+    border-radius: 4px;
+    background: var(--bg-3);
+    color: var(--text-2);
+    border: 1px solid var(--line-strong);
+    letter-spacing: 0.01em;
+  }
+  .prov::before {
+    content: ''; width: 5px; height: 5px; border-radius: 50%;
+    background: var(--prov-dot, var(--text-3));
+  }
+  .prov.user      { --prov-dot: #aab3bf; }
+  .prov.project   { --prov-dot: var(--cost); color: #e6c275; border-color: rgba(245,198,89,0.25); background: rgba(245,198,89,0.06); }
+  .prov.proj-local{ --prov-dot: #ffd07a; color: #ffd07a; border-color: rgba(255,208,122,0.22); background: rgba(255,208,122,0.05); }
+  .prov.env       { --prov-dot: var(--speed); color: #9bdcfa; border-color: rgba(109,211,255,0.22); background: rgba(109,211,255,0.06); }
+  .prov.managed   { --prov-dot: var(--safe); color: #ffa499; border-color: rgba(255,122,107,0.25); background: rgba(255,122,107,0.06); }
+  .prov.default   { --prov-dot: var(--text-4); color: var(--text-3); }
+  .prov.unset     { --prov-dot: transparent; color: var(--text-4); border-style: dashed; }
+
+  /* Card health row at top */
+  .card-meta {
+    display: flex; align-items: center; gap: 10px;
+    margin-top: 14px;
+    font-family: 'Geist Mono', monospace;
+    font-size: 11px;
+    color: var(--text-3);
+    letter-spacing: 0.02em;
+  }
+
+  /* Score arc */
+  .arc {
+    width: 28px; height: 28px;
+    transform: rotate(-90deg);
+  }
+
+  /* Layer health strip */
+  .health-cell {
+    background: var(--bg-1);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 16px;
+    display: flex; flex-direction: column; gap: 10px;
+    position: relative;
+    transition: border-color 200ms, background 200ms;
+  }
+  .health-cell:hover { border-color: var(--line-strong); background: var(--bg-2); }
+  .health-cell.muted { opacity: 0.55; }
+  .health-cell .layer-name {
+    font-family: 'Geist Mono', monospace;
+    font-size: 12px;
+    color: var(--text-1);
+    font-weight: 500;
+  }
+  .health-cell .layer-prec {
+    font-family: 'Geist Mono', monospace;
+    font-size: 9.5px;
+    color: var(--text-4);
+    letter-spacing: 0.08em;
+  }
+  .health-cell .layer-status {
+    font-size: 11.5px;
+    color: var(--text-2);
+  }
+  .health-cell .pulse {
+    position: absolute; top: 14px; right: 14px;
+    width: 8px; height: 8px; border-radius: 50%;
+  }
+  .pulse-ok { background: var(--ok); box-shadow: 0 0 10px rgba(78,194,122,0.5); }
+  .pulse-empty { border: 1px solid var(--text-4); }
+
+  /* Section header */
+  .section-tag {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: 'Geist Mono', monospace;
+    font-size: 10px; letter-spacing: 0.16em;
+    color: var(--text-3); text-transform: uppercase;
+  }
+  .section-tag::before {
+    content: ''; width: 12px; height: 1px; background: var(--text-4);
+  }
+
+  /* CTA button */
+  .cta {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: 'Geist Mono', monospace;
+    font-size: 11.5px; letter-spacing: 0.04em;
+    color: var(--text-2);
+    padding: 8px 14px;
+    border: 1px solid var(--line-strong);
+    border-radius: 8px;
+    background: var(--bg-2);
+    transition: all 150ms;
+    cursor: pointer;
+  }
+  .cta:hover { color: var(--text-1); border-color: #3b414f; background: var(--bg-3); }
+  .cta.primary { background: var(--text-1); color: #0a0b0e; border-color: var(--text-1); font-weight: 500; }
+  .cta.primary:hover { background: #fff; }
+
+  /* Gentle pulse on the score */
+  @keyframes pulseRing {
+    0%,100% { transform: scale(1); opacity: 0.5; }
+    50% { transform: scale(1.15); opacity: 0.2; }
+  }
+
+  /* Stagger reveal */
+  @keyframes riseIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+  .stagger > * { animation: riseIn 540ms cubic-bezier(.2,.8,.2,1) both; }
+  .stagger > *:nth-child(1) { animation-delay: 60ms; }
+  .stagger > *:nth-child(2) { animation-delay: 140ms; }
+  .stagger > *:nth-child(3) { animation-delay: 220ms; }
+  .stagger > *:nth-child(4) { animation-delay: 300ms; }
+
+  /* Hero typography */
+  .hero {
+    font-family: 'Geist', sans-serif;
+    font-weight: 600;
+    letter-spacing: -0.04em;
+    line-height: 0.96;
+  }
+
+  /* score number */
+  .score-big {
+    font-family: 'Geist', sans-serif;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.04em;
+  }
+
+  /* Wordmark dot */
+  .dotmark {
+    display: inline-block;
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--ok);
+    margin: 0 1px 1px;
+    vertical-align: middle;
+  }
+
+  /* segmented selector */
+  .segmented {
+    display: inline-flex; padding: 3px;
+    background: var(--bg-1);
+    border: 1px solid var(--line);
+    border-radius: 9px;
+  }
+  .segmented button {
+    font-family: 'Geist Mono', monospace;
+    font-size: 11px;
+    padding: 6px 12px;
+    border-radius: 6px;
+    color: var(--text-3);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .segmented button.on {
+    background: var(--bg-3);
+    color: var(--text-1);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+  }
+</style>
+</head>
+<body class="min-h-screen relative">
+
+<div class="pageglow"></div>
+
+<div class="relative max-w-[1240px] mx-auto px-10 py-10 z-10">
+
+  <!-- TOP NAV -->
+  <header class="flex items-center justify-between mb-14">
+    <div class="flex items-center gap-3">
+      <span class="text-[20px] font-semibold tracking-tight">knobs<span class="dotmark"></span>cc</span>
+      <span class="mono text-[10.5px] text-[var(--text-3)] tracking-wider uppercase ml-2 px-2 py-1 rounded-md border border-[var(--line)]">Goals</span>
+    </div>
+    <div class="flex items-center gap-3">
+      <div class="segmented">
+        <button>Goals</button>
+        <button class="on">Tuned for speed</button>
+        <button>All knobs</button>
+      </div>
+      <div class="mono text-[10.5px] text-[var(--text-3)]">~/Projects/knobs.cc</div>
+      <button class="cta">↻</button>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <section class="grid grid-cols-12 gap-8 mb-16 items-end">
+    <div class="col-span-8">
+      <div class="section-tag mb-5">Your config, by intent</div>
+      <h1 class="hero text-[68px] mb-5">
+        Three things you might<br/>
+        want from <span class="italic font-light text-[var(--text-2)]">claude code</span>.
+      </h1>
+      <p class="text-[16px] text-[var(--text-2)] max-w-[640px] leading-relaxed">
+        Each goal pulls together the knobs that affect it across all seven config layers,
+        and tells you which layer is currently in charge. Read-only — knobs.cc never writes.
+      </p>
+    </div>
+    <div class="col-span-4">
+      <div class="bg-[var(--bg-1)] border border-[var(--line)] rounded-2xl p-5">
+        <div class="section-tag mb-3">Snapshot</div>
+        <div class="flex items-baseline gap-2 mb-1">
+          <span class="score-big text-[44px]">12</span>
+          <span class="text-[14px] text-[var(--text-3)]">of 47 knobs set</span>
+        </div>
+        <div class="grid grid-cols-7 gap-1 mt-3">
+          <div class="h-1 rounded-sm" style="background: var(--text-4);" title="managed"></div>
+          <div class="h-1 rounded-sm" style="background: var(--text-4);" title="cli"></div>
+          <div class="h-1 rounded-sm bg-[var(--speed)]"      style="opacity:.7"   title="env"></div>
+          <div class="h-1 rounded-sm bg-[var(--cost)]"       style="opacity:.7"   title="project_local"></div>
+          <div class="h-1 rounded-sm bg-[var(--cost)]"                            title="project"></div>
+          <div class="h-1 rounded-sm bg-[var(--text-1)]"     style="opacity:.85"  title="user"></div>
+          <div class="h-1 rounded-sm bg-[var(--text-3)]"     style="opacity:.5"   title="default"></div>
+        </div>
+        <div class="mono text-[10px] text-[var(--text-4)] mt-2 tracking-wider uppercase flex justify-between">
+          <span>HI</span><span>precedence</span><span>LO</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- GOAL CARDS -->
+  <section class="grid grid-cols-3 gap-5 mb-16 stagger">
+
+    <!-- SPEED -->
+    <article class="card speed">
+      <div class="flex items-start justify-between">
+        <div class="icon-disc">⚡</div>
+        <div class="text-right">
+          <svg class="arc inline-block" viewBox="0 0 28 28">
+            <circle cx="14" cy="14" r="11" stroke="rgba(109,211,255,0.15)" stroke-width="2.5" fill="none"/>
+            <circle cx="14" cy="14" r="11" stroke="var(--speed)" stroke-width="2.5" fill="none"
+              stroke-dasharray="69" stroke-dashoffset="48" stroke-linecap="round"/>
+          </svg>
+          <div class="mono text-[10px] text-[var(--text-3)] mt-0.5 tracking-wider uppercase">3 of 9</div>
+        </div>
+      </div>
+      <h3 class="text-[20px] font-semibold mt-5 tracking-tight">Make Claude faster</h3>
+      <p class="text-[13px] text-[var(--text-3)] mt-1.5 leading-snug">
+        Three knobs are slowing this session down today. None are blockers.
+      </p>
+
+      <div class="mt-5 -mx-1">
+        <!-- model -->
+        <div class="knob px-1">
+          <span class="name">model</span>
+          <span class="value">"claude-opus-4-7"</span>
+          <div class="flex items-center justify-between" style="grid-column: 1 / -1; margin-top: 6px;">
+            <span class="prov project">project</span>
+            <span class="mono text-[10.5px] text-[var(--text-4)]">overrides user</span>
+          </div>
+          <div class="hint">
+            Opus is the slowest tier. <span class="text-[var(--text-2)]">Sonnet</span> is roughly 2× faster on most tasks.
+          </div>
+        </div>
+
+        <!-- effortLevel -->
+        <div class="knob px-1">
+          <span class="name">effortLevel</span>
+          <span class="value">"high"</span>
+          <div class="flex items-center justify-between" style="grid-column: 1 / -1; margin-top: 6px;">
+            <span class="prov user">user</span>
+            <span class="mono text-[10.5px] text-[var(--text-4)]">~/.claude/settings.json</span>
+          </div>
+          <div class="hint warn">
+            High effort spends extra thinking budget per turn. Try <span class="mono">"medium"</span> for a faster floor.
+          </div>
+        </div>
+
+        <!-- alwaysThinkingEnabled -->
+        <div class="knob px-1">
+          <span class="name">alwaysThinkingEnabled</span>
+          <span class="value">true</span>
+          <div class="flex items-center justify-between" style="grid-column: 1 / -1; margin-top: 6px;">
+            <span class="prov proj-local">project_local</span>
+            <span class="mono text-[10.5px] text-[var(--text-4)]">.local override · gitignored</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-meta">
+        <span>·</span><span>3 active</span>
+        <span>·</span><span>6 at default</span>
+      </div>
+    </article>
+
+    <!-- COST -->
+    <article class="card cost">
+      <div class="flex items-start justify-between">
+        <div class="icon-disc">💰</div>
+        <div class="text-right">
+          <svg class="arc inline-block" viewBox="0 0 28 28">
+            <circle cx="14" cy="14" r="11" stroke="rgba(245,198,89,0.15)" stroke-width="2.5" fill="none"/>
+            <circle cx="14" cy="14" r="11" stroke="var(--cost)" stroke-width="2.5" fill="none"
+              stroke-dasharray="69" stroke-dashoffset="35" stroke-linecap="round"/>
+          </svg>
+          <div class="mono text-[10px] text-[var(--text-3)] mt-0.5 tracking-wider uppercase">4 of 8</div>
+        </div>
+      </div>
+      <h3 class="text-[20px] font-semibold mt-5 tracking-tight">Reduce token usage</h3>
+      <p class="text-[13px] text-[var(--text-3)] mt-1.5 leading-snug">
+        Thinking and Opus drive most of the bill. Two knobs are fighting you here.
+      </p>
+
+      <div class="mt-5 -mx-1">
+        <div class="knob px-1">
+          <span class="name">alwaysThinkingEnabled</span>
+          <span class="value">true</span>
+          <div class="flex items-center justify-between" style="grid-column: 1 / -1; margin-top: 6px;">
+            <span class="prov proj-local">project_local</span>
+            <span class="mono text-[10.5px] text-[var(--text-4)]">biggest single cost</span>
+          </div>
+          <div class="hint alert">
+            Extended thinking can 5–10× input tokens. Disable per-session unless needed.
+          </div>
+        </div>
+
+        <div class="knob px-1">
+          <span class="name">model</span>
+          <span class="value">"claude-opus-4-7"</span>
+          <div class="flex items-center justify-between" style="grid-column: 1 / -1; margin-top: 6px;">
+            <span class="prov project">project</span>
+            <span class="mono text-[10.5px] text-[var(--text-4)]">≈ 5× sonnet</span>
+          </div>
+        </div>
+
+        <div class="knob px-1">
+          <span class="name">outputStyle</span>
+          <span class="value">"Explanatory"</span>
+          <div class="flex items-center justify-between" style="grid-column: 1 / -1; margin-top: 6px;">
+            <span class="prov user">user</span>
+            <span class="mono text-[10.5px] text-[var(--text-4)]">verbose by design</span>
+          </div>
+        </div>
+
+        <div class="knob px-1">
+          <span class="name">effortLevel</span>
+          <span class="value">"high"</span>
+          <div class="flex items-center justify-between" style="grid-column: 1 / -1; margin-top: 6px;">
+            <span class="prov user">user</span>
+            <span class="mono text-[10.5px] text-[var(--text-4)]">more thinking tokens</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-meta">
+        <span>·</span><span>4 active</span>
+        <span>·</span><span>4 at default</span>
+      </div>
+    </article>
+
+    <!-- SAFETY -->
+    <article class="card safe">
+      <div class="flex items-start justify-between">
+        <div class="icon-disc">🛡</div>
+        <div class="text-right">
+          <svg class="arc inline-block" viewBox="0 0 28 28">
+            <circle cx="14" cy="14" r="11" stroke="rgba(255,122,107,0.18)" stroke-width="2.5" fill="none"/>
+            <circle cx="14" cy="14" r="11" stroke="var(--safe)" stroke-width="2.5" fill="none"
+              stroke-dasharray="69" stroke-dashoffset="55" stroke-linecap="round"/>
+          </svg>
+          <div class="mono text-[10px] text-[var(--text-3)] mt-0.5 tracking-wider uppercase">2 of 6</div>
+        </div>
+      </div>
+      <h3 class="text-[20px] font-semibold mt-5 tracking-tight">Stay safe</h3>
+      <p class="text-[13px] text-[var(--text-3)] mt-1.5 leading-snug">
+        Sandbox isn't on and edits auto-accept. Worth a second look.
+      </p>
+
+      <div class="mt-5 -mx-1">
+        <div class="knob px-1">
+          <span class="name"><span class="ns">permissions.</span>defaultMode</span>
+          <span class="value">"acceptEdits"</span>
+          <div class="flex items-center justify-between" style="grid-column: 1 / -1; margin-top: 6px;">
+            <span class="prov project">project</span>
+            <span class="mono text-[10.5px] text-[var(--text-4)]">team-shared</span>
+          </div>
+          <div class="hint alert">
+            Edit tool calls auto-accept without prompting. Only safe in throwaway branches.
+          </div>
+        </div>
+
+        <div class="knob px-1">
+          <span class="name"><span class="ns">permissions.</span>deny</span>
+          <span class="value">[2 patterns]</span>
+          <div class="flex items-center gap-1.5 flex-wrap" style="grid-column: 1 / -1; margin-top: 6px;">
+            <span class="prov managed">managed</span>
+            <span class="prov user">user</span>
+            <span class="mono text-[10.5px] text-[var(--text-4)] ml-auto">array · merged</span>
+          </div>
+          <div class="mt-3 mono text-[11.5px] text-[var(--text-2)] space-y-1">
+            <div class="flex justify-between"><span>"Bash(rm -rf *)"</span><span class="text-[var(--err)] text-[10.5px]">managed</span></div>
+            <div class="flex justify-between"><span>"Read(.env*)"</span><span class="text-[var(--text-3)] text-[10.5px]">user</span></div>
+          </div>
+        </div>
+
+        <div class="knob px-1">
+          <span class="name">sandbox</span>
+          <span class="value unset">— unset —</span>
+          <div class="flex items-center justify-between" style="grid-column: 1 / -1; margin-top: 6px;">
+            <span class="prov unset">no source</span>
+            <span class="mono text-[10.5px] text-[var(--text-4)]">filesystem unrestricted</span>
+          </div>
+          <div class="hint warn">
+            No <span class="mono">sandbox.filesystem.allowWrite</span>. Tool calls run with your full FS access.
+          </div>
+        </div>
+      </div>
+
+      <div class="card-meta">
+        <span>·</span><span>2 active</span>
+        <span>·</span><span>4 at default</span>
+      </div>
+    </article>
+  </section>
+
+  <!-- LAYER HEALTH STRIP -->
+  <section class="mb-14">
+    <div class="flex items-baseline justify-between mb-5">
+      <div>
+        <div class="section-tag mb-2">Layer health</div>
+        <h2 class="text-[22px] font-semibold tracking-tight">Where settings are coming from</h2>
+      </div>
+      <button class="cta">Open inspector →</button>
+    </div>
+
+    <div class="grid grid-cols-7 gap-3">
+      <div class="health-cell muted">
+        <span class="pulse pulse-empty"></span>
+        <div>
+          <div class="layer-name">managed</div>
+          <div class="layer-prec">PRECEDENCE 1</div>
+        </div>
+        <div class="layer-status text-[var(--text-3)]">no MDM detected</div>
+      </div>
+
+      <div class="health-cell muted">
+        <span class="pulse pulse-empty"></span>
+        <div>
+          <div class="layer-name">cli</div>
+          <div class="layer-prec">PRECEDENCE 2</div>
+        </div>
+        <div class="layer-status text-[var(--text-3)]">not inspectable</div>
+      </div>
+
+      <div class="health-cell">
+        <span class="pulse pulse-ok"></span>
+        <div>
+          <div class="layer-name">env</div>
+          <div class="layer-prec">PRECEDENCE 3</div>
+        </div>
+        <div class="layer-status">2 vars set</div>
+      </div>
+
+      <div class="health-cell">
+        <span class="pulse pulse-ok"></span>
+        <div>
+          <div class="layer-name">project_local</div>
+          <div class="layer-prec">PRECEDENCE 4</div>
+        </div>
+        <div class="layer-status">4 keys</div>
+      </div>
+
+      <div class="health-cell">
+        <span class="pulse pulse-ok"></span>
+        <div>
+          <div class="layer-name">project</div>
+          <div class="layer-prec">PRECEDENCE 5</div>
+        </div>
+        <div class="layer-status">8 keys</div>
+      </div>
+
+      <div class="health-cell">
+        <span class="pulse pulse-ok"></span>
+        <div>
+          <div class="layer-name">user</div>
+          <div class="layer-prec">PRECEDENCE 6</div>
+        </div>
+        <div class="layer-status">12 keys</div>
+      </div>
+
+      <div class="health-cell">
+        <span class="pulse pulse-ok"></span>
+        <div>
+          <div class="layer-name">default</div>
+          <div class="layer-prec">PRECEDENCE 7</div>
+        </div>
+        <div class="layer-status text-[var(--text-3)]">catalog · 47</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- DIAGNOSTICS RIBBON -->
+  <section class="bg-[var(--bg-1)] border border-[var(--line)] rounded-2xl p-6 mb-10">
+    <div class="flex items-center gap-3 mb-4">
+      <div class="section-tag">Diagnostics · 2</div>
+    </div>
+    <div class="grid grid-cols-2 gap-4">
+      <div class="flex items-start gap-3 p-3 bg-[var(--bg-2)] rounded-lg border border-[var(--line)]">
+        <div class="w-1.5 h-1.5 rounded-full bg-[var(--warn)] mt-1.5 flex-shrink-0" style="box-shadow: 0 0 8px var(--warn);"></div>
+        <div class="flex-1">
+          <div class="text-[13px] text-[var(--text-1)] font-medium">Array merge deferred to phase 3</div>
+          <div class="text-[12px] text-[var(--text-3)] mt-1">
+            <span class="mono">permissions.allow / deny / ask</span> currently use last-wins instead of concat.
+          </div>
+        </div>
+      </div>
+      <div class="flex items-start gap-3 p-3 bg-[var(--bg-2)] rounded-lg border border-[var(--line)]">
+        <div class="w-1.5 h-1.5 rounded-full bg-[var(--warn)] mt-1.5 flex-shrink-0" style="box-shadow: 0 0 8px var(--warn);"></div>
+        <div class="flex-1">
+          <div class="text-[13px] text-[var(--text-1)] font-medium">Trailing comma in user settings</div>
+          <div class="text-[12px] text-[var(--text-3)] mt-1">
+            <span class="mono">~/.claude/settings.json</span> line 47 — parseable, but non-standard JSON.
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER LINK ROW -->
+  <footer class="flex items-center justify-between pt-6 border-t border-[var(--line)] text-[13px]">
+    <div class="text-[var(--text-3)]">
+      Showing 3 of <span class="text-[var(--text-1)] font-medium">9 goals</span> in this view.
+    </div>
+    <div class="flex items-center gap-2">
+      <button class="cta">Quality 🎯</button>
+      <button class="cta">Privacy 🔒</button>
+      <button class="cta">Hooks ⚙</button>
+      <button class="cta primary">Browse all 47 knobs →</button>
+    </div>
+  </footer>
+
+</div>
+
+</body>
+</html>

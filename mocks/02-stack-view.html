@@ -1,0 +1,688 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>knobs.cc — stack view</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  :root {
+    --paper: #f4f0e6;
+    --paper-2: #fbf8f0;
+    --ink: #18130c;
+    --ink-2: #4a4137;
+    --ink-3: #8b8275;
+    --rule: #d9d1bf;
+    --rule-soft: #e7e0cd;
+    --accent: #b3251c;        /* oxblood */
+    --accent-bg: #f7e8e6;
+    --winner: #1a3d1c;
+    --winner-bg: #ecf2e7;
+    --shadowed: #b8aa90;
+  }
+  html, body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Newsreader', Georgia, serif;
+    font-size: 16px;
+    line-height: 1.55;
+    /* very subtle paper grain */
+    background-image:
+      radial-gradient(circle at 30% 20%, rgba(255,255,255,0.5), transparent 60%),
+      radial-gradient(circle at 80% 80%, rgba(0,0,0,0.025), transparent 50%);
+  }
+  .display {
+    font-family: 'Instrument Serif', 'Newsreader', Georgia, serif;
+    font-weight: 400;
+    letter-spacing: -0.015em;
+  }
+  .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+  .smallcaps {
+    font-family: 'Newsreader', Georgia, serif;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--ink-3);
+  }
+
+  .rule { border-color: var(--rule); }
+  .rule-soft { border-color: var(--rule-soft); }
+
+  /* Layer pill in header strip */
+  .layer-pill {
+    display: inline-flex; align-items: baseline; gap: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px;
+    color: var(--ink-2);
+    padding: 4px 0;
+  }
+  .layer-pill .num { color: var(--ink-3); font-variant-numeric: tabular-nums; }
+  .layer-pill.missing { color: var(--ink-3); }
+  .layer-pill.missing .name { text-decoration: line-through; text-decoration-color: var(--ink-3); }
+  .layer-pill .dot {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: var(--ink); display: inline-block;
+    transform: translateY(-1px);
+  }
+  .layer-pill.missing .dot { background: transparent; border: 1px solid var(--ink-3); }
+
+  /* Setting entry */
+  .entry {
+    border-bottom: 1px solid var(--rule);
+    padding: 22px 0 18px;
+  }
+  .entry summary {
+    list-style: none;
+    cursor: pointer;
+    display: grid;
+    grid-template-columns: 28px 1fr auto;
+    column-gap: 18px;
+    align-items: baseline;
+  }
+  .entry summary::-webkit-details-marker { display: none; }
+  .entry .num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: var(--ink-3);
+    font-variant-numeric: tabular-nums;
+    padding-top: 6px;
+  }
+  .entry .key {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 15.5px;
+    color: var(--ink);
+    font-weight: 500;
+    letter-spacing: -0.005em;
+  }
+  .entry .key .ns { color: var(--ink-3); font-weight: 400; }
+  .entry .summary-line {
+    font-family: 'Newsreader', serif;
+    font-style: italic;
+    font-size: 14px;
+    color: var(--ink-2);
+    margin-top: 4px;
+    line-height: 1.5;
+  }
+  .entry .right {
+    text-align: right;
+    padding-top: 4px;
+  }
+  .entry .right .value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    color: var(--ink);
+    font-weight: 500;
+  }
+  .entry .right .source {
+    font-family: 'Newsreader', serif;
+    font-style: italic;
+    font-size: 12.5px;
+    color: var(--ink-3);
+    margin-top: 2px;
+  }
+
+  /* Source mark — like a small editorial stamp */
+  .stamp {
+    display: inline-flex; align-items: center;
+    font-family: 'Newsreader', serif;
+    font-style: italic;
+    font-size: 12px;
+    color: var(--accent);
+  }
+  .stamp::before { content: '— '; opacity: 0.5; margin-right: 2px; }
+
+  /* Waterfall — appears when expanded */
+  .waterfall {
+    margin: 18px 0 4px 46px;
+    padding-left: 18px;
+    border-left: 1px solid var(--rule);
+  }
+  .wf-row {
+    display: grid;
+    grid-template-columns: 110px 1fr 130px;
+    column-gap: 16px;
+    padding: 9px 0;
+    align-items: baseline;
+    border-bottom: 1px dotted var(--rule-soft);
+  }
+  .wf-row:last-child { border-bottom: none; }
+  .wf-row .layer {
+    font-family: 'Newsreader', serif;
+    font-style: italic;
+    font-size: 13.5px;
+    color: var(--ink-2);
+  }
+  .wf-row .value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--ink);
+  }
+  .wf-row .meta {
+    font-family: 'Newsreader', serif;
+    font-style: italic;
+    font-size: 11.5px;
+    text-align: right;
+    color: var(--ink-3);
+  }
+  .wf-row.winner {
+    background: var(--winner-bg);
+    margin: 0 -16px;
+    padding-left: 16px; padding-right: 16px;
+    border-radius: 2px;
+    border-bottom-color: transparent;
+  }
+  .wf-row.winner .layer { color: var(--winner); font-weight: 500; }
+  .wf-row.winner .value { color: var(--winner); font-weight: 500; }
+  .wf-row.winner .meta { color: var(--winner); }
+  .wf-row.shadowed .value { text-decoration: line-through; text-decoration-color: var(--shadowed); color: var(--ink-3); }
+  .wf-row.shadowed .layer { color: var(--ink-3); }
+  .wf-row.absent .value { font-style: italic; color: var(--ink-3); font-family: 'Newsreader', serif; font-size: 13px; }
+  .wf-row.absent .layer { color: var(--ink-3); }
+
+  /* Path note under waterfall */
+  .pathnote {
+    margin: 16px 0 4px 46px;
+    padding-left: 18px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-3);
+  }
+  .pathnote a { color: var(--ink-2); border-bottom: 1px solid var(--rule); }
+
+  /* Array element rows for permissions.allow */
+  .array-element {
+    display: grid;
+    grid-template-columns: 16px 1fr 110px;
+    column-gap: 12px;
+    padding: 6px 0;
+    border-bottom: 1px dotted var(--rule-soft);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12.5px;
+    color: var(--ink);
+  }
+  .array-element:last-child { border-bottom: none; }
+  .array-element .bullet { color: var(--ink-3); text-align: center; }
+  .array-element .src {
+    font-family: 'Newsreader', serif;
+    font-style: italic;
+    font-size: 12px;
+    color: var(--ink-3);
+    text-align: right;
+  }
+
+  /* Open marker */
+  .entry .marker {
+    display: inline-block;
+    width: 10px; text-align: center;
+    color: var(--ink-3);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    transition: transform 200ms;
+    margin-left: 8px;
+  }
+  .entry[open] .marker { transform: rotate(90deg); color: var(--accent); }
+
+  /* Tag badges in waterfall winning row */
+  .winner-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--winner);
+    padding: 2px 6px;
+    background: rgba(26,61,28,0.08);
+    border: 1px solid rgba(26,61,28,0.18);
+    border-radius: 2px;
+  }
+
+  /* Diagnostic note */
+  .marginalia {
+    font-family: 'Newsreader', serif;
+    font-style: italic;
+    font-size: 12.5px;
+    color: var(--accent);
+    background: var(--accent-bg);
+    padding: 10px 14px;
+    border-left: 3px solid var(--accent);
+    margin: 14px 0 0 46px;
+    border-radius: 0 2px 2px 0;
+  }
+  .marginalia strong { font-style: normal; font-weight: 600; letter-spacing: 0.04em; font-size: 11px; text-transform: uppercase; }
+
+  /* Hover state */
+  .entry summary:hover .key { color: var(--accent); }
+
+  /* Stagger reveal */
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  .stagger > * { animation: fadeUp 600ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+  .stagger > *:nth-child(1) { animation-delay: 0ms; }
+  .stagger > *:nth-child(2) { animation-delay: 80ms; }
+  .stagger > *:nth-child(3) { animation-delay: 160ms; }
+  .stagger > *:nth-child(4) { animation-delay: 240ms; }
+  .stagger > *:nth-child(5) { animation-delay: 320ms; }
+  .stagger > *:nth-child(6) { animation-delay: 400ms; }
+</style>
+</head>
+<body class="min-h-screen">
+
+<div class="max-w-[920px] mx-auto px-12 py-16">
+
+  <!-- MASTHEAD -->
+  <header class="border-b border-[var(--ink)] pb-8 mb-10 stagger">
+    <div class="flex items-baseline justify-between">
+      <div>
+        <span class="smallcaps">An inspector for</span>
+        <h1 class="display text-[80px] leading-none mt-1.5">
+          knobs<span class="text-[var(--accent)]">.</span><em class="not-italic" style="font-style: italic;">cc</em>
+        </h1>
+      </div>
+      <div class="text-right">
+        <div class="smallcaps mb-1">Vol. I · No. 01</div>
+        <div class="font-mono text-[11px] text-[var(--ink-2)]">read 2026·05·02 14:38</div>
+      </div>
+    </div>
+    <p class="display italic text-[24px] leading-tight text-[var(--ink-2)] mt-6 max-w-[640px]">
+      A reading of the effective settings <span class="not-italic mono text-[18px] text-[var(--ink)]">claude</span>
+      will encounter in this session, in their order of precedence.
+    </p>
+  </header>
+
+  <!-- LAYER STATUS STRIP -->
+  <section class="mb-12">
+    <div class="flex items-baseline justify-between mb-3">
+      <span class="smallcaps">The seven layers</span>
+      <span class="font-mono text-[10.5px] text-[var(--ink-3)] tracking-wider uppercase">5 active · 2 absent</span>
+    </div>
+    <div class="border-t border-b border-[var(--ink)] py-3 grid grid-cols-7 gap-4">
+      <div class="layer-pill missing">
+        <span class="num">i</span><span class="dot"></span><span class="name">managed</span>
+      </div>
+      <div class="layer-pill missing">
+        <span class="num">ii</span><span class="dot"></span><span class="name">cli</span>
+      </div>
+      <div class="layer-pill">
+        <span class="num">iii</span><span class="dot"></span><span class="name">env</span>
+      </div>
+      <div class="layer-pill">
+        <span class="num">iv</span><span class="dot"></span><span class="name">project_local</span>
+      </div>
+      <div class="layer-pill">
+        <span class="num">v</span><span class="dot"></span><span class="name">project</span>
+      </div>
+      <div class="layer-pill">
+        <span class="num">vi</span><span class="dot"></span><span class="name">user</span>
+      </div>
+      <div class="layer-pill">
+        <span class="num">vii</span><span class="dot"></span><span class="name">default</span>
+      </div>
+    </div>
+    <p class="display italic text-[14px] text-[var(--ink-3)] mt-3 max-w-[640px] leading-snug">
+      Highest precedence sits at the top. CLI flags are present in the model
+      but uninspectable from a sibling process; they would override everything
+      below them.
+    </p>
+  </section>
+
+  <!-- ENTRIES -->
+  <section>
+    <div class="flex items-baseline justify-between mb-2">
+      <h2 class="display text-[36px] leading-none">Set values</h2>
+      <span class="smallcaps">12 entries · 3 with shadows</span>
+    </div>
+    <div class="border-t-2 border-[var(--ink)]"></div>
+
+    <!-- ENTRY 1: model — OPEN, demonstrates shadowing -->
+    <details class="entry" open>
+      <summary>
+        <span class="num">i.</span>
+        <div>
+          <span class="key">model</span>
+          <span class="marker">›</span>
+          <div class="summary-line">
+            The default model identifier for new sessions. Overridable per-session by
+            the <span class="mono not-italic text-[12.5px]">--model</span> flag.
+          </div>
+        </div>
+        <div class="right">
+          <div class="value">"claude-opus-4-7"</div>
+          <div class="source"><em>set in</em> <span class="text-[var(--accent)] font-medium not-italic">project</span></div>
+        </div>
+      </summary>
+
+      <div class="waterfall">
+        <div class="wf-row absent">
+          <span class="layer">managed</span>
+          <span class="value">— no MDM policy —</span>
+          <span class="meta">missing</span>
+        </div>
+        <div class="wf-row absent">
+          <span class="layer">cli</span>
+          <span class="value">— uninspectable —</span>
+          <span class="meta">∅</span>
+        </div>
+        <div class="wf-row absent">
+          <span class="layer">env</span>
+          <span class="value">$ANTHROPIC_MODEL not set for this key</span>
+          <span class="meta">—</span>
+        </div>
+        <div class="wf-row absent">
+          <span class="layer">project_local</span>
+          <span class="value">— not declared —</span>
+          <span class="meta">—</span>
+        </div>
+        <div class="wf-row winner">
+          <span class="layer">project</span>
+          <span class="value">"claude-opus-4-7"</span>
+          <span class="meta"><span class="winner-tag">▸ wins</span></span>
+        </div>
+        <div class="wf-row shadowed">
+          <span class="layer">user</span>
+          <span class="value">"claude-sonnet-4-6"</span>
+          <span class="meta">superseded</span>
+        </div>
+        <div class="wf-row shadowed">
+          <span class="layer">default</span>
+          <span class="value">"claude-sonnet-4-6"</span>
+          <span class="meta">superseded</span>
+        </div>
+      </div>
+
+      <p class="pathnote">
+        ↳ <a href="#">./.claude/settings.json:7</a>
+        &nbsp;·&nbsp; shadowed: <a href="#">~/.claude/settings.json:3</a>
+      </p>
+    </details>
+
+    <!-- ENTRY 2: effortLevel -->
+    <details class="entry">
+      <summary>
+        <span class="num">ii.</span>
+        <div>
+          <span class="key">effortLevel</span>
+          <span class="marker">›</span>
+          <div class="summary-line">
+            How hard the model thinks. One of <span class="mono not-italic text-[12.5px]">low · medium · high · xhigh</span>.
+          </div>
+        </div>
+        <div class="right">
+          <div class="value">"high"</div>
+          <div class="source"><em>set in</em> user</div>
+        </div>
+      </summary>
+    </details>
+
+    <!-- ENTRY 3: alwaysThinkingEnabled -->
+    <details class="entry">
+      <summary>
+        <span class="num">iii.</span>
+        <div>
+          <span class="key">alwaysThinkingEnabled</span>
+          <span class="marker">›</span>
+          <div class="summary-line">
+            Whether extended thinking runs by default for every turn.
+          </div>
+        </div>
+        <div class="right">
+          <div class="value">true</div>
+          <div class="source"><em>set in</em> project_local</div>
+        </div>
+      </summary>
+    </details>
+
+    <!-- ENTRY 4: outputStyle -->
+    <details class="entry">
+      <summary>
+        <span class="num">iv.</span>
+        <div>
+          <span class="key">outputStyle</span>
+          <span class="marker">›</span>
+          <div class="summary-line">
+            Named output style that adjusts the system prompt at session start.
+          </div>
+        </div>
+        <div class="right">
+          <div class="value">"Explanatory"</div>
+          <div class="source"><em>set in</em> user</div>
+        </div>
+      </summary>
+    </details>
+
+    <!-- ENTRY 5: editorMode -->
+    <details class="entry">
+      <summary>
+        <span class="num">v.</span>
+        <div>
+          <span class="key">editorMode</span>
+          <span class="marker">›</span>
+          <div class="summary-line">
+            Keybinding scheme for the prompt input.
+            <span class="mono not-italic text-[12.5px]">"normal"</span> or
+            <span class="mono not-italic text-[12.5px]">"vim"</span>.
+          </div>
+        </div>
+        <div class="right">
+          <div class="value">"vim"</div>
+          <div class="source"><em>set in</em> user</div>
+        </div>
+      </summary>
+    </details>
+
+    <!-- ENTRY 6: permissions.defaultMode -->
+    <details class="entry">
+      <summary>
+        <span class="num">vi.</span>
+        <div>
+          <span class="key"><span class="ns">permissions.</span>defaultMode</span>
+          <span class="marker">›</span>
+          <div class="summary-line">
+            Behaviour for tool calls not matched by an allow/ask/deny rule.
+          </div>
+        </div>
+        <div class="right">
+          <div class="value">"acceptEdits"</div>
+          <div class="source"><em>set in</em> project</div>
+        </div>
+      </summary>
+    </details>
+
+    <!-- ENTRY 7: permissions.allow — OPEN, shows array merge -->
+    <details class="entry" open>
+      <summary>
+        <span class="num">vii.</span>
+        <div>
+          <span class="key"><span class="ns">permissions.</span>allow</span>
+          <span class="marker">›</span>
+          <span class="ml-2 winner-tag" style="background: var(--accent-bg); color: var(--accent); border-color: rgba(179,37,28,0.3);">array · merged</span>
+          <div class="summary-line">
+            Tool patterns auto-allowed without prompting. Concatenated and
+            de-duplicated across every layer; each entry carries its own provenance.
+          </div>
+        </div>
+        <div class="right">
+          <div class="value">[3 patterns]</div>
+          <div class="source"><em>composed across</em> 3 layers</div>
+        </div>
+      </summary>
+
+      <div class="waterfall">
+        <div class="array-element">
+          <span class="bullet">·</span>
+          <span>"Bash(npm run *)"</span>
+          <span class="src">user</span>
+        </div>
+        <div class="array-element">
+          <span class="bullet">·</span>
+          <span>"Edit(src/**)"</span>
+          <span class="src">project</span>
+        </div>
+        <div class="array-element">
+          <span class="bullet">·</span>
+          <span>"Bash(gh pr *)"</span>
+          <span class="src">project_local</span>
+        </div>
+      </div>
+
+      <div class="marginalia">
+        <strong>Note ·</strong> array merge is deferred to phase 3. The current build
+        applies last-wins to this field, which yields the wrong result for
+        <span class="mono not-italic">permissions.*</span>. The values shown
+        above reflect the intended semantics, not the current behaviour.
+      </div>
+    </details>
+
+    <!-- ENTRY 8: permissions.deny -->
+    <details class="entry">
+      <summary>
+        <span class="num">viii.</span>
+        <div>
+          <span class="key"><span class="ns">permissions.</span>deny</span>
+          <span class="marker">›</span>
+          <span class="ml-2 winner-tag" style="background: var(--accent-bg); color: var(--accent); border-color: rgba(179,37,28,0.3);">array · merged</span>
+          <div class="summary-line">
+            Patterns hard-denied without a prompt. Includes one entry from a
+            managed policy.
+          </div>
+        </div>
+        <div class="right">
+          <div class="value">[2 patterns]</div>
+          <div class="source"><em>composed across</em> 2 layers</div>
+        </div>
+      </summary>
+    </details>
+
+    <!-- ENTRY 9: hooks -->
+    <details class="entry">
+      <summary>
+        <span class="num">ix.</span>
+        <div>
+          <span class="key">hooks</span>
+          <span class="marker">›</span>
+          <div class="summary-line">
+            Event-driven shell handlers. Four declared across three event types.
+          </div>
+        </div>
+        <div class="right">
+          <div class="value">{ 4 handlers }</div>
+          <div class="source"><em>set in</em> project</div>
+        </div>
+      </summary>
+    </details>
+
+    <!-- ENTRY 10: statusLine.command -->
+    <details class="entry">
+      <summary>
+        <span class="num">x.</span>
+        <div>
+          <span class="key"><span class="ns">statusLine.</span>command</span>
+          <span class="marker">›</span>
+          <div class="summary-line">
+            Shell command run between turns; its stdout is rendered as the status line.
+          </div>
+        </div>
+        <div class="right">
+          <div class="value">"~/.claude/statusline.sh"</div>
+          <div class="source"><em>set in</em> user</div>
+        </div>
+      </summary>
+    </details>
+
+    <!-- ENTRY 11: env.ANTHROPIC_MODEL -->
+    <details class="entry">
+      <summary>
+        <span class="num">xi.</span>
+        <div>
+          <span class="key"><span class="ns">env.</span>ANTHROPIC_MODEL</span>
+          <span class="marker">›</span>
+          <div class="summary-line">
+            Process environment variable; folded into the snapshot via the env layer.
+          </div>
+        </div>
+        <div class="right">
+          <div class="value">"claude-opus-4-7"</div>
+          <div class="source"><em>set in</em> env</div>
+        </div>
+      </summary>
+    </details>
+
+    <!-- ENTRY 12: env.CLAUDE_CODE_USE_BEDROCK -->
+    <details class="entry">
+      <summary>
+        <span class="num">xii.</span>
+        <div>
+          <span class="key"><span class="ns">env.</span>CLAUDE_CODE_USE_BEDROCK</span>
+          <span class="marker">›</span>
+          <div class="summary-line">
+            Routes API calls through Amazon Bedrock instead of api.anthropic.com.
+          </div>
+        </div>
+        <div class="right">
+          <div class="value">"true"</div>
+          <div class="source"><em>set in</em> env</div>
+        </div>
+      </summary>
+    </details>
+  </section>
+
+  <!-- DEFAULTS SECTION -->
+  <section class="mt-16">
+    <div class="flex items-baseline justify-between mb-2">
+      <h2 class="display text-[36px] leading-none">Falling through to defaults</h2>
+      <span class="smallcaps">35 of 47 entries</span>
+    </div>
+    <div class="border-t-2 border-[var(--ink)] mb-6"></div>
+    <p class="display italic text-[15px] text-[var(--ink-2)] max-w-[600px] mb-6 leading-snug">
+      The remaining knobs in the catalog are unset across every layer, and so
+      take their compiled-in defaults. Three are listed below; the rest can be
+      revealed.
+    </p>
+
+    <div class="grid grid-cols-2 gap-x-12 gap-y-3 font-mono text-[12px] text-[var(--ink-2)]">
+      <div class="flex justify-between border-b border-dotted border-[var(--rule)] pb-1.5">
+        <span>apiKeyHelper</span>
+        <span class="text-[var(--ink-3)] italic">— unset</span>
+      </div>
+      <div class="flex justify-between border-b border-dotted border-[var(--rule)] pb-1.5">
+        <span>cleanupPeriodDays</span>
+        <span class="text-[var(--ink-3)]">30</span>
+      </div>
+      <div class="flex justify-between border-b border-dotted border-[var(--rule)] pb-1.5">
+        <span>includeGitInstructions</span>
+        <span class="text-[var(--ink-3)]">true</span>
+      </div>
+      <div class="flex justify-between border-b border-dotted border-[var(--rule)] pb-1.5">
+        <span>respectGitignore</span>
+        <span class="text-[var(--ink-3)]">true</span>
+      </div>
+      <div class="flex justify-between border-b border-dotted border-[var(--rule)] pb-1.5">
+        <span>autoUpdatesChannel</span>
+        <span class="text-[var(--ink-3)]">"stable"</span>
+      </div>
+      <div class="flex justify-between border-b border-dotted border-[var(--rule)] pb-1.5">
+        <span>spinnerTipsEnabled</span>
+        <span class="text-[var(--ink-3)]">true</span>
+      </div>
+    </div>
+
+    <button class="display italic text-[18px] text-[var(--accent)] mt-8 border-b border-[var(--accent)] pb-0.5 hover:opacity-70 transition">
+      Show 29 more →
+    </button>
+  </section>
+
+  <!-- COLOPHON -->
+  <footer class="mt-24 pt-8 border-t border-[var(--ink)] flex items-baseline justify-between">
+    <p class="display italic text-[14px] text-[var(--ink-3)] max-w-[400px] leading-snug">
+      Cross-referenced against <span class="mono not-italic text-[12px]">spec/inventory.md</span>
+      §1–§13. Two diagnostics suppressed; click to expand.
+    </p>
+    <div class="text-right smallcaps">
+      Altered Craft · 2026
+    </div>
+  </footer>
+
+</div>
+
+</body>
+</html>

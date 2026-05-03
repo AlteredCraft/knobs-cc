@@ -58,7 +58,7 @@ v1 is an inspector, not an editor. Explicit non-goals:
 
 Rationale: the failure modes of writing to hand-edited JSON files (merge surprises, lost comments, corruption) are much more expensive than the failure modes of a read-only viewer. Editing can land in v2 once the mental model of the data is solid.
 
-## Desktop hero flow (unsketched)
+## Desktop hero flow
 
 What's the first view a user sees when they open knobs.cc? Candidate framings:
 
@@ -67,7 +67,20 @@ What's the first view a user sees when they open knobs.cc? Candidate framings:
 3. **Source-aware detail pane.** Selecting a knob shows resolved value, winning layer, shadowed layers, docs context, and related knobs. Strength: directly explains "why is this value active?" Weakness: depends on strong data modeling.
 4. **Topology views.** Hook graphs, plugin-contributed surfaces, and MCP server state use visual layout instead of terminal approximations. Strength: uses the desktop format well. Weakness: more custom UI work.
 
-Worth sketching the first three together as one dashboard/search/detail flow, then stress-testing against real configs.
+**Decision (2026-05-03):** the v1 hero is a combined **search-first + source-aware** view, captured as the Inspector spec at [`inspector-ui.md`](./inspector-ui.md) (mocked in `mocks/01-inspector.html`). It folds #2 and #3 into one three-pane layout: rail, list, drawer. #4 stays separate (hooks/MCP get their own surfaces later). #1 is reframed as the deferred Goals view below.
+
+## Goals view (deferred)
+
+Captured here so the idea isn't lost. Mocked at `mocks/03-goals.html`.
+
+The "user-intent" framing from the *Ideas...* section above — `⚡ make Claude faster`, `💰 reduce token usage`, `🛡 stay safe`, etc. — works as a *first-run* and *discovery* surface that the Inspector doesn't serve well. Each card groups the knobs that affect a goal, shows their current values with provenance, and adds a one-line hint per knob explaining why it matters for that goal.
+
+Reasons to defer past v1:
+
+- Requires curation: somebody has to decide which knobs belong to which goal, and what the per-knob hints say. Best done after the catalog-sync harness produces structured `catalog.json` so goals can be expressed as tags on entries rather than a parallel hand-edited list.
+- Inspector and Goals serve different users; shipping both at once doubles the surface area without sharpening the value of either. Build the Inspector first; revisit Goals as a `?goal=speed`-style entry point that hands off to the Inspector for the deep dive.
+
+Worth keeping warm: the goal taxonomy itself (speed / cost / safety / quality / privacy / hooks) is a useful organising idea even before there's a Goals surface — it could tag entries in `inventory.md` so the eventual harness has structured data to draw on.
 
 ## Representing cross-cutting surfaces
 

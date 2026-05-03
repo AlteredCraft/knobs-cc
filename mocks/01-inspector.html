@@ -1,0 +1,801 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>knobs.cc — inspector</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  :root {
+    --bg-0: #0a0b0d;
+    --bg-1: #0f1115;
+    --bg-2: #14161c;
+    --bg-3: #1a1d24;
+    --line: #1f232b;
+    --line-strong: #2a2f39;
+    --text-1: #e7eaef;
+    --text-2: #b0b6c0;
+    --text-3: #6b7079;
+    --text-4: #4a4f57;
+    --accent: #ffb627;
+    --accent-soft: rgba(255, 182, 39, 0.08);
+    --accent-ring: rgba(255, 182, 39, 0.35);
+    --ok: #5fa75e;
+    --warn: #d6a64f;
+    --err: #d4585b;
+    --info: #6aa3d4;
+  }
+  html, body {
+    background: var(--bg-0);
+    color: var(--text-1);
+    font-family: 'IBM Plex Sans', system-ui, sans-serif;
+    font-feature-settings: "ss01" on, "ss02" on, "cv11" on;
+  }
+  .mono { font-family: 'IBM Plex Mono', ui-monospace, monospace; font-feature-settings: "zero" on; }
+  .grid-bg {
+    background-image:
+      linear-gradient(to right, rgba(255,255,255,0.015) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255,255,255,0.015) 1px, transparent 1px);
+    background-size: 8px 8px;
+  }
+  .scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
+  .scrollbar::-webkit-scrollbar-track { background: transparent; }
+  .scrollbar::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 4px; }
+  .scrollbar::-webkit-scrollbar-thumb:hover { background: #353a45; }
+
+  /* Status dots */
+  .dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
+  .dot-ok { background: var(--ok); box-shadow: 0 0 6px rgba(95,167,94,0.6); }
+  .dot-warn { background: var(--warn); }
+  .dot-err { background: var(--err); }
+  .dot-empty { background: transparent; border: 1px solid var(--text-4); }
+
+  /* Presence indicator: 7 tiny squares = 7 layers */
+  .presence { display: inline-flex; gap: 2px; }
+  .presence-cell {
+    width: 6px; height: 10px; border-radius: 1px;
+    background: var(--bg-3); border: 1px solid var(--line-strong);
+  }
+  .presence-cell.set { background: var(--text-3); border-color: var(--text-3); }
+  .presence-cell.shadowed { background: var(--text-4); border-color: var(--text-4); }
+  .presence-cell.winner { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 4px var(--accent-ring); }
+  .presence-cell.absent { background: transparent; }
+
+  /* Source badge */
+  .src-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-family: 'IBM Plex Mono', monospace; font-size: 10px; font-weight: 600;
+    padding: 2px 6px; border-radius: 2px;
+    text-transform: uppercase; letter-spacing: 0.05em;
+    background: var(--bg-3); color: var(--text-2);
+    border: 1px solid var(--line-strong);
+  }
+  .src-badge.proj { color: #ffb627; background: rgba(255,182,39,0.08); border-color: rgba(255,182,39,0.25); }
+  .src-badge.proj-local { color: #ffd07a; background: rgba(255,182,39,0.05); border-color: rgba(255,182,39,0.18); }
+  .src-badge.user { color: #aab3bf; background: rgba(170,179,191,0.06); border-color: rgba(170,179,191,0.18); }
+  .src-badge.env { color: #6aa3d4; background: rgba(106,163,212,0.08); border-color: rgba(106,163,212,0.22); }
+  .src-badge.managed { color: #d4585b; background: rgba(212,88,91,0.08); border-color: rgba(212,88,91,0.25); }
+  .src-badge.default { color: #6b7079; }
+
+  /* Layer rail */
+  .layer-row {
+    display: grid;
+    grid-template-columns: 14px 1fr auto;
+    gap: 8px; align-items: center;
+    padding: 6px 10px; border-radius: 3px;
+    cursor: pointer; transition: background 80ms;
+  }
+  .layer-row:hover { background: var(--bg-2); }
+  .layer-row.active { background: var(--bg-2); box-shadow: inset 2px 0 0 var(--accent); }
+  .layer-row.disabled { opacity: 0.45; cursor: default; }
+  .layer-row .label {
+    font-family: 'IBM Plex Mono', monospace; font-size: 11.5px;
+    color: var(--text-1); letter-spacing: 0.02em;
+  }
+  .layer-row .path {
+    font-family: 'IBM Plex Mono', monospace; font-size: 10px;
+    color: var(--text-3);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .layer-row .count {
+    font-family: 'IBM Plex Mono', monospace; font-size: 10px;
+    color: var(--text-3); font-variant-numeric: tabular-nums;
+  }
+
+  /* Settings table */
+  .row {
+    display: grid;
+    grid-template-columns: 32px 1fr 320px 86px 76px 16px;
+    align-items: center;
+    padding: 0 14px; height: 30px;
+    border-bottom: 1px solid var(--line);
+    cursor: pointer;
+    font-size: 12px;
+    transition: background 60ms;
+  }
+  .row:hover { background: var(--bg-1); }
+  .row.selected { background: rgba(255,182,39,0.04); box-shadow: inset 2px 0 0 var(--accent); }
+  .row .ix { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--text-4); }
+  .row .key { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--text-1); }
+  .row .key .ns { color: var(--text-3); }
+  .row .val {
+    font-family: 'IBM Plex Mono', monospace; font-size: 11.5px;
+    color: var(--text-2);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .row .val.unset { color: var(--text-4); font-style: italic; }
+  .row .val.array { color: #6aa3d4; }
+  .row .val .winner { color: var(--accent); }
+
+  /* Header bars */
+  .topbar {
+    height: 38px;
+    background: linear-gradient(180deg, #15181f 0%, #11141a 100%);
+    border-bottom: 1px solid var(--line-strong);
+  }
+
+  /* Drawer */
+  .waterfall-row {
+    display: grid;
+    grid-template-columns: 18px 80px 1fr 100px;
+    gap: 10px; align-items: baseline;
+    padding: 8px 12px;
+    border-left: 2px solid transparent;
+    font-size: 12px;
+  }
+  .waterfall-row.winner {
+    border-left-color: var(--accent);
+    background: var(--accent-soft);
+  }
+  .waterfall-row.shadowed { opacity: 0.55; }
+  .waterfall-row.shadowed .value { text-decoration: line-through; text-decoration-color: var(--text-4); }
+  .waterfall-row .layer-name {
+    font-family: 'IBM Plex Mono', monospace; font-size: 10.5px;
+    text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-2);
+  }
+  .waterfall-row .value {
+    font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--text-1);
+  }
+  .waterfall-row.winner .value { color: var(--accent); }
+  .waterfall-row .meta {
+    font-family: 'IBM Plex Mono', monospace; font-size: 10px;
+    color: var(--text-3); text-align: right;
+  }
+
+  /* Filter chip */
+  .chip {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10.5px; letter-spacing: 0.04em;
+    padding: 3px 8px; border-radius: 2px;
+    background: var(--bg-2); color: var(--text-2);
+    border: 1px solid var(--line-strong);
+    cursor: pointer; user-select: none;
+    text-transform: uppercase;
+  }
+  .chip:hover { color: var(--text-1); border-color: #373c47; }
+  .chip.on { background: var(--accent); color: #1a1300; border-color: var(--accent); font-weight: 600; }
+  .chip .count { opacity: 0.6; margin-left: 4px; font-weight: 400; }
+  .chip.on .count { opacity: 0.7; }
+
+  /* Search input */
+  .search-input {
+    background: var(--bg-1);
+    border: 1px solid var(--line-strong);
+    color: var(--text-1);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    padding: 5px 10px 5px 28px;
+    border-radius: 3px;
+    width: 100%;
+    outline: none;
+  }
+  .search-input:focus { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent-ring); }
+  .search-input::placeholder { color: var(--text-4); }
+
+  /* Stagger reveal */
+  @keyframes slideUp { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+  .stagger > * { animation: slideUp 240ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+  .stagger > *:nth-child(1) { animation-delay: 0ms; }
+  .stagger > *:nth-child(2) { animation-delay: 30ms; }
+  .stagger > *:nth-child(3) { animation-delay: 60ms; }
+  .stagger > *:nth-child(4) { animation-delay: 90ms; }
+  .stagger > *:nth-child(5) { animation-delay: 120ms; }
+  .stagger > *:nth-child(6) { animation-delay: 150ms; }
+  .stagger > *:nth-child(7) { animation-delay: 180ms; }
+
+  .corner-tag {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9.5px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--text-4);
+  }
+</style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden">
+
+<!-- TOP BAR -->
+<header class="topbar flex items-center px-4 shrink-0">
+  <div class="flex items-center gap-2">
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+      <circle cx="9" cy="9" r="6.5" stroke="#ffb627" stroke-width="1.2" />
+      <circle cx="9" cy="9" r="1.5" fill="#ffb627" />
+      <line x1="9" y1="2" x2="9" y2="0.5" stroke="#ffb627" stroke-width="1.2" />
+    </svg>
+    <span class="mono text-[12.5px] font-semibold tracking-tight">knobs.cc</span>
+    <span class="mono text-[10px] text-[var(--text-4)] tracking-wider uppercase ml-1">inspector</span>
+  </div>
+  <div class="h-4 w-px bg-[var(--line-strong)] mx-4"></div>
+  <div class="flex items-center gap-2 mono text-[11px] text-[var(--text-3)]">
+    <span>cwd</span>
+    <span class="text-[var(--text-1)]">~/Projects/knobs.cc</span>
+  </div>
+  <div class="ml-auto flex items-center gap-3 mono text-[10.5px] text-[var(--text-3)]">
+    <span class="flex items-center gap-1.5"><span class="dot dot-ok"></span> 5/7 layers</span>
+    <span class="flex items-center gap-1.5"><span class="dot dot-warn"></span> 2 diagnostics</span>
+    <span class="text-[var(--text-4)]">·</span>
+    <span>read 12ms ago</span>
+    <button class="ml-2 px-2 py-1 border border-[var(--line-strong)] rounded-sm text-[var(--text-2)] hover:text-[var(--text-1)] hover:border-[#3a3f4a] tracking-wider uppercase">↻ refresh</button>
+  </div>
+</header>
+
+<div class="flex-1 flex overflow-hidden">
+
+  <!-- LEFT RAIL: precedence stack -->
+  <aside class="w-[280px] shrink-0 border-r border-[var(--line)] bg-[var(--bg-1)] flex flex-col overflow-hidden">
+    <div class="px-4 pt-4 pb-2 flex items-center justify-between">
+      <span class="corner-tag">Precedence Stack</span>
+      <span class="mono text-[9.5px] text-[var(--text-4)]">↓ HI → LO</span>
+    </div>
+
+    <div class="px-2 stagger">
+      <!-- Layer 1: managed -->
+      <div class="layer-row disabled">
+        <span class="dot dot-empty"></span>
+        <div class="min-w-0">
+          <div class="label">managed</div>
+          <div class="path">no MDM policy detected</div>
+        </div>
+        <span class="count">—</span>
+      </div>
+
+      <!-- Layer 2: cli -->
+      <div class="layer-row disabled">
+        <span class="dot dot-empty"></span>
+        <div class="min-w-0">
+          <div class="label">cli</div>
+          <div class="path">not inspectable from sibling proc</div>
+        </div>
+        <span class="count">∅</span>
+      </div>
+
+      <!-- Layer 3: env -->
+      <div class="layer-row">
+        <span class="dot dot-ok"></span>
+        <div class="min-w-0">
+          <div class="label">env</div>
+          <div class="path">process + dotenv</div>
+        </div>
+        <span class="count">2</span>
+      </div>
+
+      <!-- Layer 4: project_local -->
+      <div class="layer-row">
+        <span class="dot dot-ok"></span>
+        <div class="min-w-0">
+          <div class="label">project_local</div>
+          <div class="path">.claude/settings.local.json</div>
+        </div>
+        <span class="count">4</span>
+      </div>
+
+      <!-- Layer 5: project -->
+      <div class="layer-row active">
+        <span class="dot dot-ok"></span>
+        <div class="min-w-0">
+          <div class="label">project</div>
+          <div class="path">.claude/settings.json</div>
+        </div>
+        <span class="count">8</span>
+      </div>
+
+      <!-- Layer 6: user -->
+      <div class="layer-row">
+        <span class="dot dot-ok"></span>
+        <div class="min-w-0">
+          <div class="label">user</div>
+          <div class="path">~/.claude/settings.json</div>
+        </div>
+        <span class="count">12</span>
+      </div>
+
+      <!-- Layer 7: default -->
+      <div class="layer-row">
+        <span class="dot dot-ok"></span>
+        <div class="min-w-0">
+          <div class="label">default</div>
+          <div class="path">catalog (compiled-in)</div>
+        </div>
+        <span class="count">47</span>
+      </div>
+    </div>
+
+    <div class="mt-auto border-t border-[var(--line)] px-4 py-3">
+      <span class="corner-tag block mb-2">Diagnostics · 2</span>
+      <div class="space-y-2">
+        <div class="mono text-[10.5px] leading-snug">
+          <span class="text-[var(--warn)] uppercase tracking-wider">warn</span>
+          <span class="text-[var(--text-2)] block">array-merge deferred to phase 3</span>
+        </div>
+        <div class="mono text-[10.5px] leading-snug">
+          <span class="text-[var(--warn)] uppercase tracking-wider">warn</span>
+          <span class="text-[var(--text-2)] block">~/.claude/settings.json: trailing comma at line 47</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- CENTER: settings list -->
+  <section class="flex-1 flex flex-col overflow-hidden bg-[var(--bg-0)] grid-bg">
+    <!-- Toolbar -->
+    <div class="px-4 py-3 border-b border-[var(--line)] bg-[var(--bg-0)] flex items-center gap-3">
+      <div class="relative flex-1 max-w-xs">
+        <svg class="absolute left-2 top-1/2 -translate-y-1/2 text-[var(--text-3)]" width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <circle cx="6" cy="6" r="4" stroke="currentColor" stroke-width="1.2"/>
+          <line x1="9" y1="9" x2="12" y2="12" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+        </svg>
+        <input class="search-input mono" placeholder="filter keys… (try permissions.*)" />
+      </div>
+      <div class="flex items-center gap-1.5">
+        <button class="chip on">all<span class="count">59</span></button>
+        <button class="chip">set<span class="count">12</span></button>
+        <button class="chip">shadowed<span class="count">3</span></button>
+        <button class="chip">array-merged<span class="count">4</span></button>
+        <button class="chip">unset<span class="count">35</span></button>
+      </div>
+      <div class="ml-auto mono text-[10.5px] text-[var(--text-4)] tracking-wider uppercase">
+        sort · precedence
+      </div>
+    </div>
+
+    <!-- Column headers -->
+    <div class="row !cursor-default !border-b-[var(--line-strong)] !bg-[var(--bg-1)]" style="height: 26px;">
+      <span class="ix"></span>
+      <span class="corner-tag">Key</span>
+      <span class="corner-tag">Effective Value</span>
+      <span class="corner-tag">Source</span>
+      <span class="corner-tag" title="layer presence: M C E PL P U D">M·C·E·PL·P·U·D</span>
+      <span></span>
+    </div>
+
+    <!-- Rows -->
+    <div class="flex-1 overflow-auto scrollbar">
+      <!-- model — SELECTED, shadowed -->
+      <div class="row selected">
+        <span class="ix">01</span>
+        <span class="key">model</span>
+        <span class="val"><span class="winner">"claude-opus-4-7"</span></span>
+        <span><span class="src-badge proj">PROJ</span></span>
+        <span class="presence">
+          <span class="presence-cell absent" title="managed"></span>
+          <span class="presence-cell absent" title="cli"></span>
+          <span class="presence-cell absent" title="env"></span>
+          <span class="presence-cell absent" title="project_local"></span>
+          <span class="presence-cell winner" title="project · winner"></span>
+          <span class="presence-cell shadowed" title="user · shadowed"></span>
+          <span class="presence-cell set" title="default"></span>
+        </span>
+        <span class="text-[var(--accent)] mono text-[10px]">▸</span>
+      </div>
+
+      <!-- effortLevel -->
+      <div class="row">
+        <span class="ix">02</span>
+        <span class="key">effortLevel</span>
+        <span class="val">"high"</span>
+        <span><span class="src-badge user">USER</span></span>
+        <span class="presence">
+          <span class="presence-cell absent"></span>
+          <span class="presence-cell absent"></span>
+          <span class="presence-cell absent"></span>
+          <span class="presence-cell absent"></span>
+          <span class="presence-cell absent"></span>
+          <span class="presence-cell winner"></span>
+          <span class="presence-cell set"></span>
+        </span>
+        <span class="text-[var(--text-4)] mono text-[10px]">›</span>
+      </div>
+
+      <!-- alwaysThinkingEnabled -->
+      <div class="row">
+        <span class="ix">03</span>
+        <span class="key">alwaysThinkingEnabled</span>
+        <span class="val">true</span>
+        <span><span class="src-badge proj-local">P.LOCAL</span></span>
+        <span class="presence">
+          <span class="presence-cell absent"></span>
+          <span class="presence-cell absent"></span>
+          <span class="presence-cell absent"></span>
+          <span class="presence-cell winner"></span>
+          <span class="presence-cell absent"></span>
+          <span class="presence-cell absent"></span>
+          <span class="presence-cell set"></span>
+        </span>
+        <span class="text-[var(--text-4)] mono text-[10px]">›</span>
+      </div>
+
+      <!-- outputStyle -->
+      <div class="row">
+        <span class="ix">04</span>
+        <span class="key">outputStyle</span>
+        <span class="val">"Explanatory"</span>
+        <span><span class="src-badge user">USER</span></span>
+        <span class="presence">
+          <span class="presence-cell absent"></span>
+          <span class="presence-cell absent"></span>
+          <span class="presence-cell absent"></span>
+          <span class="presence-cell absent"></span>
+          <span class="presence-cell absent"></span>
+          <span class="presence-cell winner"></span>
+          <span class="presence-cell set"></span>
+        </span>
+        <span class="text-[var(--text-4)] mono text-[10px]">›</span>
+      </div>
+
+      <!-- editorMode -->
+      <div class="row">
+        <span class="ix">05</span>
+        <span class="key">editorMode</span>
+        <span class="val">"vim"</span>
+        <span><span class="src-badge user">USER</span></span>
+        <span class="presence">
+          <span class="presence-cell absent"></span>
+          <span class="presence-cell absent"></span>
+          <span class="presence-cell absent"></span>
+          <span class="presence-cell absent"></span>
+          <span class="presence-cell absent"></span>
+          <span class="presence-cell winner"></span>
+          <span class="presence-cell set"></span>
+        </span>
+        <span class="text-[var(--text-4)] mono text-[10px]">›</span>
+      </div>
+
+      <!-- autoUpdatesChannel — default -->
+      <div class="row">
+        <span class="ix">06</span>
+        <span class="key">autoUpdatesChannel</span>
+        <span class="val unset">"stable"</span>
+        <span><span class="src-badge default">DEFAULT</span></span>
+        <span class="presence">
+          <span class="presence-cell absent"></span>
+          <span class="presence-cell absent"></span>
+          <span class="presence-cell absent"></span>
+          <span class="presence-cell absent"></span>
+          <span class="presence-cell absent"></span>
+          <span class="presence-cell absent"></span>
+          <span class="presence-cell winner"></span>
+        </span>
+        <span class="text-[var(--text-4)] mono text-[10px]">›</span>
+      </div>
+
+      <!-- permissions.defaultMode -->
+      <div class="row">
+        <span class="ix">07</span>
+        <span class="key"><span class="ns">permissions.</span>defaultMode</span>
+        <span class="val">"acceptEdits"</span>
+        <span><span class="src-badge proj">PROJ</span></span>
+        <span class="presence">
+          <span class="presence-cell absent"></span>
+          <span class="presence-cell absent"></span>
+          <span class="presence-cell absent"></span>
+          <span class="presence-cell absent"></span>
+          <span class="presence-cell winner"></span>
+          <span class="presence-cell absent"></span>
+          <span class="presence-cell set"></span>
+        </span>
+        <span class="text-[var(--text-4)] mono text-[10px]">›</span>
+      </div>
+
+      <!-- permissions.allow — array-merged -->
+      <div class="row">
+        <span class="ix">08</span>
+        <span class="key"><span class="ns">permissions.</span>allow</span>
+        <span class="val array">[3] "Bash(npm run *)", "Edit(src/**)", "Bash(gh pr *)"</span>
+        <span class="mono text-[9.5px] text-[var(--text-3)] tracking-wider">
+          USER<span class="text-[var(--text-4)]"> + </span>PROJ<span class="text-[var(--text-4)]"> + </span>P.LOCAL
+        </span>
+        <span class="presence">
+          <span class="presence-cell absent"></span>
+          <span class="presence-cell absent"></span>
+          <span class="presence-cell absent"></span>
+          <span class="presence-cell set"></span>
+          <span class="presence-cell set"></span>
+          <span class="presence-cell set"></span>
+          <span class="presence-cell absent"></span>
+        </span>
+        <span class="text-[var(--text-4)] mono text-[10px]">›</span>
+      </div>
+
+      <!-- permissions.deny — array-merged from managed -->
+      <div class="row">
+        <span class="ix">09</span>
+        <span class="key"><span class="ns">permissions.</span>deny</span>
+        <span class="val array">[2] "Bash(rm -rf *)", "Read(.env*)"</span>
+        <span class="mono text-[9.5px] text-[var(--text-3)] tracking-wider">
+          <span class="text-[var(--err)]">MGD</span><span class="text-[var(--text-4)]"> + </span>USER
+        </span>
+        <span class="presence">
+          <span class="presence-cell" style="background:#d4585b;border-color:#d4585b"></span>
+          <span class="presence-cell absent"></span>
+          <span class="presence-cell absent"></span>
+          <span class="presence-cell absent"></span>
+          <span class="presence-cell absent"></span>
+          <span class="presence-cell set"></span>
+          <span class="presence-cell absent"></span>
+        </span>
+        <span class="text-[var(--text-4)] mono text-[10px]">›</span>
+      </div>
+
+      <!-- statusLine -->
+      <div class="row">
+        <span class="ix">10</span>
+        <span class="key"><span class="ns">statusLine.</span>command</span>
+        <span class="val">"~/.claude/statusline.sh"</span>
+        <span><span class="src-badge user">USER</span></span>
+        <span class="presence">
+          <span class="presence-cell absent"></span>
+          <span class="presence-cell absent"></span>
+          <span class="presence-cell absent"></span>
+          <span class="presence-cell absent"></span>
+          <span class="presence-cell absent"></span>
+          <span class="presence-cell winner"></span>
+          <span class="presence-cell absent"></span>
+        </span>
+        <span class="text-[var(--text-4)] mono text-[10px]">›</span>
+      </div>
+
+      <!-- hooks -->
+      <div class="row">
+        <span class="ix">11</span>
+        <span class="key">hooks</span>
+        <span class="val array">{PreToolUse: 2, PostToolUse: 1, Stop: 1}</span>
+        <span><span class="src-badge proj">PROJ</span></span>
+        <span class="presence">
+          <span class="presence-cell absent"></span>
+          <span class="presence-cell absent"></span>
+          <span class="presence-cell absent"></span>
+          <span class="presence-cell absent"></span>
+          <span class="presence-cell winner"></span>
+          <span class="presence-cell absent"></span>
+          <span class="presence-cell absent"></span>
+        </span>
+        <span class="text-[var(--text-4)] mono text-[10px]">›</span>
+      </div>
+
+      <!-- env vars (shown as composite) -->
+      <div class="row">
+        <span class="ix">12</span>
+        <span class="key"><span class="ns">env.</span>ANTHROPIC_MODEL</span>
+        <span class="val">"claude-opus-4-7"</span>
+        <span><span class="src-badge env">ENV</span></span>
+        <span class="presence">
+          <span class="presence-cell absent"></span>
+          <span class="presence-cell absent"></span>
+          <span class="presence-cell winner"></span>
+          <span class="presence-cell absent"></span>
+          <span class="presence-cell absent"></span>
+          <span class="presence-cell absent"></span>
+          <span class="presence-cell absent"></span>
+        </span>
+        <span class="text-[var(--text-4)] mono text-[10px]">›</span>
+      </div>
+
+      <div class="row">
+        <span class="ix">13</span>
+        <span class="key"><span class="ns">env.</span>CLAUDE_CODE_USE_BEDROCK</span>
+        <span class="val">"true"</span>
+        <span><span class="src-badge env">ENV</span></span>
+        <span class="presence">
+          <span class="presence-cell absent"></span>
+          <span class="presence-cell absent"></span>
+          <span class="presence-cell winner"></span>
+          <span class="presence-cell absent"></span>
+          <span class="presence-cell absent"></span>
+          <span class="presence-cell absent"></span>
+          <span class="presence-cell absent"></span>
+        </span>
+        <span class="text-[var(--text-4)] mono text-[10px]">›</span>
+      </div>
+
+      <!-- Faded unset rows -->
+      <div class="row" style="opacity:.45">
+        <span class="ix">14</span>
+        <span class="key">apiKeyHelper</span>
+        <span class="val unset">— unset —</span>
+        <span><span class="src-badge default">DEFAULT</span></span>
+        <span class="presence">
+          <span class="presence-cell absent"></span><span class="presence-cell absent"></span><span class="presence-cell absent"></span><span class="presence-cell absent"></span><span class="presence-cell absent"></span><span class="presence-cell absent"></span><span class="presence-cell winner"></span>
+        </span>
+        <span class="text-[var(--text-4)] mono text-[10px]">›</span>
+      </div>
+      <div class="row" style="opacity:.45">
+        <span class="ix">15</span>
+        <span class="key">cleanupPeriodDays</span>
+        <span class="val unset">30</span>
+        <span><span class="src-badge default">DEFAULT</span></span>
+        <span class="presence">
+          <span class="presence-cell absent"></span><span class="presence-cell absent"></span><span class="presence-cell absent"></span><span class="presence-cell absent"></span><span class="presence-cell absent"></span><span class="presence-cell absent"></span><span class="presence-cell winner"></span>
+        </span>
+        <span class="text-[var(--text-4)] mono text-[10px]">›</span>
+      </div>
+      <div class="row" style="opacity:.45">
+        <span class="ix">16</span>
+        <span class="key">includeGitInstructions</span>
+        <span class="val unset">true</span>
+        <span><span class="src-badge default">DEFAULT</span></span>
+        <span class="presence">
+          <span class="presence-cell absent"></span><span class="presence-cell absent"></span><span class="presence-cell absent"></span><span class="presence-cell absent"></span><span class="presence-cell absent"></span><span class="presence-cell absent"></span><span class="presence-cell winner"></span>
+        </span>
+        <span class="text-[var(--text-4)] mono text-[10px]">›</span>
+      </div>
+    </div>
+
+    <!-- Status footer -->
+    <div class="border-t border-[var(--line)] bg-[var(--bg-1)] px-4 py-1.5 flex items-center gap-4 mono text-[10px] text-[var(--text-3)] tracking-wider uppercase">
+      <span>59 keys</span>
+      <span>·</span>
+      <span>12 set</span>
+      <span>·</span>
+      <span>3 shadowed</span>
+      <span>·</span>
+      <span>4 array-merged</span>
+      <span class="ml-auto">⌘K filter · J/K nav · ↵ details</span>
+    </div>
+  </section>
+
+  <!-- RIGHT DRAWER: detail -->
+  <aside class="w-[440px] shrink-0 border-l border-[var(--line)] bg-[var(--bg-1)] flex flex-col overflow-hidden">
+    <!-- Drawer header -->
+    <div class="px-5 pt-5 pb-4 border-b border-[var(--line)]">
+      <div class="flex items-center justify-between mb-2">
+        <span class="corner-tag">Detail · row 01</span>
+        <button class="text-[var(--text-3)] hover:text-[var(--text-1)] mono text-xs">×</button>
+      </div>
+      <h2 class="mono text-[18px] font-semibold tracking-tight text-[var(--text-1)]">model</h2>
+      <div class="mono text-[11px] text-[var(--text-3)] mt-1.5 flex items-center gap-2">
+        <span>string</span>
+        <span class="text-[var(--text-4)]">·</span>
+        <span>scalar (last-wins)</span>
+        <span class="text-[var(--text-4)]">·</span>
+        <span class="text-[var(--warn)] flex items-center gap-1">
+          <svg width="9" height="9" viewBox="0 0 9 9" fill="currentColor"><path d="M4.5 0L9 8H0z"/></svg>
+          shadowing
+        </span>
+      </div>
+      <p class="text-[var(--text-2)] text-[12.5px] leading-relaxed mt-3 max-w-prose">
+        Default model ID for new sessions. Overridden per-session by
+        <span class="mono text-[var(--text-1)]">--model</span> CLI flag or
+        <span class="mono text-[var(--text-1)]">/model</span>.
+      </p>
+    </div>
+
+    <!-- Effective value -->
+    <div class="px-5 py-4 border-b border-[var(--line)]">
+      <span class="corner-tag block mb-2">Effective</span>
+      <div class="bg-[var(--bg-0)] border border-[var(--line-strong)] rounded-sm p-3 flex items-center gap-3">
+        <span class="dot dot-ok"></span>
+        <span class="mono text-[14px] text-[var(--accent)] font-semibold">"claude-opus-4-7"</span>
+        <span class="ml-auto src-badge proj">PROJ wins</span>
+      </div>
+    </div>
+
+    <!-- Waterfall -->
+    <div class="flex-1 overflow-auto scrollbar">
+      <div class="px-5 pt-4 pb-2 flex items-center justify-between">
+        <span class="corner-tag">Layer Waterfall</span>
+        <span class="mono text-[9.5px] text-[var(--text-4)]">↓ HIGH PRECEDENCE</span>
+      </div>
+
+      <!-- managed -->
+      <div class="waterfall-row">
+        <span class="dot dot-empty mt-1"></span>
+        <span class="layer-name">managed</span>
+        <span class="value text-[var(--text-4)] italic">— no policy —</span>
+        <span class="meta">missing</span>
+      </div>
+      <!-- cli -->
+      <div class="waterfall-row">
+        <span class="dot dot-empty mt-1"></span>
+        <span class="layer-name">cli</span>
+        <span class="value text-[var(--text-4)] italic">— not inspectable —</span>
+        <span class="meta">∅</span>
+      </div>
+      <!-- env -->
+      <div class="waterfall-row">
+        <span class="dot dot-empty mt-1"></span>
+        <span class="layer-name">env</span>
+        <span class="value text-[var(--text-4)] italic">$ANTHROPIC_MODEL unset</span>
+        <span class="meta">—</span>
+      </div>
+      <!-- project_local -->
+      <div class="waterfall-row">
+        <span class="dot dot-empty mt-1"></span>
+        <span class="layer-name">project_local</span>
+        <span class="value text-[var(--text-4)] italic">— not set —</span>
+        <span class="meta">—</span>
+      </div>
+      <!-- project — WINNER -->
+      <div class="waterfall-row winner">
+        <span class="dot dot-ok mt-1" style="box-shadow: 0 0 6px var(--accent-ring); background: var(--accent);"></span>
+        <span class="layer-name" style="color: var(--accent)">project</span>
+        <span class="value">"claude-opus-4-7"</span>
+        <span class="meta" style="color: var(--accent)">⏵ winner</span>
+      </div>
+      <div class="px-5 py-1.5">
+        <div class="mono text-[10px] text-[var(--text-3)] flex items-center gap-2">
+          <span class="opacity-50">↳</span>
+          <span>./.claude/settings.json:7</span>
+        </div>
+      </div>
+      <!-- user — SHADOWED -->
+      <div class="waterfall-row shadowed">
+        <span class="dot dot-ok mt-1" style="opacity:.5"></span>
+        <span class="layer-name">user</span>
+        <span class="value">"claude-sonnet-4-6"</span>
+        <span class="meta">shadowed</span>
+      </div>
+      <div class="px-5 py-1.5 opacity-55">
+        <div class="mono text-[10px] text-[var(--text-3)] flex items-center gap-2">
+          <span class="opacity-50">↳</span>
+          <span>~/.claude/settings.json:3</span>
+        </div>
+      </div>
+      <!-- default -->
+      <div class="waterfall-row shadowed">
+        <span class="dot dot-ok mt-1" style="opacity:.5"></span>
+        <span class="layer-name">default</span>
+        <span class="value">"claude-sonnet-4-6"</span>
+        <span class="meta">shadowed</span>
+      </div>
+
+      <div class="border-t border-[var(--line)] mt-3 mx-5"></div>
+
+      <!-- Related -->
+      <div class="px-5 pt-4 pb-3">
+        <span class="corner-tag block mb-2">Related Knobs</span>
+        <div class="space-y-1.5">
+          <a class="flex items-center gap-2 mono text-[11.5px] text-[var(--text-2)] hover:text-[var(--text-1)] cursor-pointer">
+            <span class="text-[var(--text-4)]">→</span>
+            <span>modelOverrides</span>
+            <span class="text-[var(--text-4)] ml-auto">unset</span>
+          </a>
+          <a class="flex items-center gap-2 mono text-[11.5px] text-[var(--text-2)] hover:text-[var(--text-1)] cursor-pointer">
+            <span class="text-[var(--text-4)]">→</span>
+            <span>availableModels</span>
+            <span class="text-[var(--text-4)] ml-auto">unset</span>
+          </a>
+          <a class="flex items-center gap-2 mono text-[11.5px] text-[var(--text-2)] hover:text-[var(--text-1)] cursor-pointer">
+            <span class="text-[var(--text-4)]">→</span>
+            <span>effortLevel</span>
+            <span class="text-[var(--text-3)] ml-auto">"high" · USER</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Catalog ref -->
+      <div class="px-5 pt-3 pb-5 border-t border-[var(--line)]">
+        <span class="corner-tag block mb-2">Catalog Source</span>
+        <div class="mono text-[10.5px] text-[var(--text-3)] leading-relaxed">
+          inventory.md §2.1 · core behaviour · line 76
+          <br />
+          <span class="text-[var(--text-4)]">last verified 2026-04-12</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+</div>
+
+</body>
+</html>

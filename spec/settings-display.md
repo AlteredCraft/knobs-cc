@@ -150,10 +150,20 @@ discovery, catalog cross-reference, list/badge UI, refresh, file watcher.
 
 ### Phase 4 — Settings list UI with provenance badges
 
-- Replace the JSON dump with a real component.
-- Flat searchable/sortable list of all known settings (driven by the catalog;
-  unset entries shown greyed).
-- Each row: key, effective value, source badge, "details" affordance.
+UI direction is locked: a three-pane DevTools-style **Inspector**
+(precedence rail / settings list / detail drawer). Layout, design
+primitives (presence indicator, source badges, layer waterfall), empty-
+state copy, and keyboard model are specified in
+[`inspector-ui.md`](./inspector-ui.md). Visual reference:
+`mocks/01-inspector.html`.
+
+Phase 4 work items:
+
+- Replace the JSON dump with the Inspector layout.
+- Flat searchable/sortable settings list (driven by the catalog; unset
+  entries shown greyed and hidden by default).
+- Implement source badges and the presence indicator (the two reusable
+  components that appear across the rail, list, and drawer).
 - Project-root discovery: walk up from cwd to find the nearest `.claude/`,
   with a manual override.
 
