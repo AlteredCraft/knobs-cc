@@ -24,8 +24,8 @@ export function SettingsRow({ row, index }: { row: Row; index: number }) {
     <div
       className={cn(
         "grid h-[30px] cursor-default items-center gap-x-3 border-b border-line px-3.5 text-[12px]",
-        // 32 ix · 1fr key · 320 value · 86 source · 76 presence · 16 chevron
-        "grid-cols-[32px_1fr_320px_86px_76px_16px]",
+        // 32 ix · key (min 180, flex) · 320 value · 86 source · 76 presence · 16 chevron
+        "grid-cols-[32px_minmax(180px,1fr)_320px_86px_76px_16px]",
         row.state === "unset" && "opacity-45",
       )}
     >

@@ -99,34 +99,39 @@ export function SettingsList({ snapshot }: { snapshot: SettingsSnapshot }) {
         </button>
       </div>
 
-      {/* Column headers */}
-      <div
-        className={cn(
-          "grid h-[26px] items-center gap-x-3 border-b border-line-strong bg-bg-1 px-3.5",
-          "grid-cols-[32px_1fr_320px_86px_76px_16px]",
-        )}
-      >
-        <span />
-        <span className="corner-tag">Key</span>
-        <span className="corner-tag">Effective Value</span>
-        <span className="corner-tag">Source</span>
-        <span className="corner-tag" title="Layer presence: M C E PL P U D">
-          M·C·E·PL·P·U·D
-        </span>
-        <span />
-      </div>
-
-      {/* Body */}
+      {/* Header + body share a single horizontal scroll container so the
+          column header stays aligned with rows when the pane is narrower
+          than the row's intrinsic min width. */}
       <div className="scrollbar flex-1 overflow-auto">
-        {visible.length === 0 ? (
-          <div className="flex h-full items-center justify-center font-mono text-[11px] text-fg-3">
-            no rows match
+        <div className="min-w-[710px]">
+          {/* Column header — sticky so it survives vertical scroll but
+              tracks horizontal scroll with the body. */}
+          <div
+            className={cn(
+              "sticky top-0 z-10 grid h-[26px] items-center gap-x-3 border-b border-line-strong bg-bg-1 px-3.5",
+              "grid-cols-[32px_minmax(180px,1fr)_320px_86px_76px_16px]",
+            )}
+          >
+            <span />
+            <span className="corner-tag">Key</span>
+            <span className="corner-tag">Effective Value</span>
+            <span className="corner-tag">Source</span>
+            <span className="corner-tag" title="Layer presence: M C E PL P U D">
+              M·C·E·PL·P·U·D
+            </span>
+            <span />
           </div>
-        ) : (
-          visible.map((row, i) => (
-            <SettingsRow key={row.keyPath} row={row} index={i} />
-          ))
-        )}
+
+          {visible.length === 0 ? (
+            <div className="flex h-32 items-center justify-center font-mono text-[11px] text-fg-3">
+              no rows match
+            </div>
+          ) : (
+            visible.map((row, i) => (
+              <SettingsRow key={row.keyPath} row={row} index={i} />
+            ))
+          )}
+        </div>
       </div>
 
       {/* Footer */}
