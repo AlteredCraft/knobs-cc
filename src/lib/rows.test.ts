@@ -4,6 +4,7 @@ import {
   applyFilter,
   buildRows,
   chipCounts,
+  nextCursorPath,
   sortRows,
   type Row,
 } from "./rows";
@@ -203,6 +204,42 @@ describe("chipCounts", () => {
       "array-merged": 1,
       unset: 1,
     });
+  });
+});
+
+describe("nextCursorPath", () => {
+  const visible: Row[] = [row("a", "set", "user"), row("b", "set", "user"), row("c", "set", "user")];
+
+  it("returns null for an empty list", () => {
+    expect(nextCursorPath([], null, 1)).toBeNull();
+    expect(nextCursorPath([], "a", 1)).toBeNull();
+  });
+
+  it("returns the first row when there is no current cursor", () => {
+    expect(nextCursorPath(visible, null, 1)).toBe("a");
+    expect(nextCursorPath(visible, null, -1)).toBe("a");
+  });
+
+  it("returns the first row when the current cursor isn't visible", () => {
+    expect(nextCursorPath(visible, "missing", 1)).toBe("a");
+  });
+
+  it("moves down one with delta=1", () => {
+    expect(nextCursorPath(visible, "a", 1)).toBe("b");
+    expect(nextCursorPath(visible, "b", 1)).toBe("c");
+  });
+
+  it("moves up one with delta=-1", () => {
+    expect(nextCursorPath(visible, "c", -1)).toBe("b");
+    expect(nextCursorPath(visible, "b", -1)).toBe("a");
+  });
+
+  it("clamps at the bottom", () => {
+    expect(nextCursorPath(visible, "c", 1)).toBe("c");
+  });
+
+  it("clamps at the top", () => {
+    expect(nextCursorPath(visible, "a", -1)).toBe("a");
   });
 });
 

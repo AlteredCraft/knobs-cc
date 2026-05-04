@@ -21,11 +21,13 @@ export function SettingsRow({
   row,
   index,
   selected,
+  cursor,
   onSelect,
 }: {
   row: Row;
   index: number;
   selected?: boolean;
+  cursor?: boolean;
   onSelect?: () => void;
 }) {
   const formatted = formatValue(row.value);
@@ -34,6 +36,7 @@ export function SettingsRow({
     <div
       role="button"
       tabIndex={0}
+      data-row-key={row.keyPath}
       onClick={onSelect}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
@@ -48,7 +51,9 @@ export function SettingsRow({
         row.state === "unset" && "opacity-45",
         selected
           ? "bg-accent-soft shadow-[inset_2px_0_0_var(--color-accent)]"
-          : "hover:bg-bg-1",
+          : cursor
+            ? "bg-bg-1 shadow-[inset_2px_0_0_var(--color-line-strong)]"
+            : "hover:bg-bg-1",
       )}
     >
       <span className="font-mono text-[10px] text-fg-4">

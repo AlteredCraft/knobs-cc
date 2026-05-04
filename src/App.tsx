@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { InspectorShell } from "@/components/inspector/InspectorShell";
 import type { SettingsSnapshot } from "@/types";
@@ -7,11 +7,25 @@ function App() {
   const [snapshot, setSnapshot] = useState<SettingsSnapshot | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    invoke<SettingsSnapshot>("read_settings_layers")
-      .then(setSnapshot)
-      .catch((e) => setError(String(e)));
+  const refresh = useCallback(async () => {
+    try {
+      const next = await invoke<SettingsSnapshot>("read_settings_layers");
+      setSnapshot(next);
+      setError(null);
+    } catch (e) {
+      // On the initial read we have no snapshot to fall back to, so surface
+      // the error UI. Once a snapshot is present, keep it on screen — a
+      // failed refresh shouldn't blow away usable state.
+      setSnapshot((prev) => {
+        if (!prev) setError(String(e));
+        return prev;
+      });
+    }
   }, []);
+
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
 
   if (error) {
     return (
@@ -41,7 +55,7 @@ function App() {
     );
   }
 
-  return <InspectorShell snapshot={snapshot} />;
+  return <InspectorShell snapshot={snapshot} onRefresh={() => void refresh()} />;
 }
 
 export default App;

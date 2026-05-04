@@ -149,6 +149,25 @@ export function sortRows(rows: Row[], mode: SortMode): Row[] {
   return copy;
 }
 
+/**
+ * Given the visible rows and the current cursor key, return the next cursor
+ * key after applying `delta`. Clamps at both ends. Falls back to the first
+ * row when the current key isn't in `visible` (e.g. after the filter changed).
+ */
+export function nextCursorPath(
+  visible: Row[],
+  current: string | null,
+  delta: 1 | -1,
+): string | null {
+  if (visible.length === 0) return null;
+  const idx = current ? visible.findIndex((r) => r.keyPath === current) : -1;
+  if (idx === -1) return visible[0].keyPath;
+  const next = idx + delta;
+  if (next < 0) return visible[0].keyPath;
+  if (next >= visible.length) return visible[visible.length - 1].keyPath;
+  return visible[next].keyPath;
+}
+
 export function chipCounts(rows: Row[]): Record<ChipFilter, number> {
   const counts: Record<ChipFilter, number> = {
     all: rows.length,

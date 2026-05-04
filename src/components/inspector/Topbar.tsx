@@ -1,7 +1,15 @@
 import { LAYERS_IN_PRECEDENCE_ORDER, type SettingsSnapshot } from "@/types";
 import { StatusDot } from "./StatusDot";
 
-export function Topbar({ snapshot }: { snapshot: SettingsSnapshot }) {
+export function Topbar({
+  snapshot,
+  onRefresh,
+  onHelp,
+}: {
+  snapshot: SettingsSnapshot;
+  onRefresh?: () => void;
+  onHelp?: () => void;
+}) {
   const okLayers = snapshot.layers.filter((l) => l.status === "ok").length;
   const totalLayers = LAYERS_IN_PRECEDENCE_ORDER.length;
   const diagnosticCount = snapshot.diagnostics.length;
@@ -43,12 +51,23 @@ export function Topbar({ snapshot }: { snapshot: SettingsSnapshot }) {
         </span>
         <button
           type="button"
-          disabled
-          className="ml-2 cursor-not-allowed rounded-sm border border-line-strong px-2 py-1 uppercase tracking-wider text-fg-2 opacity-60"
-          title="Refresh wiring lands in a later phase"
+          onClick={onRefresh}
+          disabled={!onRefresh}
+          className="ml-2 rounded-sm border border-line-strong px-2 py-1 uppercase tracking-wider text-fg-2 hover:border-accent hover:text-fg-1 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:border-line-strong disabled:hover:text-fg-2"
+          title="Re-read all layers (R)"
         >
           ↻ refresh
         </button>
+        {onHelp && (
+          <button
+            type="button"
+            onClick={onHelp}
+            className="rounded-sm border border-line-strong px-2 py-1 uppercase tracking-wider text-fg-2 hover:border-accent hover:text-fg-1"
+            title="Help — keyboard shortcuts, layer legend (?)"
+          >
+            ?
+          </button>
+        )}
       </div>
     </header>
   );
