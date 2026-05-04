@@ -1,0 +1,98 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@theme {
+  /* Surface backgrounds, darkest → lightest. Match the mock's --bg-0..3. */
+  --color-bg-0: #0a0b0d;
+  --color-bg-1: #0f1115;
+  --color-bg-2: #14161c;
+  --color-bg-3: #1a1d24;
+
+  /* Borders / dividers. */
+  --color-line: #1f232b;
+  --color-line-strong: #2a2f39;
+
+  /* Foregrounds, brightest → dimmest. Used as text-fg-1..4.
+     fg-3 and fg-4 are bumped above the mock's values to clear WCAG
+     contrast against bg-0/bg-1 (the mock's #6b7079/#4a4f57 sit at
+     ~4.6:1 and ~2.8:1 — fg-4 was below the 3:1 UI minimum). */
+  --color-fg-1: #e7eaef;
+  --color-fg-2: #b0b6c0;
+  --color-fg-3: #98a0ac;
+  --color-fg-4: #7c828d;
+
+  /* Single accent (amber). The Inspector deliberately ships one accent. */
+  --color-accent: #ffb627;
+  --color-accent-soft: rgba(255, 182, 39, 0.08);
+  --color-accent-ring: rgba(255, 182, 39, 0.35);
+
+  /* Status. */
+  --color-ok: #5fa75e;
+  --color-warn: #d6a64f;
+  --color-err: #d4585b;
+  --color-info: #6aa3d4;
+
+  /* Per-source accent treatments, shared by SourceBadge and presence cells.
+     Only the rail and topbar use these in Phase 4a; the rest land in 4b. */
+  --color-src-managed: #d4585b;
+  --color-src-env: #6aa3d4;
+  --color-src-proj: #ffb627;
+  --color-src-proj-local: #ffd07a;
+  --color-src-user: #aab3bf;
+
+  --font-sans: "IBM Plex Sans", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+html {
+  background: var(--color-bg-0);
+  color: var(--color-fg-1);
+  font-family: var(--font-sans);
+  font-feature-settings: "ss01" on, "ss02" on, "cv11" on;
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-feature-settings: "zero" on;
+}
+
+/* Subtle 8-px graph-paper grid for the centre pane background.
+   Lifted from mocks/01-inspector.html. */
+.grid-bg {
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+  background-size: 8px 8px;
+}
+
+/* Native scrollbars styled to match the dark surface. */
+.scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scrollbar::-webkit-scrollbar-thumb {
+  background: var(--color-line-strong);
+  border-radius: 4px;
+}
+.scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #353a45;
+}
+
+/* "Corner tag" — the all-caps tracking-wide section labels in the rail
+   and drawer (see mock lines 209-213). */
+.corner-tag {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-fg-3);
+}

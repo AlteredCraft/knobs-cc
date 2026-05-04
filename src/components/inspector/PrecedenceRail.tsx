@@ -1,0 +1,116 @@
+import {
+  LAYERS_IN_PRECEDENCE_ORDER,
+  type Diagnostic,
+  type LayerRead,
+  type LayerSource,
+  type SettingsSnapshot,
+} from "@/types";
+import { LayerRow, type RailRow } from "./LayerRow";
+
+// Top-level key count for a layer's parsed JSON. The mock's example numbers
+// (env=2, proj=8, user=12) read as set-keys at the top level; we mirror that
+// rather than walk to leaves.
+function countTopLevelKeys(raw: unknown): number {
+  if (raw === null || typeof raw !== "object" || Array.isArray(raw)) return 0;
+  return Object.keys(raw as Record<string, unknown>).length;
+}
+
+// Empty-state copy for absent or uninspectable layers — verbatim from
+// inspector-ui.md:131-135.
+const ABSENT_DETAIL: Partial<Record<LayerSource, string>> = {
+  managed: "no MDM policy detected",
+  cli: "not inspectable from sibling proc",
+  env: "no env vars read yet",
+  default: "catalog (compiled-in)",
+};
+
+function buildRow(source: LayerSource, layer: LayerRead | undefined): RailRow {
+  // Layers the backend doesn't read in Phase 1 fall through to synthesized rows.
+  if (!layer) {
+    return {
+      source,
+      dot: "empty",
+      detail: ABSENT_DETAIL[source] ?? "—",
+      count: null,
+      disabled: source === "managed" || source === "cli",
+    };
+  }
+
+  if (layer.status === "error") {
+    return {
+      source,
+      dot: "err",
+      detail: layer.error ?? "parse error",
+      detailIsError: true,
+      count: null,
+    };
+  }
+
+  if (layer.status === "missing") {
+    return {
+      source,
+      dot: "empty",
+      detail: layer.path ?? "—",
+      count: null,
+    };
+  }
+
+  return {
+    source,
+    dot: "ok",
+    detail: layer.path ?? "—",
+    count: countTopLevelKeys(layer.raw),
+  };
+}
+
+export function PrecedenceRail({ snapshot }: { snapshot: SettingsSnapshot }) {
+  const byKey = new Map(snapshot.layers.map((l) => [l.source, l] as const));
+  const rows = LAYERS_IN_PRECEDENCE_ORDER.map((src) => buildRow(src, byKey.get(src)));
+
+  return (
+    <aside className="flex w-[280px] shrink-0 flex-col overflow-hidden border-r border-line bg-bg-1">
+      <div className="flex items-center justify-between px-4 pt-4 pb-2">
+        <span className="corner-tag">Precedence Stack</span>
+        <span className="font-mono text-[9.5px] text-fg-4">↓ HI → LO</span>
+      </div>
+
+      <div className="px-2">
+        {rows.map((row) => (
+          <LayerRow key={row.source} row={row} />
+        ))}
+      </div>
+
+      <DiagnosticsDock diagnostics={snapshot.diagnostics} />
+    </aside>
+  );
+}
+
+function DiagnosticsDock({ diagnostics }: { diagnostics: Diagnostic[] }) {
+  return (
+    <div className="mt-auto border-t border-line px-4 py-3">
+      <span className="corner-tag mb-2 block">
+        Diagnostics · {diagnostics.length}
+      </span>
+      {diagnostics.length === 0 ? (
+        <span className="font-mono text-[10.5px] text-fg-4">none</span>
+      ) : (
+        <div className="space-y-2">
+          {diagnostics.map((d, i) => (
+            <div key={i} className="font-mono text-[10.5px] leading-snug">
+              <span
+                className={
+                  d.level === "error"
+                    ? "text-err uppercase tracking-wider"
+                    : "text-warn uppercase tracking-wider"
+                }
+              >
+                {d.level}
+              </span>
+              <span className="block text-fg-2">{d.message}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
