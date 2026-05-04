@@ -15,13 +15,19 @@ export interface RailRow {
   disabled?: boolean;
 }
 
-export function LayerRow({ row }: { row: RailRow }) {
+export function LayerRow({
+  row,
+  active,
+}: {
+  row: RailRow;
+  active?: boolean;
+}) {
   return (
     <div
       className={cn(
         "grid grid-cols-[14px_1fr_auto] items-center gap-2 rounded-sm px-2.5 py-1.5",
-        // Rows aren't clickable until 4c (drawer); no hover affordance.
         row.disabled && "opacity-45",
+        active && "bg-bg-2 shadow-[inset_2px_0_0_var(--color-accent)]",
       )}
     >
       <StatusDot variant={row.dot} />

@@ -25,7 +25,15 @@ const CHIPS: ReadonlyArray<{ id: ChipFilter; label: string; disabled?: boolean; 
   { id: "unset", label: "unset" },
 ];
 
-export function SettingsList({ snapshot }: { snapshot: SettingsSnapshot }) {
+export function SettingsList({
+  snapshot,
+  activeKeyPath,
+  onSelect,
+}: {
+  snapshot: SettingsSnapshot;
+  activeKeyPath: string | null;
+  onSelect: (keyPath: string) => void;
+}) {
   const [query, setQuery] = useState("");
   const [chip, setChip] = useState<ChipFilter>("all");
   const [sort, setSort] = useState<SortMode>("precedence");
@@ -128,7 +136,13 @@ export function SettingsList({ snapshot }: { snapshot: SettingsSnapshot }) {
             </div>
           ) : (
             visible.map((row, i) => (
-              <SettingsRow key={row.keyPath} row={row} index={i} />
+              <SettingsRow
+                key={row.keyPath}
+                row={row}
+                index={i}
+                selected={row.keyPath === activeKeyPath}
+                onSelect={() => onSelect(row.keyPath)}
+              />
             ))
           )}
         </div>
@@ -143,7 +157,7 @@ export function SettingsList({ snapshot }: { snapshot: SettingsSnapshot }) {
         <span>{counts.shadowed} shadowed</span>
         <span>·</span>
         <span>{counts.unset} unset</span>
-        <span className="ml-auto text-fg-4">⌘K filter · J/K nav · ↵ details (4d)</span>
+        <span className="ml-auto text-fg-4">click row · esc closes · ⌘K / J·K / ↵ in 4d</span>
       </div>
     </section>
   );

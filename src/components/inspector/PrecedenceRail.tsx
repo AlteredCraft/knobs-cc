@@ -68,7 +68,13 @@ function buildRow(
   };
 }
 
-export function PrecedenceRail({ snapshot }: { snapshot: SettingsSnapshot }) {
+export function PrecedenceRail({
+  snapshot,
+  activeWinner,
+}: {
+  snapshot: SettingsSnapshot;
+  activeWinner?: LayerSource | null;
+}) {
   const byKey = new Map(snapshot.layers.map((l) => [l.source, l] as const));
   const defaultCount = buildRows(snapshot).filter((r) => r.state === "unset").length;
   const rows = LAYERS_IN_PRECEDENCE_ORDER.map((src) =>
@@ -84,7 +90,11 @@ export function PrecedenceRail({ snapshot }: { snapshot: SettingsSnapshot }) {
 
       <div className="px-2">
         {rows.map((row) => (
-          <LayerRow key={row.source} row={row} />
+          <LayerRow
+            key={row.source}
+            row={row}
+            active={row.source === activeWinner}
+          />
         ))}
       </div>
 
