@@ -1,5 +1,6 @@
 import type { SettingsSnapshot } from "@/types";
 import { PrecedenceRail } from "./PrecedenceRail";
+import { SettingsList } from "./SettingsList";
 import { Topbar } from "./Topbar";
 
 export function InspectorShell({ snapshot }: { snapshot: SettingsSnapshot }) {
@@ -9,31 +10,10 @@ export function InspectorShell({ snapshot }: { snapshot: SettingsSnapshot }) {
 
       <div className="flex flex-1 overflow-hidden">
         <PrecedenceRail snapshot={snapshot} />
-
-        <CenterPlaceholder />
+        <SettingsList snapshot={snapshot} />
         <DrawerPlaceholder />
       </div>
-
-      <Footer />
     </div>
-  );
-}
-
-function CenterPlaceholder() {
-  return (
-    <section className="grid-bg flex flex-1 flex-col items-center justify-center bg-bg-0 px-8">
-      <div className="max-w-md text-center">
-        <div className="mb-3 font-mono text-[11px] uppercase tracking-[0.18em] text-fg-3">
-          settings list — phase 4b
-        </div>
-        <p className="font-mono text-[12px] leading-relaxed text-fg-2">
-          A flat, searchable list of every catalog key plus the env vars
-          and array-merged fields detected in the layers on the left.
-          Each row will show effective value, winning source, and a
-          7-cell presence indicator.
-        </p>
-      </div>
-    </section>
   );
 }
 
@@ -51,18 +31,5 @@ function DrawerPlaceholder() {
         </p>
       </div>
     </aside>
-  );
-}
-
-function Footer() {
-  return (
-    <footer className="flex shrink-0 items-center gap-4 border-t border-line bg-bg-1 px-4 py-1.5 font-mono text-[11px] uppercase tracking-wider text-fg-3">
-      <span>phase 4a · chrome only</span>
-      <span className="text-fg-4">·</span>
-      <span>static snapshot · no live refresh yet</span>
-      <span className="ml-auto text-fg-3">
-        list, drawer, ⌘K / J·K / ↵ land in 4b–4d
-      </span>
-    </footer>
   );
 }

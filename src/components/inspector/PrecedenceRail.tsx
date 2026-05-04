@@ -5,6 +5,7 @@ import {
   type LayerSource,
   type SettingsSnapshot,
 } from "@/types";
+import { buildRows } from "@/lib/rows";
 import { LayerRow, type RailRow } from "./LayerRow";
 
 // Top-level key count for a layer's parsed JSON. The mock's example numbers
@@ -24,14 +25,18 @@ const ABSENT_DETAIL: Partial<Record<LayerSource, string>> = {
   default: "catalog (compiled-in)",
 };
 
-function buildRow(source: LayerSource, layer: LayerRead | undefined): RailRow {
+function buildRow(
+  source: LayerSource,
+  layer: LayerRead | undefined,
+  defaultCount: number,
+): RailRow {
   // Layers the backend doesn't read in Phase 1 fall through to synthesized rows.
   if (!layer) {
     return {
       source,
-      dot: "empty",
+      dot: source === "default" ? "ok" : "empty",
       detail: ABSENT_DETAIL[source] ?? "—",
-      count: null,
+      count: source === "default" ? defaultCount : null,
       disabled: source === "managed" || source === "cli",
     };
   }
@@ -65,7 +70,10 @@ function buildRow(source: LayerSource, layer: LayerRead | undefined): RailRow {
 
 export function PrecedenceRail({ snapshot }: { snapshot: SettingsSnapshot }) {
   const byKey = new Map(snapshot.layers.map((l) => [l.source, l] as const));
-  const rows = LAYERS_IN_PRECEDENCE_ORDER.map((src) => buildRow(src, byKey.get(src)));
+  const defaultCount = buildRows(snapshot).filter((r) => r.state === "unset").length;
+  const rows = LAYERS_IN_PRECEDENCE_ORDER.map((src) =>
+    buildRow(src, byKey.get(src), defaultCount),
+  );
 
   return (
     <aside className="flex w-[280px] shrink-0 flex-col overflow-hidden border-r border-line bg-bg-1">
