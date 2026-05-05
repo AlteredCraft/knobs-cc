@@ -2,6 +2,8 @@
 
 Open questions carried from the concept phase. This file is a scratchpad — expect it to churn.
 
+> Open items that have a place in the implementation roadmap (Goals view, cross-cutting surfaces, landing page, nomenclature) are tracked in [`roadmap.md`](./roadmap.md). The deeper rationale stays here.
+
 ## Ideas...
 
 - User could express a 'Goal' : I want to make Claude faster, I want to reduce token usage.

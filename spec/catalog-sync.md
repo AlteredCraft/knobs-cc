@@ -2,6 +2,8 @@
 
 Status: **partial implementation.** `sync-settings.js` shipped 2026-04-28; `sync-env-vars.js` shipped 2026-04-29; `sync-hooks.js` shipped 2026-04-29 (lifecycle table only — handler types and per-event input/output schemas are not yet captured).
 
+> Open work — new scripts, the hooks pass #2, the `read_catalog` wire-up, and the open questions at the bottom of this doc — is tracked in [`roadmap.md`](./roadmap.md).
+
 ## Intent
 
 Every Claude Code config surface (settings, env vars, hooks, MCP, …) has an authoritative upstream representation — usually a docs page, sometimes a JSON Schema. For each surface we want a small, idempotent script that pulls that upstream form and reshapes it into a flat JSON file the desktop app consumes via its planned `read_catalog` Tauri command.

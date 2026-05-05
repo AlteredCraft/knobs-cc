@@ -11,6 +11,8 @@ The repo currently holds two distinct things, and conflating them is the most co
 1. **`spec/`** — the live deliverable right now. `inventory.md` (the catalog of every Claude Code config surface) and `catalog-sync.md` (a spec for the harness that keeps it in sync with upstream docs). Both are hand-edited prose; the catalog-sync harness is **spec only — no code yet**.
 2. **The Tauri 2 scaffold** (`src/`, `src-tauri/`) — the bare `create-tauri-app` template (React + TypeScript + Vite + Rust). The current "greet" command is boilerplate; the planned commands are `read_settings_layers`, `read_env_snapshot`, `read_catalog`. None of those exist yet.
 
+**Outstanding work across the spec files is tracked in [`spec/roadmap.md`](spec/roadmap.md)** — single source of truth. When you ship something or discover new work, update there rather than scattering status across the individual specs.
+
 If a request is ambiguous between "edit the inventory" and "edit the app," ask. The inventory has far more activity than the app right now.
 
 ## Scope rule (non-obvious — read before adding entries to inventory.md)

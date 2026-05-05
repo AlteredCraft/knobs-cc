@@ -12,7 +12,7 @@ This file is the data model knobs.cc will render. It's also the public contribut
 
 If you're not sure whether a knob belongs: does it read or write a config file / setting / env var / persistent state? If yes, in. If it only changes the current session's transient behaviour, out.
 
-All entries have been cross-checked against live docs as of 2026-04-27. Known gaps remain (especially §3 env vars, §5.1 hook events) — not yet canonical.
+All entries have been cross-checked against live docs as of 2026-04-27. Known gaps remain (especially §3 env vars, §5.1 hook events) — not yet canonical. The canonicalization backlog and the `[!verify]`-convention decision are tracked in [`roadmap.md`](./roadmap.md).
 
 **Primary reference:** [`code.claude.com/docs/en/`](https://code.claude.com/docs/en/) (mirrored at `docs.anthropic.com/en/docs/claude-code/`).
 

@@ -7,6 +7,10 @@ value was set"). v1 is read-only; nothing in this spec writes back.
 The spec is a phased plan. Phase 1 is the only one being implemented now;
 later phases describe scope, not commitments.
 
+> **Status of open phases lives in [`roadmap.md`](./roadmap.md).** The phase
+> sections below stay as design references; what's shipped vs. pending is
+> tracked there.
+
 ## Goals
 
 - For every setting Claude Code might read, show the **effective value** the

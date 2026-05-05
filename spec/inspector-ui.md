@@ -8,6 +8,10 @@ This file is design-locked but implementation-open. It records the chosen
 layout and the design primitives that distinguish this UI from a generic
 settings table. Visual reference: `mocks/01-inspector.html`.
 
+> Implementation status and remaining polish (path-notes click-through,
+> related-knobs, rail navigability decision, …) live in
+> [`roadmap.md`](./roadmap.md).
+
 ## Why this direction
 
 Three directions were prototyped (`mocks/README.md` has the full comparison):
