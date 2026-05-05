@@ -51,6 +51,13 @@ const PRESENCE_LEGEND: ReadonlyArray<{
     label: "shadowed",
     description: "Layer contributed but a higher-precedence layer shadowed it.",
   },
+  {
+    contributors: ["user", "project"],
+    winner: null,
+    label: "array-merged",
+    description:
+      "Multiple layers contributed elements (e.g. permissions.allow); no single winner.",
+  },
 ];
 
 export function HelpView({ onClose }: { onClose: () => void }) {

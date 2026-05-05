@@ -163,6 +163,114 @@ fn is_provenance_leaf(v: &Value) -> bool {
     obj.contains_key("value") && obj.contains_key("source")
 }
 
+// ---- Array-merge ----------------------------------------------------------
+//
+// Per `inventory.md:58`, a small set of array-valued settings are
+// concatenated + deduplicated across layers rather than replaced last-wins.
+// For these fields, the leaf carries `source: null` at the field level and a
+// per-element provenance list under `elements`. See spec/settings-display.md
+// "Merge semantics" and inspector-ui.md:117-124.
+
+const ARRAY_MERGED_PATHS: &[&[&str]] = &[
+    &["permissions", "allow"],
+    &["permissions", "deny"],
+    &["permissions", "ask"],
+    &["permissions", "additionalDirectories"],
+    &["sandbox", "filesystem", "allowWrite"],
+];
+
+fn lookup_path<'a>(raw: &'a Value, path: &[&str]) -> Option<&'a Value> {
+    let mut cur = raw;
+    for seg in path {
+        cur = cur.as_object()?.get(*seg)?;
+    }
+    Some(cur)
+}
+
+fn set_path(root: &mut Value, path: &[&str], leaf: Value) {
+    if path.is_empty() {
+        *root = leaf;
+        return;
+    }
+    if !root.is_object() || is_provenance_leaf(root) {
+        *root = Value::Object(Map::new());
+    }
+    let obj = root.as_object_mut().expect("ensured object above");
+    let (head, rest) = (path[0], &path[1..]);
+    if rest.is_empty() {
+        obj.insert(head.to_string(), leaf);
+        return;
+    }
+    let child = obj
+        .entry(head.to_string())
+        .or_insert_with(|| Value::Object(Map::new()));
+    set_path(child, rest, leaf);
+}
+
+/// For one known array-merged path, walk the layers in lowest-precedence-first
+/// order, collect array elements, dedupe by serialized JSON (first contributor
+/// wins), and emit a provenance leaf with `value` (the merged array),
+/// `source: null`, and `elements` (per-element source list). Returns `None`
+/// when no layer contributed an array at this path.
+fn collect_array_merged(layers: &[LayerRead], path: &[&str]) -> Option<Value> {
+    let mut elements: Vec<Value> = Vec::new();
+    let mut seen: std::collections::HashSet<String> = std::collections::HashSet::new();
+
+    // `layers` is stored highest-first; reverse to walk lowest-first. This
+    // matches the merge order in `read_snapshot` and means the lowest-precedence
+    // layer contributing a given element gets the credit — so the rule's
+    // origin reads from "where was this rule first added?".
+    for layer in layers.iter().rev() {
+        if layer.status != LayerStatus::Ok {
+            continue;
+        }
+        let Some(raw) = layer.raw.as_ref() else {
+            continue;
+        };
+        let Some(node) = lookup_path(raw, path) else {
+            continue;
+        };
+        let Some(arr) = node.as_array() else {
+            continue;
+        };
+        for item in arr {
+            let key = serde_json::to_string(item).unwrap_or_default();
+            if seen.insert(key) {
+                let mut entry = Map::new();
+                entry.insert("value".into(), item.clone());
+                entry.insert(
+                    "source".into(),
+                    serde_json::to_value(layer.source).unwrap_or(Value::Null),
+                );
+                elements.push(Value::Object(entry));
+            }
+        }
+    }
+
+    if elements.is_empty() {
+        return None;
+    }
+
+    let value_array: Vec<Value> = elements
+        .iter()
+        .filter_map(|e| e.get("value").cloned())
+        .collect();
+
+    let mut leaf = Map::new();
+    leaf.insert("value".into(), Value::Array(value_array));
+    leaf.insert("source".into(), Value::Null);
+    leaf.insert("elements".into(), Value::Array(elements));
+    Some(Value::Object(leaf))
+}
+
+fn apply_array_merge(effective: &mut Value, layers: &[LayerRead]) {
+    for path in ARRAY_MERGED_PATHS {
+        if let Some(leaf) = collect_array_merged(layers, path) {
+            set_path(effective, path, leaf);
+        }
+    }
+}
+
 fn home_dir() -> Option<PathBuf> {
     // Read HOME / USERPROFILE without pulling a dependency. Tauri targets
     // desktop OSes only, so this covers macOS, Linux, and Windows.
@@ -229,6 +337,8 @@ pub fn read_snapshot() -> SettingsSnapshot {
         };
         merge_with_provenance(&mut effective, raw, layer.source);
     }
+    // After last-wins, rewrite the leaf for known array-merged paths.
+    apply_array_merge(&mut effective, &layers);
 
     SettingsSnapshot {
         layers,
@@ -313,11 +423,10 @@ mod tests {
     }
 
     #[test]
-    fn arrays_are_replaced_wholesale_in_phase_1() {
-        // Documents the deliberate phase 1 limitation: array-merge concat-dedup
-        // is deferred to phase 3, so a higher layer's array fully replaces the
-        // lower layer's array. If this test ever needs updating, it means
-        // phase 3 has landed and ProvenancedValue should grow `elements`.
+    fn merge_with_provenance_replaces_arrays_last_wins() {
+        // `merge_with_provenance` itself is last-wins for everything except
+        // objects — that's deliberate. Array-merge for the known fields runs
+        // as a post-pass (`apply_array_merge`); see `array_merged_*` tests.
         let merged = merge_layers(&[
             (LayerSource::User, json!({ "permissions": { "allow": ["a", "b"] } })),
             (
@@ -402,6 +511,128 @@ mod tests {
         assert!(matches!(layer.status, LayerStatus::Error));
         assert!(layer.error.is_some());
         std::fs::remove_dir_all(&dir).ok();
+    }
+
+    fn ok_layer(source: LayerSource, raw: Value) -> LayerRead {
+        LayerRead {
+            source,
+            path: None,
+            status: LayerStatus::Ok,
+            raw: Some(raw),
+            error: None,
+        }
+    }
+
+    #[test]
+    fn array_merged_concats_across_layers_lowest_first() {
+        // `layers` is stored highest-first (matches read_snapshot's order).
+        let layers = vec![
+            ok_layer(LayerSource::Project, json!({"permissions": {"allow": ["c"]}})),
+            ok_layer(LayerSource::User, json!({"permissions": {"allow": ["a", "b"]}})),
+        ];
+        let mut eff = Value::Object(Map::new());
+        apply_array_merge(&mut eff, &layers);
+        let leaf = lookup_path(&eff, &["permissions", "allow"]).unwrap();
+        assert_eq!(leaf["value"], json!(["a", "b", "c"]));
+        assert_eq!(leaf["source"], Value::Null);
+        let elements = leaf["elements"].as_array().unwrap();
+        assert_eq!(elements[0], json!({"value": "a", "source": "user"}));
+        assert_eq!(elements[1], json!({"value": "b", "source": "user"}));
+        assert_eq!(elements[2], json!({"value": "c", "source": "project"}));
+    }
+
+    #[test]
+    fn array_merged_dedupes_with_first_contributor_winning() {
+        // user adds a+b; project also adds b — b's source stays user (lowest
+        // precedence to contribute it).
+        let layers = vec![
+            ok_layer(
+                LayerSource::Project,
+                json!({"permissions": {"allow": ["b", "c"]}}),
+            ),
+            ok_layer(
+                LayerSource::User,
+                json!({"permissions": {"allow": ["a", "b"]}}),
+            ),
+        ];
+        let mut eff = Value::Object(Map::new());
+        apply_array_merge(&mut eff, &layers);
+        let leaf = lookup_path(&eff, &["permissions", "allow"]).unwrap();
+        assert_eq!(leaf["value"], json!(["a", "b", "c"]));
+        let elements = leaf["elements"].as_array().unwrap();
+        assert_eq!(elements[1], json!({"value": "b", "source": "user"}));
+        assert_eq!(elements[2], json!({"value": "c", "source": "project"}));
+    }
+
+    #[test]
+    fn array_merged_skips_non_array_values_and_failed_layers() {
+        let layers = vec![
+            ok_layer(
+                LayerSource::Project,
+                json!({"permissions": {"allow": "not an array"}}),
+            ),
+            ok_layer(LayerSource::User, json!({"permissions": {"allow": ["a"]}})),
+            LayerRead {
+                source: LayerSource::ProjectLocal,
+                path: None,
+                status: LayerStatus::Error,
+                raw: None,
+                error: Some("parse fail".into()),
+            },
+        ];
+        let mut eff = Value::Object(Map::new());
+        apply_array_merge(&mut eff, &layers);
+        let leaf = lookup_path(&eff, &["permissions", "allow"]).unwrap();
+        assert_eq!(leaf["value"], json!(["a"]));
+    }
+
+    #[test]
+    fn array_merged_emits_nothing_when_no_layer_has_the_path() {
+        let layers = vec![ok_layer(LayerSource::User, json!({"model": "opus"}))];
+        let mut eff = Value::Object(Map::new());
+        apply_array_merge(&mut eff, &layers);
+        assert!(lookup_path(&eff, &["permissions", "allow"]).is_none());
+    }
+
+    #[test]
+    fn array_merged_overwrites_last_wins_leaf() {
+        let layers = vec![
+            ok_layer(LayerSource::Project, json!({"permissions": {"allow": ["b"]}})),
+            ok_layer(LayerSource::User, json!({"permissions": {"allow": ["a"]}})),
+        ];
+        let mut eff = Value::Object(Map::new());
+        for layer in layers.iter().rev() {
+            merge_with_provenance(&mut eff, layer.raw.clone().unwrap(), layer.source);
+        }
+        // Sanity: last-wins put a single source on the leaf.
+        assert_eq!(
+            lookup_path(&eff, &["permissions", "allow"]).unwrap()["source"],
+            json!("project"),
+        );
+        apply_array_merge(&mut eff, &layers);
+        let leaf = lookup_path(&eff, &["permissions", "allow"]).unwrap();
+        assert_eq!(leaf["value"], json!(["a", "b"]));
+        assert_eq!(leaf["source"], Value::Null);
+    }
+
+    #[test]
+    fn array_merged_dedupes_object_elements_by_serialized_json() {
+        // Permission rules are typically strings, but additionalDirectories
+        // could in principle be object entries. Verify dedup is shape-aware.
+        let layers = vec![
+            ok_layer(
+                LayerSource::Project,
+                json!({"permissions": {"additionalDirectories": [{"path": "/x"}]}}),
+            ),
+            ok_layer(
+                LayerSource::User,
+                json!({"permissions": {"additionalDirectories": [{"path": "/x"}, {"path": "/y"}]}}),
+            ),
+        ];
+        let mut eff = Value::Object(Map::new());
+        apply_array_merge(&mut eff, &layers);
+        let leaf = lookup_path(&eff, &["permissions", "additionalDirectories"]).unwrap();
+        assert_eq!(leaf["value"], json!([{"path": "/x"}, {"path": "/y"}]));
     }
 
     #[test]

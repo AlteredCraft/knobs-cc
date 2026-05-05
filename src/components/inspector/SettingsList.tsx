@@ -24,12 +24,7 @@ const CHIPS: ReadonlyArray<{ id: ChipFilter; label: string; disabled?: boolean; 
   { id: "all", label: "all" },
   { id: "set", label: "set" },
   { id: "shadowed", label: "shadowed" },
-  {
-    id: "array-merged",
-    label: "array-merged",
-    disabled: true,
-    tooltip: "Array-merge semantics land in Phase 3",
-  },
+  { id: "array-merged", label: "array-merged" },
   { id: "unset", label: "unset" },
 ];
 

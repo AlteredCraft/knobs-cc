@@ -71,6 +71,38 @@ describe("buildRows — unset rows", () => {
   });
 });
 
+describe("buildRows — array-merged", () => {
+  it("emits state=array-merged with null winner and per-element list when the leaf has elements", () => {
+    const snap = snapshot(
+      [
+        ok("project", { permissions: { allow: ["b"] } }),
+        ok("user", { permissions: { allow: ["a"] } }),
+      ],
+      {
+        permissions: {
+          allow: {
+            value: ["a", "b"],
+            source: null,
+            elements: [
+              { value: "a", source: "user" },
+              { value: "b", source: "project" },
+            ],
+          },
+        },
+      },
+    );
+    const r = buildRows(snap).find((x) => x.keyPath === "permissions.allow");
+    expect(r?.state).toBe("array-merged");
+    expect(r?.winner).toBeNull();
+    expect(r?.elements).toEqual([
+      { value: "a", source: "user" },
+      { value: "b", source: "project" },
+    ]);
+    // Contributors still come from the raw layers, not elements.
+    expect(r?.contributors).toEqual(["project", "user"]);
+  });
+});
+
 describe("buildRows — namespace split", () => {
   it("splits the last dot off as the leaf", () => {
     const snap = snapshot(
@@ -250,13 +282,20 @@ function row(
   state: Row["state"],
   winner: Row["winner"],
 ): Row {
+  // Derive contributors from the explicit winner where present; for
+  // array-merged rows (winner=null) the test passes a placeholder list.
+  const contributors: Row["contributors"] = winner
+    ? state === "shadowed"
+      ? [winner, "user"]
+      : [winner]
+    : ["user", "project"];
   return {
     keyPath,
     namespace: keyPath.includes(".") ? keyPath.split(".").slice(0, -1).join(".") : null,
     leaf: keyPath.split(".").pop()!,
     value: undefined,
     winner,
-    contributors: state === "shadowed" ? [winner, "user"] : [winner],
+    contributors,
     state,
     catalog: null,
   };

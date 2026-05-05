@@ -52,4 +52,31 @@ describe("flattenEffective", () => {
       { keyPath: "apiKeyHelper", value: null, winner: "user" },
     ]);
   });
+
+  it("emits an array-merged leaf with null winner and per-element provenance", () => {
+    const out = flattenEffective({
+      permissions: {
+        allow: {
+          value: ["a", "b", "c"],
+          source: null,
+          elements: [
+            { value: "a", source: "user" },
+            { value: "b", source: "user" },
+            { value: "c", source: "project" },
+          ],
+        },
+      },
+    });
+    expect(out).toHaveLength(1);
+    expect(out[0]).toMatchObject({
+      keyPath: "permissions.allow",
+      value: ["a", "b", "c"],
+      winner: null,
+      elements: [
+        { value: "a", source: "user" },
+        { value: "b", source: "user" },
+        { value: "c", source: "project" },
+      ],
+    });
+  });
 });

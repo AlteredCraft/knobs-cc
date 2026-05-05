@@ -78,7 +78,16 @@ export function SettingsRow({
       </span>
 
       <span>
-        <SourceBadge source={row.winner} />
+        {row.winner ? (
+          <SourceBadge source={row.winner} />
+        ) : (
+          <span
+            className="inline-flex items-center rounded-[2px] border border-line-strong bg-bg-2 px-1.5 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-[0.05em] text-fg-3"
+            title="Array-merged across layers — see drawer for per-element sources"
+          >
+            merged
+          </span>
+        )}
       </span>
 
       <PresenceIndicator

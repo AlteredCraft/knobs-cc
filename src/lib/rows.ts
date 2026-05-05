@@ -3,6 +3,7 @@
 
 import type { CatalogEntry } from "./catalog";
 import { CATALOG, findCatalogEntry } from "./catalog";
+import type { ArrayMergedElement } from "./flatten";
 import { flattenEffective } from "./flatten";
 import { contributorsForKey } from "./presence";
 import {
@@ -22,12 +23,14 @@ export interface Row {
 
   /** Effective value, or `undefined` for unset rows. */
   value: unknown;
-  /** Winning layer; "default" for unset rows. */
-  winner: LayerSource;
+  /** Winning layer; null for array-merged (no single winner). */
+  winner: LayerSource | null;
   /** Layers that contributed any value (includes winner). */
   contributors: LayerSource[];
 
   state: RowState;
+  /** Per-element source list; only set for array-merged rows. */
+  elements?: ArrayMergedElement[];
   catalog: CatalogEntry | null;
 }
 
@@ -51,6 +54,7 @@ export function buildRows(snapshot: SettingsSnapshot): Row[] {
   const setRows: Row[] = leaves.map((leaf) => {
     const contributors = contributorsForKey(snapshot.layers, leaf.keyPath);
     const { namespace, leaf: leafName } = splitKey(leaf.keyPath);
+    const isArrayMerged = leaf.elements !== undefined;
     return {
       keyPath: leaf.keyPath,
       namespace,
@@ -58,7 +62,12 @@ export function buildRows(snapshot: SettingsSnapshot): Row[] {
       value: leaf.value,
       winner: leaf.winner,
       contributors,
-      state: contributors.length > 1 ? "shadowed" : "set",
+      state: isArrayMerged
+        ? "array-merged"
+        : contributors.length > 1
+          ? "shadowed"
+          : "set",
+      elements: leaf.elements,
       catalog: findCatalogEntry(leaf.keyPath),
     };
   });
@@ -141,8 +150,12 @@ export function sortRows(rows: Row[], mode: SortMode): Row[] {
     return copy;
   }
   copy.sort((a, b) => {
-    const ai = PRECEDENCE_INDEX.get(a.winner) ?? 99;
-    const bi = PRECEDENCE_INDEX.get(b.winner) ?? 99;
+    // Array-merged rows have no single winner; rank them with the
+    // highest contributor for sort purposes so they cluster near their peers.
+    const aWinner = a.winner ?? a.contributors[0] ?? "default";
+    const bWinner = b.winner ?? b.contributors[0] ?? "default";
+    const ai = PRECEDENCE_INDEX.get(aWinner) ?? 99;
+    const bi = PRECEDENCE_INDEX.get(bWinner) ?? 99;
     if (ai !== bi) return ai - bi;
     return a.keyPath.localeCompare(b.keyPath);
   });
