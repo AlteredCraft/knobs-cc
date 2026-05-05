@@ -19,7 +19,7 @@ const LAYER_DESCRIPTIONS: Record<LayerSource, string> = {
   managed:
     "Enterprise / MDM-deployed policy. Highest precedence — designed for admins to pin settings users can't override.",
   cli: "Flags on the running `claude` process (e.g. --model, --mcp-config). Not inspectable from a sibling app in v1.",
-  env: "Environment variables (e.g. ANTHROPIC_MODEL, CLAUDE_CODE_USE_BEDROCK).",
+  env: "Process environment variables that override settings keys (e.g. ANTHROPIC_MODEL → `model`). Mapping table at `catalog/env-settings-map.json` — env-only vars without a settings equivalent aren't surfaced here.",
   project_local:
     "`<project>/.claude/settings.local.json` — your machine's overrides for this project, gitignored by convention.",
   project: "`<project>/.claude/settings.json` — committed, team-shared project settings.",
@@ -264,7 +264,7 @@ function Kbd({ children }: { children: React.ReactNode }) {
 const SHORT_BADGE_NOTE: Record<LayerSource, string> = {
   managed: "Enterprise / MDM policy",
   cli: "CLI flags · not inspectable in v1",
-  env: "Environment variables",
+  env: "Process env (mapped vars)",
   project_local: ".claude/settings.local.json",
   project: ".claude/settings.json",
   user: "~/.claude/settings.json",

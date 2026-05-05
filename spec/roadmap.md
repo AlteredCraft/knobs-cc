@@ -8,7 +8,7 @@ If you ship something, mark it ✅ here and (where relevant) update the
 corresponding spec section. If you discover new work, add it here, not
 inline in another spec.
 
-Last reviewed: 2026-05-04.
+Last reviewed: 2026-05-05.
 
 ---
 
@@ -20,11 +20,14 @@ Phase numbering matches the spec.
   alphabetic merge of `managed-settings.d/*.json`, surface as `managed`
   layer. Sibling read of `managed-mcp.json`. (`settings-display.md` §
   "Phase 2".)
-- **Phase 3 — env vars + array-merge.** Reads the env-var subset from
-  `inventory.md` §3 as a new `env` layer; implements array-concat-dedup
-  for `permissions.allow`, `additionalDirectories`, etc., populating
-  `elements` with per-element source. Activates the `array-merged` chip
-  (currently disabled, copy in `SettingsList.tsx:23`). (§ "Phase 3".)
+- **Phase 3 — env vars + array-merge.** ✅ shipped 2026-05-05.
+  Phase 3a: array-concat-dedup with per-element provenance for the known
+  array-merged paths; `array-merged` chip activated.
+  Phase 3b: `env` layer reads process env via the hand-curated mapping at
+  `catalog/env-settings-map.json` (eight v1 mappings — `ANTHROPIC_MODEL`,
+  `CLAUDE_CODE_*`). Mapping is extensible by JSON edit; future PR can
+  migrate to a description-prose-derived `env` field on each settings
+  catalog entry once upstream schema gains structured metadata.
 - **Phase 5 — drawer catalog cross-reference.** Catalog-sourced
   description / type / default / deprecation in the drawer. Real
   `default` layer flow-through (values nobody set fall through to the

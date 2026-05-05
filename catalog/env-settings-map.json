@@ -1,0 +1,51 @@
+{
+  "source": "spec/inventory.md §3 (env vars) cross-referenced with §2 (settings fields). Hand-maintained: the upstream JSON Schema doesn't expose env-var equivalents as structured metadata, only inline in description prose, and inversion can't be inferred. See spec/settings-display.md Phase 3.",
+  "fetchedAt": "2026-05-05",
+  "count": 8,
+  "mappings": [
+    {
+      "env": "ANTHROPIC_MODEL",
+      "settings": "model",
+      "type": "string"
+    },
+    {
+      "env": "CLAUDE_CODE_EFFORT_LEVEL",
+      "settings": "effortLevel",
+      "type": "string"
+    },
+    {
+      "env": "CLAUDE_CODE_SHELL",
+      "settings": "defaultShell",
+      "type": "string"
+    },
+    {
+      "env": "CLAUDE_CODE_DISABLE_GIT_INSTRUCTIONS",
+      "settings": "includeGitInstructions",
+      "type": "bool",
+      "invert": true
+    },
+    {
+      "env": "CLAUDE_CODE_GLOB_NO_IGNORE",
+      "settings": "respectGitignore",
+      "type": "bool",
+      "invert": true
+    },
+    {
+      "env": "CLAUDE_CODE_DISABLE_AUTO_MEMORY",
+      "settings": "autoMemoryEnabled",
+      "type": "bool",
+      "invert": true
+    },
+    {
+      "env": "CLAUDE_CODE_DISABLE_THINKING",
+      "settings": "alwaysThinkingEnabled",
+      "type": "bool",
+      "invert": true
+    },
+    {
+      "env": "CLAUDE_CODE_ENABLE_AWAY_SUMMARY",
+      "settings": "awaySummaryEnabled",
+      "type": "bool"
+    }
+  ]
+}

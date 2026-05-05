@@ -21,7 +21,7 @@ function countTopLevelKeys(raw: unknown): number {
 const ABSENT_DETAIL: Partial<Record<LayerSource, string>> = {
   managed: "no MDM policy detected",
   cli: "not inspectable from sibling proc",
-  env: "no env vars read yet",
+  env: "no mapped env vars set",
   default: "catalog (compiled-in)",
 };
 
@@ -57,6 +57,19 @@ function buildRow(
       dot: "empty",
       detail: layer.path ?? "—",
       count: null,
+    };
+  }
+
+  // env is a real layer with no file path. The detail describes what was
+  // read; an empty raw object reads as "no mapped vars are set" rather
+  // than "—" (the file-layer fallback).
+  if (source === "env") {
+    const setCount = countTopLevelKeys(layer.raw);
+    return {
+      source,
+      dot: setCount > 0 ? "ok" : "empty",
+      detail: setCount > 0 ? "process environment" : "no mapped env vars set",
+      count: setCount,
     };
   }
 

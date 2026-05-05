@@ -309,6 +309,7 @@ pub fn read_snapshot() -> SettingsSnapshot {
     // Highest precedence first — matches the public API order. The merge below
     // walks them in reverse so higher-precedence values win.
     let layers = vec![
+        crate::env_layer::read_env_layer(),
         read_layer(
             LayerSource::ProjectLocal,
             project

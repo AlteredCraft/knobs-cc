@@ -119,15 +119,9 @@ function buildSynthesizedEntry(source: LayerSource, row: Row): WaterfallEntry {
     };
   }
 
-  if (source === "env") {
-    return {
-      source,
-      state: "absent",
-      value: undefined,
-      path: null,
-      emptyText: ABSENT_PER_LAYER_TEXT.env ?? "—",
-    };
-  }
+  // env is a real layer now (Phase 3b) — when it doesn't appear in
+  // snapshot.layers, that's a backend-side gap, not the synthesized
+  // "absent" we used in Phase 1. Fall through to the default branch.
 
   // default — wins iff nobody else supplied a value (state === "unset").
   if (row.state === "unset") {
