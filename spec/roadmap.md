@@ -84,10 +84,11 @@ Phase numbering matches the spec.
   in the user's editor. Spec calls this Phase 7+; nothing wired today.
 - **Related-knobs section.** Drawer placeholder; depends on catalog
   wiring (above).
-- **Per-element waterfall** for array-merged fields (depends on Phase 3).
+- **Per-element waterfall** for array-merged fields. ✅ shipped with
+  Phase 3a (`KeyDrawer.tsx` `ElementList`).
 - **Real `error` rail row.** The variant exists in the rail's status-dot
-  scheme but no layer currently produces it; lights up once Phase 2 / 3
-  reads can fail.
+  scheme but no layer currently produces it; lights up once Phase 2's
+  managed-file reads can fail.
 - **Rail navigability — undecided.** Spec is silent. Either keep the
   rail informational (current behavior) or wire layer-click → centre
   list filtered to keys won by that layer. Surface as an explicit
