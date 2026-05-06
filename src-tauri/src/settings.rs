@@ -62,6 +62,12 @@ pub struct SettingsSnapshot {
     pub effective: Value,
     pub project_root: Option<String>,
     pub diagnostics: Vec<Diagnostic>,
+    /// Sibling read of the managed-tier MCP-servers file. Not part of the
+    /// settings precedence merge — surfaced separately so the UI can
+    /// indicate that an admin has shipped MCP policy. (`spec/inventory.md:42`,
+    /// `spec/settings-display.md` Phase 2.)
+    #[serde(rename = "managed_mcp")]
+    pub managed_mcp: LayerRead,
 }
 
 fn read_layer(source: LayerSource, path: Option<PathBuf>) -> LayerRead {
@@ -309,6 +315,7 @@ pub fn read_snapshot() -> SettingsSnapshot {
     // Highest precedence first — matches the public API order. The merge below
     // walks them in reverse so higher-precedence values win.
     let layers = vec![
+        crate::managed_layer::read_managed_layer(),
         crate::env_layer::read_env_layer(),
         read_layer(
             LayerSource::ProjectLocal,
@@ -327,6 +334,7 @@ pub fn read_snapshot() -> SettingsSnapshot {
             home.as_deref().map(|d| settings_path(d, "settings.json")),
         ),
     ];
+    let managed_mcp = crate::managed_layer::read_managed_mcp();
 
     let mut effective = Value::Object(Map::new());
     for layer in layers.iter().rev() {
@@ -346,6 +354,7 @@ pub fn read_snapshot() -> SettingsSnapshot {
         effective,
         project_root: project.map(|p| p.to_string_lossy().into_owned()),
         diagnostics,
+        managed_mcp,
     }
 }
 

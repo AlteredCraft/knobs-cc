@@ -7,8 +7,22 @@ function ok(source: LayerRead["source"], raw: unknown): LayerRead {
   return { source, path: `/fake/${source}.json`, status: "ok", raw, error: null };
 }
 
+const ABSENT_MANAGED_MCP: LayerRead = {
+  source: "managed",
+  path: null,
+  status: "missing",
+  raw: null,
+  error: null,
+};
+
 function snapshot(layers: LayerRead[]): SettingsSnapshot {
-  return { layers, effective: {}, project_root: "/x", diagnostics: [] };
+  return {
+    layers,
+    effective: {},
+    project_root: "/x",
+    diagnostics: [],
+    managed_mcp: ABSENT_MANAGED_MCP,
+  };
 }
 
 function row(partial: Partial<Row> & Pick<Row, "keyPath" | "winner" | "state">): Row {
@@ -88,6 +102,7 @@ describe("buildWaterfall", () => {
       effective: {},
       project_root: "/x",
       diagnostics: [],
+      managed_mcp: ABSENT_MANAGED_MCP,
     };
     const r = row({ keyPath: "model", winner: "default", value: undefined, state: "unset" });
     const entries = buildWaterfall(snap, r);

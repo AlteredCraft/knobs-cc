@@ -8,7 +8,7 @@ If you ship something, mark it ✅ here and (where relevant) update the
 corresponding spec section. If you discover new work, add it here, not
 inline in another spec.
 
-Last reviewed: 2026-05-05.
+Last reviewed: 2026-05-05 (Phase 2 shipped).
 
 ---
 
@@ -16,10 +16,16 @@ Last reviewed: 2026-05-05.
 
 Phase numbering matches the spec.
 
-- **Phase 2 — file-based managed sources.** Read `managed-settings.json`,
-  alphabetic merge of `managed-settings.d/*.json`, surface as `managed`
-  layer. Sibling read of `managed-mcp.json`. (`settings-display.md` §
-  "Phase 2".)
+- **Phase 2 — file-based managed sources.** ✅ shipped 2026-05-05.
+  `managed-settings.json` + alphabetic last-wins merge of
+  `managed-settings.d/*.json` (within-tier; the cross-layer
+  array-concat-dedup post-pass still runs). OS roots resolved per
+  `inventory.md:46-48`. A malformed file in the managed tier fails the
+  whole layer with the offending path named — admins should see their
+  policy isn't loading rather than a silently-skipped file. Sibling read
+  of `managed-mcp.json` exposed on the snapshot as `managed_mcp`; UI
+  surfacing of MCP-policy presence is a follow-up. Plist / registry
+  policy sources remain Phase 6.
 - **Phase 3 — env vars + array-merge.** ✅ shipped 2026-05-05.
   Phase 3a: array-concat-dedup with per-element provenance for the known
   array-merged paths; `array-merged` chip activated.
@@ -86,9 +92,14 @@ Phase numbering matches the spec.
   wiring (above).
 - **Per-element waterfall** for array-merged fields. ✅ shipped with
   Phase 3a (`KeyDrawer.tsx` `ElementList`).
-- **Real `error` rail row.** The variant exists in the rail's status-dot
-  scheme but no layer currently produces it; lights up once Phase 2's
-  managed-file reads can fail.
+- **Real `error` rail row.** ✅ shipped with Phase 2 — managed-file
+  parse failures now produce an `err` row in the rail. (Project / user
+  files have produced `error` since Phase 1; Phase 2 closed the last
+  layer that couldn't.)
+- **`managed-mcp.json` surface.** Backend exposes the sibling read at
+  `snapshot.managed_mcp` (Phase 2). UI placement TBD — likely a small
+  "MCP policy" indicator near the topbar or a row in the rail's
+  diagnostics dock. Out of scope for the inspector main flow.
 - **Rail navigability — undecided.** Spec is silent. Either keep the
   rail informational (current behavior) or wire layer-click → centre
   list filtered to keys won by that layer. Surface as an explicit

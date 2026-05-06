@@ -62,7 +62,10 @@ function buildEntry(
   row: Row,
   layer: LayerRead | undefined,
 ): WaterfallEntry {
-  // Layers the backend never reads in Phase 1: managed, cli, env, default.
+  // Production backend always emits managed (Phase 2) and env (Phase 3b),
+  // so this synth fallback only fires for cli (never inspectable) and
+  // default (catalog-derived). It still runs for managed/env in unit tests
+  // that hand-craft a thinner snapshot.
   if (!layer) {
     return buildSynthesizedEntry(source, row);
   }

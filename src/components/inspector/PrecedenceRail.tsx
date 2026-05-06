@@ -52,10 +52,13 @@ function buildRow(
   }
 
   if (layer.status === "missing") {
+    // `managed` is missing when no policy is shipped to this machine — the
+    // user-friendly copy (per inspector-ui.md:135) reads better than the
+    // raw managed dir path.
     return {
       source,
       dot: "empty",
-      detail: layer.path ?? "—",
+      detail: source === "managed" ? ABSENT_DETAIL.managed! : layer.path ?? "—",
       count: null,
     };
   }

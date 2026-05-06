@@ -27,6 +27,9 @@ export interface SettingsSnapshot {
   effective: unknown;
   project_root: string | null;
   diagnostics: Diagnostic[];
+  /** Sibling read of `managed-mcp.json` (Phase 2). Not part of precedence;
+   * surfaced so the UI can indicate admin-shipped MCP policy. */
+  managed_mcp: LayerRead;
 }
 
 export const LAYERS_IN_PRECEDENCE_ORDER: LayerSource[] = [

@@ -14,11 +14,25 @@ function ok(source: LayerRead["source"], raw: unknown): LayerRead {
   return { source, path: "/fake/path", status: "ok", raw, error: null };
 }
 
+const ABSENT_MANAGED_MCP: LayerRead = {
+  source: "managed",
+  path: null,
+  status: "missing",
+  raw: null,
+  error: null,
+};
+
 function snapshot(
   layers: LayerRead[],
   effective: unknown,
 ): SettingsSnapshot {
-  return { layers, effective, project_root: "/x", diagnostics: [] };
+  return {
+    layers,
+    effective,
+    project_root: "/x",
+    diagnostics: [],
+    managed_mcp: ABSENT_MANAGED_MCP,
+  };
 }
 
 describe("buildRows — set vs shadowed", () => {
