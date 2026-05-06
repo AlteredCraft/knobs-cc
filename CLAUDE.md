@@ -6,14 +6,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 knobs.cc is a **Tauri 2 desktop app** (concept phase, no release) that inspects Claude Code's configuration: what knobs exist, what's currently set, and which layer wins. v1 is **read-only**.
 
-The repo currently holds two distinct things, and conflating them is the most common mistake:
+The repo holds three coordinated surfaces:
 
-1. **`spec/`** — the live deliverable right now. `inventory.md` (the catalog of every Claude Code config surface) and `catalog-sync.md` (a spec for the harness that keeps it in sync with upstream docs). Both are hand-edited prose; the catalog-sync harness is **spec only — no code yet**.
-2. **The Tauri 2 scaffold** (`src/`, `src-tauri/`) — the bare `create-tauri-app` template (React + TypeScript + Vite + Rust). The current "greet" command is boilerplate; the planned commands are `read_settings_layers`, `read_env_snapshot`, `read_catalog`. None of those exist yet.
+1. **`spec/`** — design, scope, and roadmap. `inventory.md` catalogs every Claude Code config surface; `settings-display.md` and `inspector-ui.md` describe the app's backend and UI in phases; `catalog-sync.md` describes the harness that keeps catalog files in sync with upstream docs; `design-notes.md` carries open questions; `roadmap.md` is the single source of truth for what's shipped and what's pending.
+2. **The Tauri 2 app** (`src/`, `src-tauri/`) — implementation. The Rust backend exposes `read_settings_layers` (five layers — managed / env / project_local / project / user — with per-leaf provenance and array-merge for permissions-style fields) and `read_catalog`. The React/Vite frontend is a three-pane DevTools-style Inspector: precedence rail, settings list, key drawer.
+3. **The catalog harness** (`scripts/sync-*.js`, `catalog/*.json`) — pulls upstream JSON Schema and docs into `catalog/{settings,env-vars,hooks}.json`, which the app reads through `read_catalog`. `catalog/env-settings-map.json` maps env vars to their settings-key equivalents for the env layer.
 
-**Outstanding work across the spec files is tracked in [`spec/roadmap.md`](spec/roadmap.md)** — single source of truth. When you ship something or discover new work, update there rather than scattering status across the individual specs.
+**Outstanding work is tracked in [`spec/roadmap.md`](spec/roadmap.md)**, the single source of truth. When you ship something or discover new work, update there rather than scattering status across the individual specs.
 
-If a request is ambiguous between "edit the inventory" and "edit the app," ask. The inventory has far more activity than the app right now.
+If a request is ambiguous between "edit the inventory" and "edit the app," ask — both are active surfaces. (Earlier in the project the inventory was the only live work; that's no longer true.)
 
 ## Scope rule (non-obvious — read before adding entries to inventory.md)
 
@@ -40,16 +41,29 @@ The reasoning is in `spec/design-notes.md` under "Tauri 2 boundaries" and "v1 sc
 npm install               # one-time
 npm run dev               # Vite dev server only (frontend at http://localhost:1420)
 npm run tauri dev         # full Tauri dev — spawns Vite + native window
-npm run build             # tsc --noEmit + vite build → dist/
+npm run build             # tsc + vite build → dist/
 npm run tauri build       # native installers (DMG / .msi / AppImage / etc.)
 npm run preview           # serve the built dist/ for sanity checks
+
+# Tests
+npm run test:unit                      # vitest run — frontend unit tests under src/
+npm run test:unit:watch                # vitest watch mode
+npm test                               # node:test on scripts/sync-*.test.js
+npm run test:coverage                  # node:test with coverage report
+(cd src-tauri && cargo test --lib)     # Rust backend unit tests
+
+# Catalog sync (manual)
+npm run sync:settings                  # catalog/settings.json from upstream JSON Schema
+npm run sync:env-vars                  # catalog/env-vars.json from upstream docs
+npm run sync:hooks                     # catalog/hooks.json from upstream docs
 ```
 
 Notes:
 
 - The Vite port is **fixed at 1420** (`vite.config.ts` sets `strictPort: true`). `tauri.conf.json#build.devUrl` matches. Don't change one without the other.
-- No test runner, linter, or formatter is wired up yet. `tsc` (via `npm run build`) is the only static check.
+- No linter or formatter wired up yet. `tsc` (via `npm run build`) is the static check; vitest + cargo test are the runtime checks.
 - Rust changes in `src-tauri/` are picked up automatically by `tauri dev`; the frontend Vite watcher ignores `**/src-tauri/**`.
+- Vitest hydrates the catalog from a setup file (`src/test-setup.ts`) so tests run without a Tauri runtime — see `src/lib/catalog.ts` for the production vs test seam (`loadCatalog()` vs `hydrateCatalogForTesting()`).
 
 ## Scaffold gotchas
 

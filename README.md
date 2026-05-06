@@ -4,13 +4,28 @@ A local desktop inspector for every knob Claude Code gives you — where it live
 
 ## Status
 
-**Concept — no release yet.** Domain acquired 2026-04-24.
+**Concept — no release yet.** Domain acquired 2026-04-24. No installer
+or signed build, but the read-only inspector runs end-to-end via
+`npm run tauri dev`.
 
-No app code, no release, no install path yet. The repo currently holds:
+The repo holds three working surfaces:
 
-- [`spec/inventory.md`](spec/inventory.md) — working inventory of Claude Code's configuration surface.
-- [`spec/catalog-sync.md`](spec/catalog-sync.md) — spec for the harness that keeps the inventory in sync with upstream docs (RSS-driven, no code yet).
-- [`spec/design-notes.md`](spec/design-notes.md) — open questions (stack, hero screen, landing page).
+- **The Tauri 2 app.** `src/` (React/Vite/TypeScript Inspector UI) and
+  `src-tauri/` (Rust backend with the read-only `read_settings_layers`
+  and `read_catalog` Tauri commands). Five settings layers (managed /
+  env / project_local / project / user), per-leaf provenance, and
+  per-element waterfall for array-merged fields like `permissions.allow`.
+- **The specs.** [`spec/roadmap.md`](spec/roadmap.md) is the single
+  source of truth for what's shipped vs pending. Other live specs:
+  [`spec/inventory.md`](spec/inventory.md) (every Claude Code knob),
+  [`spec/settings-display.md`](spec/settings-display.md) (backend
+  phases), [`spec/inspector-ui.md`](spec/inspector-ui.md) (UI spec —
+  visual reference at [`mocks/01-inspector.html`](mocks/01-inspector.html)),
+  [`spec/catalog-sync.md`](spec/catalog-sync.md), and
+  [`spec/design-notes.md`](spec/design-notes.md).
+- **The catalog harness.** `scripts/sync-{settings,env-vars,hooks}.js`
+  pull upstream JSON Schema and docs into `catalog/*.json`, which the
+  app consumes through `read_catalog`.
 
 ## Premise
 
@@ -32,16 +47,29 @@ knobs.cc is a Tauri 2 desktop app that lays it all out:
 
 ## Roadmap
 
+[`spec/roadmap.md`](spec/roadmap.md) is the live tracker. High-level
+snapshot:
+
 1. ✅ Domain acquired
 2. ✅ Repo bootstrapped, inventory doc seeded
-3. ✅ Catalog-sync harness spec drafted ← *you are here*
-4. ✅ Verify inventory against current docs (entries tagged `[!verify]`)
-5. ⬜ Implement catalog-sync harness v0 (manual, per spec)
+3. ✅ Catalog-sync harness spec drafted
+4. ✅ Verify inventory against current docs
+5. ✅ Catalog-sync harness v0 — `scripts/sync-{settings,env-vars,hooks}.js`
 6. ✅ Pick app stack: Tauri 2 + TypeScript/Vite + Rust backend
-7. ✅ Scaffold the Tauri 2 app shell via `create-tauri-app` (React + TypeScript + Vite template)
-8. ⬜ Sketch the desktop dashboard/search/detail flow
-9. ⬜ Minimal prototype with explicit Tauri 2 commands (`read_settings_layers`, `read_env_snapshot`, `read_catalog`) registered via `invoke_handler`, with a minimal capability file in `src-tauri/capabilities/`
+7. ✅ Scaffold the Tauri 2 app shell
+8. ✅ Inspector UI sketched
+   ([`mocks/01-inspector.html`](mocks/01-inspector.html),
+   [`spec/inspector-ui.md`](spec/inspector-ui.md))
+9. ✅ Tauri 2 commands shipped — `read_settings_layers` (managed,
+   env, project_local, project, user; per-leaf provenance;
+   array-merge for permissions-style fields) and `read_catalog`. The
+   capability file is kept minimal (`core:default` + `opener:default`).
+   `read_env_snapshot` was folded into `read_settings_layers` as the
+   `env` layer rather than shipping as a separate command.
 10. ⬜ Landing page at knobs.cc
+
+Inspector polish, OS-policy managed sources, and the file watcher
+remain — see [`spec/roadmap.md`](spec/roadmap.md).
 
 ## Running knobs.cc
 
@@ -59,12 +87,18 @@ npm run tauri build    # build a native installer (DMG / .msi / AppImage)
 
 ## Tests
 
+Three suites live in this repo:
+
 ```sh
-npm test                 # run the unit test suite (Node's built-in test runner)
-npm run test:coverage    # run tests with a per-file coverage report
+npm run test:unit                    # vitest run — frontend (src/)
+npm run test:unit:watch              # vitest watch mode
+npm test                             # node:test on scripts/sync-*.test.js
+npm run test:coverage                # node:test with coverage report
+(cd src-tauri && cargo test --lib)   # Rust backend unit tests
 ```
 
-The catalog-sync script (`scripts/sync-settings.js`) is the only code under test today; its `main()` function (network fetch + filesystem write) is intentionally excluded from coverage.
+`main()` in the catalog-sync scripts (network fetch + filesystem
+write) is intentionally excluded from coverage.
 
 ## Contributing
 
