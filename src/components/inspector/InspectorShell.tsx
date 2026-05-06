@@ -36,6 +36,15 @@ export function InspectorShell({
     setActiveKeyPath((cur) => (cur === keyPath ? null : keyPath));
   }, []);
 
+  // Drawer-originated navigation (related-knobs click). Set the active key
+  // and move the list's cursor to match — otherwise the list's
+  // cursor-follow effect would immediately call onSelect with the old
+  // cursor position and drag the drawer back.
+  const handleNavigate = useCallback((keyPath: string) => {
+    setActiveKeyPath(keyPath);
+    listRef.current?.setCursor(keyPath);
+  }, []);
+
   const closeDrawer = useCallback(() => setActiveKeyPath(null), []);
 
   // Global keyboard model — see inspector-ui.md "Interaction model".
@@ -156,6 +165,7 @@ export function InspectorShell({
             row={activeRow}
             snapshot={snapshot}
             onClose={closeDrawer}
+            onSelect={handleNavigate}
           />
         ) : (
           <DrawerPlaceholder />

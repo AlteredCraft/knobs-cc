@@ -119,6 +119,26 @@ export function getCatalogMeta(): CatalogMeta {
   return requireState().meta;
 }
 
+/**
+ * Sibling catalog entries — same parent dot-path, immediate level only.
+ * Top-level keys (no dot) have no siblings under this rule and return [].
+ * Used by the drawer's related-knobs section.
+ */
+export function findRelatedKnobs(keyPath: string): readonly CatalogEntry[] {
+  const dot = keyPath.lastIndexOf(".");
+  if (dot < 0) return [];
+  const prefix = keyPath.slice(0, dot + 1);
+  const { full } = requireState();
+  return full.filter((e) => {
+    if (e.key === keyPath) return false;
+    if (!e.key.startsWith(prefix)) return false;
+    // Immediate siblings only — exclude nieces/nephews. We want
+    // `permissions.deny` next to `permissions.allow` but not
+    // `permissions.foo.bar`.
+    return !e.key.slice(prefix.length).includes(".");
+  });
+}
+
 /** Lookup by exact dot-path. Walks up to find the closest parent on miss. */
 export function findCatalogEntry(keyPath: string): CatalogEntry | null {
   const { byKey, full } = requireState();

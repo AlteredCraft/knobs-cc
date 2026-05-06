@@ -32,6 +32,11 @@ export interface SettingsListHandle {
   focusFilter: () => void;
   moveCursor: (delta: 1 | -1) => void;
   activateCursor: () => void;
+  /** Jump the logical cursor to a specific key. Used when navigation
+   * originates outside the list (e.g. clicking a related knob in the
+   * drawer); without this the cursor-follow effect would drag the drawer
+   * back to wherever the cursor was. */
+  setCursor: (keyPath: string) => void;
 }
 
 interface SettingsListProps {
@@ -113,6 +118,7 @@ export const SettingsList = forwardRef<SettingsListHandle, SettingsListProps>(
             return cur;
           });
         },
+        setCursor: (keyPath) => setCursorKeyPath(keyPath),
       }),
       [onSelect],
     );

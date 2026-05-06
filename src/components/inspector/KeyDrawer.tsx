@@ -1,6 +1,8 @@
+import { useMemo } from "react";
 import { cn } from "@/lib/utils";
+import { findRelatedKnobs, type CatalogEntry } from "@/lib/catalog";
 import { formatValue } from "@/lib/format";
-import type { Row } from "@/lib/rows";
+import { buildRows, type Row } from "@/lib/rows";
 import { buildWaterfall } from "@/lib/waterfall";
 import type { ArrayMergedElement } from "@/lib/flatten";
 import type { SettingsSnapshot } from "@/types";
@@ -12,14 +14,30 @@ export function KeyDrawer({
   row,
   snapshot,
   onClose,
+  onSelect,
 }: {
   row: Row;
   snapshot: SettingsSnapshot;
   onClose: () => void;
+  /** Click-through from the related-knobs section navigates the drawer. */
+  onSelect: (keyPath: string) => void;
 }) {
   const formatted = formatValue(row.value);
   const description = row.catalog?.description?.split("\n")[0] ?? null;
   const isArrayMerged = row.state === "array-merged";
+
+  // Look up siblings via the catalog and join with current row state so the
+  // section can show set-vs-unset hints. Memoized on snapshot/row so we
+  // don't rerun the join on incidental rerenders.
+  const related = useMemo(() => {
+    const entries = findRelatedKnobs(row.keyPath);
+    if (entries.length === 0) return [];
+    const rowsByKey = new Map(buildRows(snapshot).map((r) => [r.keyPath, r]));
+    return entries.map((entry) => ({
+      entry,
+      row: rowsByKey.get(entry.key) ?? null,
+    }));
+  }, [snapshot, row.keyPath]);
 
   return (
     <aside className="flex w-[440px] shrink-0 flex-col overflow-hidden border-l border-line bg-bg-1">
@@ -33,6 +51,7 @@ export function KeyDrawer({
           <Waterfall row={row} snapshot={snapshot} />
         )}
 
+        <RelatedKnobs items={related} onSelect={onSelect} />
         <CatalogFooter row={row} />
       </div>
     </aside>
@@ -115,6 +134,14 @@ function DrawerHeader({
 }) {
   const typeText = row.catalog?.type ?? "unknown";
   const isShadowed = row.state === "shadowed";
+  // Most catalog entries don't declare a default; show only when present.
+  // For unset rows the effective value IS the default, so the inline copy
+  // would be redundant — the EffectiveBlock already shows it.
+  const showDefault =
+    row.catalog && "default" in row.catalog && row.state !== "unset";
+  const defaultText = showDefault
+    ? formatValue(row.catalog!.default).text
+    : null;
 
   return (
     <div className="border-b border-line px-5 pt-5 pb-4">
@@ -136,10 +163,18 @@ function DrawerHeader({
         {row.namespace ? <span className="text-fg-3">{row.namespace}.</span> : null}
         {row.leaf}
       </h2>
-      <div className="mt-1.5 flex items-center gap-2 font-mono text-[11px] text-fg-3">
+      <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[11px] text-fg-3">
         <span>{typeText}</span>
         <span className="text-fg-4">·</span>
         <span>{describeShape(row)}</span>
+        {defaultText !== null && (
+          <>
+            <span className="text-fg-4">·</span>
+            <span title="Catalog default — what Claude Code uses if nobody sets this">
+              default: <span className="text-fg-2">{defaultText}</span>
+            </span>
+          </>
+        )}
         {isShadowed && (
           <>
             <span className="text-fg-4">·</span>
@@ -202,6 +237,70 @@ function EffectiveBlock({
   );
 }
 
+interface RelatedItem {
+  entry: CatalogEntry;
+  row: Row | null;
+}
+
+function RelatedKnobs({
+  items,
+  onSelect,
+}: {
+  items: RelatedItem[];
+  onSelect: (keyPath: string) => void;
+}) {
+  if (items.length === 0) return null;
+  return (
+    <>
+      <div className="flex items-center justify-between px-5 pt-4 pb-2">
+        <span className="corner-tag">Related ({items.length})</span>
+        <span className="font-mono text-[9.5px] text-fg-4">siblings</span>
+      </div>
+      <div className="space-y-0.5 px-3 pb-2">
+        {items.map(({ entry, row }) => {
+          const winner = row?.winner ?? null;
+          const isSet = row?.state === "set" || row?.state === "shadowed" || row?.state === "array-merged";
+          return (
+            <button
+              key={entry.key}
+              type="button"
+              onClick={() => onSelect(entry.key)}
+              className={cn(
+                "grid w-full items-center gap-2.5 rounded-sm px-2.5 py-1.5",
+                "grid-cols-[1fr_72px] text-left",
+                "hover:bg-bg-2 focus:bg-bg-2 focus:outline-none",
+              )}
+              title={entry.key}
+            >
+              <span className="min-w-0 truncate font-mono text-[12px] text-fg-1">
+                <span className="text-fg-3">{prefixOf(entry.key)}</span>
+                {leafOf(entry.key)}
+              </span>
+              <span className="justify-self-end">
+                {winner ? (
+                  <SourceBadge source={winner} />
+                ) : (
+                  <span
+                    className={cn(
+                      "inline-block rounded-[2px] border px-1.5 py-0.5",
+                      "font-mono text-[10px] uppercase tracking-[0.05em]",
+                      isSet
+                        ? "text-fg-3 border-line-strong"
+                        : "text-fg-4 border-line",
+                    )}
+                  >
+                    unset
+                  </span>
+                )}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </>
+  );
+}
+
 function CatalogFooter({ row }: { row: Row }) {
   if (!row.catalog) {
     return (
@@ -219,13 +318,19 @@ function CatalogFooter({ row }: { row: Row }) {
       <div className="font-mono text-[10.5px] leading-relaxed text-fg-3">
         {row.catalog.key}
         {row.catalog.type ? ` · ${row.catalog.type}` : ""}
-        <br />
-        <span className="text-fg-4">
-          inventory.md · related knobs in Phase 5
-        </span>
       </div>
     </div>
   );
+}
+
+function prefixOf(keyPath: string): string {
+  const dot = keyPath.lastIndexOf(".");
+  return dot < 0 ? "" : `${keyPath.slice(0, dot)}.`;
+}
+
+function leafOf(keyPath: string): string {
+  const dot = keyPath.lastIndexOf(".");
+  return dot < 0 ? keyPath : keyPath.slice(dot + 1);
 }
 
 function describeShape(row: Row): string {

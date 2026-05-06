@@ -8,7 +8,7 @@ If you ship something, mark it ✅ here and (where relevant) update the
 corresponding spec section. If you discover new work, add it here, not
 inline in another spec.
 
-Last reviewed: 2026-05-05 (Phase 2 + read_catalog shipped).
+Last reviewed: 2026-05-05 (Phase 2 + read_catalog + Phase 5 shipped).
 
 ---
 
@@ -34,12 +34,27 @@ Phase numbering matches the spec.
   `CLAUDE_CODE_*`). Mapping is extensible by JSON edit; future PR can
   migrate to a description-prose-derived `env` field on each settings
   catalog entry once upstream schema gains structured metadata.
-- **Phase 5 — drawer catalog cross-reference.** Catalog-sourced
-  description / type / default / deprecation in the drawer. Real
-  `default` layer flow-through (values nobody set fall through to the
-  catalog default and tag as `default`). Per-element waterfall for
-  array-merged fields. Related-knobs section (placeholder copy in
-  `KeyDrawer.tsx:154`). Depends on Phase 3 + catalog wiring below.
+- **Phase 5 — drawer catalog cross-reference.** Mostly shipped
+  2026-05-05.
+  ✅ Description / type / default in the drawer header (default shown
+  inline as "default: X" when the entry has one and the row isn't
+  unset).
+  ✅ Default-layer flow-through — unset rows already pull `value` from
+  catalog `default` and tag with `winner: "default"`; the waterfall
+  surfaces it as the winning row.
+  ✅ Per-element waterfall (Phase 3a).
+  ✅ Related-knobs section — `findRelatedKnobs(keyPath)` in
+  `src/lib/catalog.ts` returns immediate siblings under the same
+  parent; drawer renders them as clickable rows; clicking
+  navigates the drawer + list cursor in lockstep.
+  Outstanding: **deprecation copy.** The settings catalog has no
+  structured `deprecated` field — only one entry
+  (`includeCoAuthoredBy`) mentions it informally in description prose.
+  Either lobby upstream JSON Schema for a flag, or build a
+  description-prose matcher when more entries gain that copy. Not slated.
+  Known minor limitation: clicking a related knob that's currently
+  filtered out (chip / search) snaps to the first visible row instead
+  of clearing the filter. Acceptable for v1; track if it bites.
   (§ "Phase 5".)
 - **Phase 6 — OS-policy managed sources.** macOS
   `com.anthropic.claudecode` plist; Windows `HKLM`/`HKCU` policy keys.
@@ -95,8 +110,8 @@ Phase numbering matches the spec.
 
 - **Path-notes click-through.** Open the source file at the right line
   in the user's editor. Spec calls this Phase 7+; nothing wired today.
-- **Related-knobs section.** Drawer placeholder; depends on catalog
-  wiring (above).
+- **Related-knobs section.** ✅ shipped with Phase 5
+  (`KeyDrawer.tsx` `RelatedKnobs`).
 - **Per-element waterfall** for array-merged fields. ✅ shipped with
   Phase 3a (`KeyDrawer.tsx` `ElementList`).
 - **Real `error` rail row.** ✅ shipped with Phase 2 — managed-file
