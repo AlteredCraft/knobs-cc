@@ -8,7 +8,7 @@ If you ship something, mark it ✅ here and (where relevant) update the
 corresponding spec section. If you discover new work, add it here, not
 inline in another spec.
 
-Last reviewed: 2026-05-05 (Phase 2 + read_catalog + Phase 5 shipped).
+Last reviewed: 2026-05-05 (Phase 2 + read_catalog + Phase 5 + Phase 7 shipped).
 
 ---
 
@@ -59,10 +59,23 @@ Phase numbering matches the spec.
 - **Phase 6 — OS-policy managed sources.** macOS
   `com.anthropic.claudecode` plist; Windows `HKLM`/`HKCU` policy keys.
   Apply managed-tier precedence (`inventory.md:50`). (§ "Phase 6".)
-- **Phase 7 — refresh / watch / diagnostics.** Manual refresh ✅ shipped
-  (`R` key + topbar button). Outstanding: file watcher (Rust, not the fs
-  plugin), per-layer empty-state diagnostics, malformed/permission-denied
-  surfaced in UI. (§ "Phase 7".)
+- **Phase 7 — refresh / watch / diagnostics.** ✅ shipped 2026-05-05.
+  Manual refresh shipped earlier (`R` key + topbar button). Phase 7
+  added:
+  ✅ File watcher via `notify` (not the fs plugin — capability surface
+  stays at `core:default`+`opener:default`). Watches each settings dir
+  non-recursively, filters by filename, emits `settings-changed` to the
+  main window; the frontend debounces by 250ms and re-runs
+  `read_settings_layers`.
+  ✅ Per-layer error promotion — layer-level parse / IO errors now
+  appear in the diagnostics dock alongside snapshot-level diagnostics
+  (HOME/cwd unresolvable). Previously the dock said "Diagnostics · 0"
+  while a rail row was red.
+  ✅ Better empty-state copy when a file-based layer has no resolvable
+  path (`user` → "$HOME not set", `project`/`project_local` → "no
+  project root"). The bare "—" was uninformative.
+  Existing empty states (managed / cli / env / default) continue
+  verbatim from `inspector-ui.md:131-139`. (§ "Phase 7".)
 
 ### Deferred plan (kept warm, not slated)
 

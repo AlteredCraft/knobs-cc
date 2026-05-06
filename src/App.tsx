@@ -1,8 +1,15 @@
 import { useCallback, useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import { InspectorShell } from "@/components/inspector/InspectorShell";
 import { loadCatalog } from "@/lib/catalog";
 import type { SettingsSnapshot } from "@/types";
+
+// Coalesce window for `settings-changed` bursts. Editors typically write a
+// settings file as a tempfile rename — that's two events back-to-back, plus
+// the occasional follow-up. 250ms is short enough to feel live and long
+// enough to absorb the rename pair without a double-fetch.
+const REFRESH_DEBOUNCE_MS = 250;
 
 function App() {
   const [snapshot, setSnapshot] = useState<SettingsSnapshot | null>(null);
@@ -32,6 +39,23 @@ function App() {
 
   useEffect(() => {
     void refresh();
+  }, [refresh]);
+
+  // Live updates from the Rust file watcher (Phase 7). We re-fetch the whole
+  // snapshot on any settings-changed event — same code path as a manual
+  // refresh, no state diffing needed.
+  useEffect(() => {
+    let timer: number | undefined;
+    const unlisten = listen("settings-changed", () => {
+      if (timer !== undefined) window.clearTimeout(timer);
+      timer = window.setTimeout(() => {
+        void refresh();
+      }, REFRESH_DEBOUNCE_MS);
+    });
+    return () => {
+      void unlisten.then((u) => u());
+      if (timer !== undefined) window.clearTimeout(timer);
+    };
   }, [refresh]);
 
   if (error) {

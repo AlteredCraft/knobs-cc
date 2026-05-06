@@ -68,8 +68,11 @@ snapshot:
    `env` layer rather than shipping as a separate command.
 10. ⬜ Landing page at knobs.cc
 
-Inspector polish, OS-policy managed sources, and the file watcher
-remain — see [`spec/roadmap.md`](spec/roadmap.md).
+Inspector polish and OS-policy managed sources (macOS plist / Windows
+registry) remain — see [`spec/roadmap.md`](spec/roadmap.md). Live
+updates are wired: the Rust backend watches the settings paths via
+`notify` and emits `settings-changed`, and the frontend re-reads the
+snapshot on receipt.
 
 ## Running knobs.cc
 

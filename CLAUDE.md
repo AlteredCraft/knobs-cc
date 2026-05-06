@@ -9,7 +9,7 @@ knobs.cc is a **Tauri 2 desktop app** (concept phase, no release) that inspects 
 The repo holds three coordinated surfaces:
 
 1. **`spec/`** — design, scope, and roadmap. `inventory.md` catalogs every Claude Code config surface; `settings-display.md` and `inspector-ui.md` describe the app's backend and UI in phases; `catalog-sync.md` describes the harness that keeps catalog files in sync with upstream docs; `design-notes.md` carries open questions; `roadmap.md` is the single source of truth for what's shipped and what's pending.
-2. **The Tauri 2 app** (`src/`, `src-tauri/`) — implementation. The Rust backend exposes `read_settings_layers` (five layers — managed / env / project_local / project / user — with per-leaf provenance and array-merge for permissions-style fields) and `read_catalog`. The React/Vite frontend is a three-pane DevTools-style Inspector: precedence rail, settings list, key drawer.
+2. **The Tauri 2 app** (`src/`, `src-tauri/`) — implementation. The Rust backend exposes `read_settings_layers` (five layers — managed / env / project_local / project / user — with per-leaf provenance and array-merge for permissions-style fields) and `read_catalog`, plus a `notify`-based file watcher that emits `settings-changed` so the UI refreshes live (see "Tauri 2 boundaries" — we use `notify` directly, not `tauri-plugin-fs-watch`, to keep the capability surface minimal). The React/Vite frontend is a three-pane DevTools-style Inspector: precedence rail, settings list, key drawer.
 3. **The catalog harness** (`scripts/sync-*.js`, `catalog/*.json`) — pulls upstream JSON Schema and docs into `catalog/{settings,env-vars,hooks}.json`, which the app reads through `read_catalog`. `catalog/env-settings-map.json` maps env vars to their settings-key equivalents for the env layer.
 
 **Outstanding work is tracked in [`spec/roadmap.md`](spec/roadmap.md)**, the single source of truth. When you ship something or discover new work, update there rather than scattering status across the individual specs.
@@ -30,6 +30,7 @@ v1 is locked to read-only inspection. The capability surface is deliberately tin
 
 - `src-tauri/capabilities/default.json` grants only `core:default` + `opener:default`. **Do not add `fs`, `shell`, `process`, `dialog`, or `updater` plugin permissions.**
 - File reads happen through explicit `#[tauri::command]` Rust functions registered via `tauri::generate_handler![...]`, **not** by granting the frontend filesystem-plugin permissions.
+- File **watching** uses the `notify` crate from Rust and pushes `settings-changed` events to the frontend. Don't swap to `tauri-plugin-fs-watch` — that would require granting fs-watch capabilities to JS.
 - Frontend calls commands via `invoke()` from `@tauri-apps/api/core`. No open-ended plugin APIs from JS.
 - No write commands. No editing settings through the app. That's a v2 conversation.
 

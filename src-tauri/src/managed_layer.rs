@@ -17,7 +17,7 @@ use crate::settings::{LayerRead, LayerSource, LayerStatus};
 
 /// Platform's file-based managed-settings root. None on unsupported targets
 /// (so the snapshot can still report a `missing` rail row rather than panic).
-fn resolve_managed_base() -> Option<PathBuf> {
+pub(crate) fn resolve_managed_base() -> Option<PathBuf> {
     #[cfg(target_os = "macos")]
     {
         Some(PathBuf::from("/Library/Application Support/ClaudeCode"))

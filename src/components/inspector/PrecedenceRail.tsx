@@ -25,6 +25,23 @@ const ABSENT_DETAIL: Partial<Record<LayerSource, string>> = {
   default: "catalog (compiled-in)",
 };
 
+// Fallback copy when a file-based layer is `missing` and we have no path to
+// display — i.e. HOME / cwd couldn't be resolved at all. Better than "—":
+// tells the user *why* the layer is absent. Snapshot diagnostics carry the
+// same information at the bottom of the rail; this just stops the row
+// itself from being uninformative.
+function unreachableLayerDetail(source: LayerSource): string {
+  switch (source) {
+    case "user":
+      return "$HOME not set";
+    case "project":
+    case "project_local":
+      return "no project root";
+    default:
+      return "—";
+  }
+}
+
 function buildRow(
   source: LayerSource,
   layer: LayerRead | undefined,
@@ -55,10 +72,18 @@ function buildRow(
     // `managed` is missing when no policy is shipped to this machine — the
     // user-friendly copy (per inspector-ui.md:135) reads better than the
     // raw managed dir path.
+    if (source === "managed") {
+      return {
+        source,
+        dot: "empty",
+        detail: ABSENT_DETAIL.managed!,
+        count: null,
+      };
+    }
     return {
       source,
       dot: "empty",
-      detail: source === "managed" ? ABSENT_DETAIL.managed! : layer.path ?? "—",
+      detail: layer.path ?? unreachableLayerDetail(source),
       count: null,
     };
   }
@@ -114,9 +139,23 @@ export function PrecedenceRail({
         ))}
       </div>
 
-      <DiagnosticsDock diagnostics={snapshot.diagnostics} />
+      <DiagnosticsDock diagnostics={collectDiagnostics(snapshot)} />
     </aside>
   );
+}
+
+// Snapshot diagnostics + per-layer errors. Layer errors already render in
+// the rail row, but a user scanning the dock for "what's wrong" should see
+// them counted here too — otherwise the dock reads "Diagnostics · 0" while
+// a row above flashes red.
+function collectDiagnostics(snapshot: SettingsSnapshot): Diagnostic[] {
+  const fromLayers: Diagnostic[] = snapshot.layers
+    .filter((l) => l.status === "error" && l.error)
+    .map((l) => ({
+      level: "error",
+      message: `${l.source}: ${l.error}`,
+    }));
+  return [...snapshot.diagnostics, ...fromLayers];
 }
 
 function DiagnosticsDock({ diagnostics }: { diagnostics: Diagnostic[] }) {
