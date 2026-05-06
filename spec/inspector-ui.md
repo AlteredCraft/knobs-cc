@@ -77,8 +77,10 @@ Non-modal. The list and rail remain navigable while the drawer is open.
   alone)
 - Effective-value block — value + winning layer badge, accent-coloured
 - **Layer waterfall** (see Design primitives)
-- Path notes for set layers (`./.claude/settings.json:7`) — clickable to
-  open the file in the user's editor (Phase 7+)
+- Path notes for set layers (`./.claude/settings.json`) — clickable to
+  open the file in the user's default editor (shipped). Line targeting
+  (`:7`) is deferred — `openPath` doesn't accept a line and a
+  `vscode://file` URL would lock click-through to a single editor.
 - Related-knobs section, seeded from the catalog (Phase 5+)
 - Catalog-source footer pointing back at `inventory.md`
 

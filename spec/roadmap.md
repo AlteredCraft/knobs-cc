@@ -8,7 +8,34 @@ If you ship something, mark it ✅ here and (where relevant) update the
 corresponding spec section. If you discover new work, add it here, not
 inline in another spec.
 
-Last reviewed: 2026-05-05 (Phase 2 + read_catalog + Phase 5 + Phase 7 shipped).
+Last reviewed: 2026-05-06 (Phase 2 + read_catalog + Phase 5 + Phase 7 +
+path-notes click-through shipped).
+
+## Next-up candidates
+
+A digest of what's open across the four tracks below — pick from
+here, then jump to the relevant section for shape and rationale.
+
+- **Phase 6 macOS plist** (settings layers) — completes the managed
+  tier on the OS we can dogfood. Windows registry is the natural
+  follow-up but isn't testable on this machine.
+- **`managed-mcp.json` UI surface** (inspector polish) — backend
+  already serves the sibling read; placement TBD.
+- **Hooks catalog pass #2** (catalog sync) — handler types + per-event
+  schemas. Investment without an immediate UI consumer.
+- **Rail navigability decision** (inspector polish) — spec question,
+  not coding work; needs a fork-vs-fork call before any UI lands.
+- **Inventory canonicalization** — clear `[!verify]` rows in §3
+  env-vars and §5.1 hook-events, or retire the convention.
+- **New sync scripts** (catalog sync) — `mcp.md`, `sub-agents.md`,
+  permissions, `keybindings.md`, `cli-reference.md`. Each gets one
+  script + one catalog file + one test.
+- **CI / drift hardening** (catalog sync) — cron-driven sync with
+  PR-on-diff; `$ref` resolution policy; staleness signal.
+
+Deferred / open-ended (kept warm, not slated): CLI layer via process
+argv, goals view, cross-cutting surfaces, landing page, nomenclature.
+See "Deferred plan" and "Design surfaces" further down.
 
 ---
 
@@ -121,8 +148,35 @@ Phase numbering matches the spec.
 
 ## Inspector polish — `inspector-ui.md`
 
-- **Path-notes click-through.** Open the source file at the right line
-  in the user's editor. Spec calls this Phase 7+; nothing wired today.
+Open work (what to pick up next within this track):
+
+- **`managed-mcp.json` surface.** Backend exposes the sibling read at
+  `snapshot.managed_mcp` (Phase 2). UI placement TBD — likely a small
+  "MCP policy" indicator near the topbar or a row in the rail's
+  diagnostics dock. Out of scope for the inspector main flow; small
+  visible payoff but only fires on machines with admin-shipped MCP
+  policy.
+- **Rail navigability — undecided.** Spec is silent. Either keep the
+  rail informational (current behavior) or wire layer-click → centre
+  list filtered to keys won by that layer. Needs an explicit decision
+  before any work — surface as a question, not a ticket.
+
+Shipped:
+
+- **Path-notes click-through.** ✅ shipped 2026-05-06. Path notes in
+  the drawer waterfall are now clickable; click invokes
+  `@tauri-apps/plugin-opener`'s `openPath` to open the file in the OS
+  default editor. Required adding `opener:allow-open-path` to
+  `capabilities/default.json` (default opener perms cover URLs +
+  reveal-in-dir but not path-open) **and** scoping the grant to a
+  whitelist of settings-file globs (`$HOME/.claude/**`,
+  `**/.claude/settings.json`, `**/.claude/settings.local.json`,
+  managed dirs on macOS/Linux). Without a scope the runtime denies
+  every call; the scope keeps the v1 boundary tight by limiting the
+  webview to opening only the files we surface. Line targeting (`:7`)
+  is deferred — `openPath` doesn't take a line, and adding a
+  `vscode://file` URL scheme would expand the capability surface for
+  VS-Code-only users.
 - **Related-knobs section.** ✅ shipped with Phase 5
   (`KeyDrawer.tsx` `RelatedKnobs`).
 - **Per-element waterfall** for array-merged fields. ✅ shipped with
@@ -131,14 +185,6 @@ Phase numbering matches the spec.
   parse failures now produce an `err` row in the rail. (Project / user
   files have produced `error` since Phase 1; Phase 2 closed the last
   layer that couldn't.)
-- **`managed-mcp.json` surface.** Backend exposes the sibling read at
-  `snapshot.managed_mcp` (Phase 2). UI placement TBD — likely a small
-  "MCP policy" indicator near the topbar or a row in the rail's
-  diagnostics dock. Out of scope for the inspector main flow.
-- **Rail navigability — undecided.** Spec is silent. Either keep the
-  rail informational (current behavior) or wire layer-click → centre
-  list filtered to keys won by that layer. Surface as an explicit
-  decision before adding the affordance.
 
 ---
 

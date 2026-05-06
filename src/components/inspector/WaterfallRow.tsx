@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import { formatValue } from "@/lib/format";
+import { openInEditor } from "@/lib/openPath";
 import type { WaterfallEntry } from "@/lib/waterfall";
 import { StatusDot } from "./StatusDot";
 import { SOURCE_BADGE_LABEL } from "./SourceBadge";
@@ -62,15 +63,28 @@ export function WaterfallRow({ entry }: { entry: WaterfallEntry }) {
       </div>
 
       {entry.path && entry.value !== undefined && (
-        <div className={cn("px-5 pb-1.5 -mt-1", isShadowed && "opacity-55")}>
-          <div className="flex items-center gap-2 font-mono text-[10px] text-fg-3">
-            <span className="opacity-50">↳</span>
-            <span className="truncate" title={entry.path}>
-              {entry.path}
-            </span>
-          </div>
-        </div>
+        <PathNote path={entry.path} dimmed={isShadowed} />
       )}
+    </div>
+  );
+}
+
+function PathNote({ path, dimmed }: { path: string; dimmed: boolean }) {
+  return (
+    <div className={cn("px-5 pb-1.5 -mt-1", dimmed && "opacity-55")}>
+      <button
+        type="button"
+        onClick={() => void openInEditor(path)}
+        title={`Open ${path} in your default editor`}
+        className={cn(
+          "flex w-full min-w-0 items-center gap-2 text-left",
+          "font-mono text-[10px] text-fg-3",
+          "hover:text-fg-1 hover:underline focus:text-fg-1 focus:underline focus:outline-none",
+        )}
+      >
+        <span className="opacity-50">↳</span>
+        <span className="truncate">{path}</span>
+      </button>
     </div>
   );
 }
