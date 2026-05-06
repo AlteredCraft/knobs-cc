@@ -2,7 +2,7 @@
 // effective tree (set keys) with the catalog (so unset rows appear too).
 
 import type { CatalogEntry } from "./catalog";
-import { CATALOG, findCatalogEntry } from "./catalog";
+import { findCatalogEntry, getCatalog } from "./catalog";
 import type { ArrayMergedElement } from "./flatten";
 import { flattenEffective } from "./flatten";
 import { contributorsForKey } from "./presence";
@@ -87,21 +87,21 @@ export function buildRows(snapshot: SettingsSnapshot): Row[] {
     }
   }
 
-  const unsetRows: Row[] = CATALOG.filter(
-    (entry) => !setPathsAndAncestors.has(entry.key),
-  ).map((entry) => {
-    const { namespace, leaf: leafName } = splitKey(entry.key);
-    return {
-      keyPath: entry.key,
-      namespace,
-      leaf: leafName,
-      value: entry.default,
-      winner: "default",
-      contributors: [],
-      state: "unset",
-      catalog: entry,
-    };
-  });
+  const unsetRows: Row[] = getCatalog()
+    .filter((entry) => !setPathsAndAncestors.has(entry.key))
+    .map((entry) => {
+      const { namespace, leaf: leafName } = splitKey(entry.key);
+      return {
+        keyPath: entry.key,
+        namespace,
+        leaf: leafName,
+        value: entry.default,
+        winner: "default",
+        contributors: [],
+        state: "unset",
+        catalog: entry,
+      };
+    });
 
   return [...setRows, ...unsetRows];
 }

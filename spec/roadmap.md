@@ -8,7 +8,7 @@ If you ship something, mark it ✅ here and (where relevant) update the
 corresponding spec section. If you discover new work, add it here, not
 inline in another spec.
 
-Last reviewed: 2026-05-05 (Phase 2 shipped).
+Last reviewed: 2026-05-05 (Phase 2 + read_catalog shipped).
 
 ---
 
@@ -66,8 +66,15 @@ Phase numbering matches the spec.
 - **New sync scripts.** Each gets one script + one catalog file + one
   test, per the recipe. Likely candidates: `mcp.md`, `sub-agents.md`,
   permissions doc, `keybindings.md`, `cli-reference.md`. None committed.
-- **`read_catalog` Tauri command.** Wire `catalog/*.json` into the app,
-  retiring the hand-imported `src/lib/catalog.ts`. Unblocks Phase 5.
+- **`read_catalog` Tauri command.** ✅ shipped 2026-05-05. Rust now
+  owns `catalog/{settings,env-vars,hooks}.json` via `include_str!` and
+  serves them through `read_catalog`. The frontend's `src/lib/catalog.ts`
+  is now async-hydrated (`loadCatalog()` at boot, sync accessors
+  thereafter); a vitest setup file feeds the same JSON into
+  `hydrateCatalogForTesting()` so unit tests skip IPC. The env-vars
+  and hooks catalogs are exposed on the wire but not yet consumed by
+  the UI — Phase 5 and inspector polish will pick them up. Unblocks
+  Phase 5.
 - **`$ref` resolution policy.** Settings catalog preserves `$ref`
   strings; decide whether consumers expand them at sync time or via a
   sibling `$defs` block.

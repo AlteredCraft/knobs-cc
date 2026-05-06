@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { InspectorShell } from "@/components/inspector/InspectorShell";
+import { loadCatalog } from "@/lib/catalog";
 import type { SettingsSnapshot } from "@/types";
 
 function App() {
@@ -9,7 +10,13 @@ function App() {
 
   const refresh = useCallback(async () => {
     try {
-      const next = await invoke<SettingsSnapshot>("read_settings_layers");
+      // Catalog is idempotent after first load — the await is a no-op on
+      // refresh. Pair it with the snapshot read so a cold start doesn't
+      // race the inspector against an unloaded catalog.
+      const [, next] = await Promise.all([
+        loadCatalog(),
+        invoke<SettingsSnapshot>("read_settings_layers"),
+      ]);
       setSnapshot(next);
       setError(null);
     } catch (e) {
