@@ -9,7 +9,8 @@ corresponding spec section. If you discover new work, add it here, not
 inline in another spec.
 
 Last reviewed: 2026-05-06 (Phase 2 + read_catalog + Phase 5 + Phase 7 +
-path-notes click-through + Phase 6 fully shipped + three-OS CI).
+path-notes click-through + Phase 6 fully shipped + three-OS CI +
+managed-mcp.json topbar pill + catalog-drift cron).
 
 ## Next-up candidates
 
@@ -25,8 +26,9 @@ here, then jump to the relevant section for shape and rationale.
 - **New sync scripts** (catalog sync) — `mcp.md`, `sub-agents.md`,
   permissions, `keybindings.md`, `cli-reference.md`. Each gets one
   script + one catalog file + one test.
-- **CI / drift hardening** (catalog sync) — cron-driven sync with
-  PR-on-diff; `$ref` resolution policy; staleness signal.
+- **CI / drift hardening** (catalog sync) — `$ref` resolution policy;
+  staleness signal. (Cron-driven sync with PR-on-diff shipped
+  2026-05-06.)
 
 Deferred / open-ended (kept warm, not slated): CLI layer via process
 argv, goals view, cross-cutting surfaces, landing page, nomenclature.
@@ -149,8 +151,14 @@ Phase numbering matches the spec.
   sibling `$defs` block.
 - **Staleness signal.** ETag or content-hash on fetch — useful once we
   want change-detection beyond raw diff.
-- **Cron CI for catalog drift.** GitHub Action that runs the sync
-  scripts on schedule and opens a PR on diff. Cheap; nothing blocks it.
+- **Cron CI for catalog drift.** ✅ shipped 2026-05-06.
+  `.github/workflows/catalog-drift.yml` runs the sync scripts every
+  Monday 09:00 UTC (and on `workflow_dispatch`). Detect step
+  normalises out the always-changing `fetchedAt` field; if only the
+  timestamp moved, the working tree is restored and no PR opens.
+  Real drift opens (or updates) a single `chore/catalog-drift` PR
+  via `peter-evans/create-pull-request@v7`. (§ "Automation" in
+  `catalog-sync.md`.)
 - **Coverage thresholds.** `--test-coverage-lines/-branches` floors on
   the sync test suites. Premature now.
 - **Inventory's long-term role.** Once catalogs cover the same ground,

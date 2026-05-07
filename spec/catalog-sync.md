@@ -130,9 +130,12 @@ Pragmatic acceptance criteria: every row in the upstream lifecycle table appears
 
 Each gets the same recipe: one script, one catalog file, one test file. Likely candidates in rough priority order: `mcp.md`, `sub-agents.md`, `permissions` doc, `keybindings.md`, `cli-reference.md`. A second `hooks.md` pass to capture handler types and per-event input/output schemas also belongs on this list. None are committed scope today.
 
+## Automation
+
+- **CI on cron — shipped.** [`.github/workflows/catalog-drift.yml`](../.github/workflows/catalog-drift.yml) runs `npm run sync:settings`, `npm run sync:env-vars`, and `npm run sync:hooks` every Monday at 09:00 UTC and on `workflow_dispatch`. The detect step normalises out the always-changing `fetchedAt` field before deciding whether content drifted; if only the timestamp moved, the working tree is restored to HEAD and no PR is opened. Real drift opens (or updates) a single `chore/catalog-drift` PR via `peter-evans/create-pull-request@v7`. Required permissions: `contents: write` + `pull-requests: write`.
+
 ## Future automation (not committed)
 
-- **CI on cron.** A GitHub Actions workflow could run `npm run sync:settings && npm run sync:env-vars && npm run sync:hooks` on a schedule and open a PR when `catalog/` changes. Cheap to add when there's a reason; nothing about the current scripts blocks it.
 - **Coverage thresholds.** `--test-coverage-lines` / `--test-coverage-branches` to fail the run below a target. Premature now; reasonable when there are several scripts.
 
 ## What this spec explicitly is not
