@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { SettingsSnapshot } from "@/types";
 import { buildRows } from "@/lib/rows";
+import { ErrorPanel } from "./ErrorPanel";
 import { HelpView } from "./HelpView";
 import { KeyDrawer } from "./KeyDrawer";
 import { PrecedenceRail } from "./PrecedenceRail";
@@ -23,6 +24,7 @@ export function InspectorShell({
 }) {
   const [activeKeyPath, setActiveKeyPath] = useState<string | null>(null);
   const [helpOpen, setHelpOpen] = useState(false);
+  const [errorsOpen, setErrorsOpen] = useState(false);
   const listRef = useRef<SettingsListHandle>(null);
 
   const activeRow = useMemo(() => {
@@ -64,6 +66,15 @@ export function InspectorShell({
         if (e.key === "Escape" || e.key === "?") {
           e.preventDefault();
           setHelpOpen(false);
+        }
+        return;
+      }
+
+      // Errors panel is the same shape — modal layer, Esc closes.
+      if (errorsOpen) {
+        if (e.key === "Escape") {
+          e.preventDefault();
+          setErrorsOpen(false);
         }
         return;
       }
@@ -139,7 +150,7 @@ export function InspectorShell({
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [activeKeyPath, closeDrawer, helpOpen, onRefresh]);
+  }, [activeKeyPath, closeDrawer, errorsOpen, helpOpen, onRefresh]);
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-bg-0 text-fg-1">
@@ -147,6 +158,7 @@ export function InspectorShell({
         snapshot={snapshot}
         onRefresh={onRefresh}
         onHelp={() => setHelpOpen(true)}
+        onShowErrors={() => setErrorsOpen(true)}
       />
 
       <div className="flex flex-1 overflow-hidden">
@@ -173,6 +185,7 @@ export function InspectorShell({
       </div>
 
       {helpOpen && <HelpView onClose={() => setHelpOpen(false)} />}
+      {errorsOpen && <ErrorPanel onClose={() => setErrorsOpen(false)} />}
     </div>
   );
 }

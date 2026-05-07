@@ -3,6 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { InspectorShell } from "@/components/inspector/InspectorShell";
 import { loadCatalog } from "@/lib/catalog";
+import { installGlobalHandlers } from "@/lib/errorLog";
 import type { SettingsSnapshot } from "@/types";
 
 // Coalesce window for `settings-changed` bursts. Editors typically write a
@@ -40,6 +41,11 @@ function App() {
   useEffect(() => {
     void refresh();
   }, [refresh]);
+
+  // Bridge uncaught errors and unhandled rejections into the in-app log so
+  // silent UI failures (e.g. a rejected `openPath` Promise) surface in the
+  // Topbar pill instead of only the WebView devtools console.
+  useEffect(() => installGlobalHandlers(), []);
 
   // Live updates from the Rust file watcher (Phase 7). We re-fetch the whole
   // snapshot on any settings-changed event — same code path as a manual

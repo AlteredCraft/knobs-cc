@@ -1,0 +1,17 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default-macos",
+  "description": "macOS-only opener scopes for managed-tier paths under /Library/. Split out so the patterns only compile on macOS (Windows backslash globs in a shared file fail to compile across all platforms).",
+  "platforms": ["macOS"],
+  "windows": ["main"],
+  "permissions": [
+    {
+      "identifier": "opener:allow-open-path",
+      "allow": [
+        { "path": "/Library/Application Support/ClaudeCode/**" },
+        { "path": "/Library/Managed Preferences/com.anthropic.claudecode.plist" },
+        { "path": "/Library/Managed Preferences/*/com.anthropic.claudecode.plist" }
+      ]
+    }
+  ]
+}

@@ -10,7 +10,8 @@ inline in another spec.
 
 Last reviewed: 2026-05-07 (Phase 2 + read_catalog + Phase 5 + Phase 7 +
 path-notes click-through + Phase 6 fully shipped + three-OS CI +
-managed-mcp.json topbar pill + catalog-drift cron + sync-sub-agents).
+managed-mcp.json topbar pill + catalog-drift cron + sync-sub-agents +
+in-app error log + per-OS capability split).
 
 ## Next-up candidates
 
@@ -199,6 +200,25 @@ Open work (what to pick up next within this track):
 
 Shipped:
 
+- **In-app error log + per-OS capability split.** ✅ shipped 2026-05-07.
+  `src/lib/errorLog.ts` is a 50-entry in-memory ring buffer with
+  `subscribe`/`reportError`/`markAllSeen`/`clearErrors` and an
+  `installGlobalHandlers` bridge for `window.onerror` and
+  `unhandledrejection`. `openInEditor`'s catch now routes to
+  `reportError` instead of silently `console.error`-ing. The Topbar
+  surfaces a red `errors` pill (visible only when entries > 0, glows
+  red while there are unseen entries); clicking opens an `ErrorPanel`
+  modeled on `HelpView` that lists timestamp / source / message /
+  detail with a `clear` button. Diagnostics (config-side) and runtime
+  errors (UI-side) stay as separate pills so users can tell "my config
+  is broken" from "the inspector is broken." Surfaced an existing bug:
+  `opener:allow-open-path` was failing every call on macOS because
+  Tauri compiles every scope glob on every target, and a Windows
+  backslash pattern (`C:\Program Files\ClaudeCode\**`) fails to
+  compile on macOS/Linux. Fix: split `capabilities/default.json` into
+  cross-platform + `default-macos.json` / `default-linux.json` /
+  `default-windows.json` gated via `platforms` so each pattern is only
+  compiled on its own target.
 - **`managed-mcp.json` topbar pill.** ✅ shipped 2026-05-06.
   `describeMcpPolicy(snapshot.managed_mcp)` (`src/lib/managedMcp.ts`)
   drives a small clickable pill in the topbar that only renders when
@@ -212,22 +232,23 @@ Shipped:
   that the pill makes the path actionable). Drill-down into the
   parsed contents stays out of scope — the file's small enough that
   opening it in the user's editor is the right primary action.
-- **Path-notes click-through.** ✅ shipped 2026-05-06. Path notes in
-  the drawer waterfall are now clickable; click invokes
+- **Path-notes click-through.** ✅ shipped 2026-05-06 (per-OS capability
+  split followed 2026-05-07 — see "In-app error log" above for the why).
+  Path notes in the drawer waterfall are now clickable; click invokes
   `@tauri-apps/plugin-opener`'s `openPath` to open the file in the OS
-  default editor. Required adding `opener:allow-open-path` to
-  `capabilities/default.json` (default opener perms cover URLs +
-  reveal-in-dir but not path-open) **and** scoping the grant to a
-  whitelist of settings-file globs (`$HOME/.claude/**`,
-  `**/.claude/settings.json`, `**/.claude/settings.local.json`,
-  managed dirs on macOS/Linux/Windows including
-  `/Library/Managed Preferences/*/com.anthropic.claudecode.plist` and
-  `C:\Program Files\ClaudeCode\**`). Without a scope the runtime
-  denies every call; the scope keeps the v1 boundary tight by
-  limiting the webview to opening only the files we surface. Line
-  targeting (`:7`) is deferred — `openPath` doesn't take a line, and
-  adding a `vscode://file` URL scheme would expand the capability
-  surface for VS-Code-only users.
+  default editor. Required adding `opener:allow-open-path` to the
+  capability files (default opener perms cover URLs + reveal-in-dir
+  but not path-open) **and** scoping the grant to a whitelist of
+  settings-file globs (`$HOME/.claude/**`, `**/.claude/settings.json`,
+  `**/.claude/settings.local.json`) plus per-OS managed-tier paths
+  gated by `platforms` (macOS `/Library/Managed Preferences/*/...plist`
+  + `/Library/Application Support/ClaudeCode/**`; Linux
+  `/etc/claude-code/**`; Windows `C:\Program Files\ClaudeCode\**`).
+  Without a scope the runtime denies every call; the scope keeps the
+  v1 boundary tight by limiting the webview to opening only the files
+  we surface. Line targeting (`:7`) is deferred — `openPath` doesn't
+  take a line, and adding a `vscode://file` URL scheme would expand
+  the capability surface for VS-Code-only users.
 - **Related-knobs section.** ✅ shipped with Phase 5
   (`KeyDrawer.tsx` `RelatedKnobs`).
 - **Per-element waterfall** for array-merged fields. ✅ shipped with

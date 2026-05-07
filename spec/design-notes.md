@@ -39,13 +39,13 @@ v1 should keep the desktop security model tight:
 - No `shell` plugin — no shell execution permitted.
 - No `updater` plugin until signing and release flow are stable.
 - Expose explicit commands (`read_settings_layers`, `read_env_snapshot`, `read_catalog`) registered via `generate_handler![]` instead of granting generic file access.
-- Capabilities file (`src-tauri/capabilities/default.json`) grants only `core:default` permissions — no `fs`, `shell`, or `updater`.
+- Capability files in `src-tauri/capabilities/` (`default.json` for cross-platform plus per-OS files `default-macos.json` / `default-linux.json` / `default-windows.json` gated via `platforms`) grant only `core:default` + `opener:default` + a tightly-scoped `opener:allow-open-path` — no `fs`, `shell`, or `updater`. The per-OS split is load-bearing: Tauri compiles every glob on every target, and a Windows backslash pattern (`C:\Program Files\…\**`) fails to compile on macOS/Linux unless gated.
 
 ## Security model (Tauri 2 capabilities)
 
 Tauri 2 permissions are managed through capability files (`src-tauri/capabilities/<id>.json`). For v1:
 
-- The default capability file grants only core permissions (`core:default`).
+- The default capability file grants `core:default` + `opener:default` plus a scoped `opener:allow-open-path` whitelist for the path-notes click-through. Platform-specific managed-tier paths live in sibling capability files gated by `platforms` (split because Tauri compiles every scope glob on every target — a Windows backslash pattern in a shared file fails to compile on macOS/Linux).
 - No `fs`, `shell`, `process`, `dialog`, or `updater` plugin permissions.
 - Our Rust commands (`#[tauri::command]`) are registered in the builder via `invoke_handler(tauri::generate_handler![...])`.
 - The frontend calls commands through `@tauri-apps/api/core` (`invoke`), not through open-ended plugin APIs.

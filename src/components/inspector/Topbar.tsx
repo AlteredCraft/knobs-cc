@@ -1,17 +1,23 @@
+import { useSyncExternalStore } from "react";
 import { LAYERS_IN_PRECEDENCE_ORDER, type SettingsSnapshot } from "@/types";
 import { describeMcpPolicy } from "@/lib/managedMcp";
 import { openInEditor } from "@/lib/openPath";
+import { getEntries, getUnseenCount, subscribe } from "@/lib/errorLog";
 import { StatusDot } from "./StatusDot";
 
 export function Topbar({
   snapshot,
   onRefresh,
   onHelp,
+  onShowErrors,
 }: {
   snapshot: SettingsSnapshot;
   onRefresh?: () => void;
   onHelp?: () => void;
+  onShowErrors?: () => void;
 }) {
+  const errorEntries = useSyncExternalStore(subscribe, getEntries);
+  const unseenErrors = useSyncExternalStore(subscribe, getUnseenCount);
   const okLayers = snapshot.layers.filter((l) => l.status === "ok").length;
   const totalLayers = LAYERS_IN_PRECEDENCE_ORDER.length;
   const diagnosticCount = snapshot.diagnostics.length;
@@ -52,6 +58,13 @@ export function Topbar({
           <StatusDot variant={diagnosticCount > 0 ? "warn" : "empty"} />
           {diagnosticCount} {diagnosticCount === 1 ? "diagnostic" : "diagnostics"}
         </span>
+        {errorEntries.length > 0 && onShowErrors && (
+          <ErrorsPill
+            count={errorEntries.length}
+            unseen={unseenErrors}
+            onClick={onShowErrors}
+          />
+        )}
         {mcpPolicy && (
           <button
             type="button"
@@ -93,5 +106,41 @@ export function Topbar({
         )}
       </div>
     </header>
+  );
+}
+
+function ErrorsPill({
+  count,
+  unseen,
+  onClick,
+}: {
+  count: number;
+  unseen: number;
+  onClick: () => void;
+}) {
+  const label = `${count} ${count === 1 ? "error" : "errors"}`;
+  const title =
+    unseen > 0
+      ? `${unseen} new — click to open the error log`
+      : "Open the error log";
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={title}
+      className={`flex items-center gap-1.5 rounded-sm border px-2 py-1 hover:text-fg-1 ${
+        unseen > 0
+          ? "border-err text-err shadow-[0_0_8px_rgba(212,88,91,0.35)] hover:border-err"
+          : "border-line-strong text-fg-2 hover:border-accent"
+      }`}
+    >
+      <StatusDot variant="err" />
+      {label}
+      {unseen > 0 && (
+        <span className="font-mono text-[9.5px] uppercase tracking-wider">
+          ·new
+        </span>
+      )}
+    </button>
   );
 }

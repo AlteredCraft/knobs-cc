@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Capability for the main window",
+  "description": "Cross-platform capability for the main window. Platform-specific opener scopes live in default-macos.json / default-linux.json / default-windows.json so that one OS's path globs (e.g. Windows backslashes) don't break the scope compile on the other OSes.",
   "windows": ["main"],
   "permissions": [
     "core:default",
@@ -11,12 +11,7 @@
       "allow": [
         { "path": "$HOME/.claude/**" },
         { "path": "**/.claude/settings.json" },
-        { "path": "**/.claude/settings.local.json" },
-        { "path": "/Library/Application Support/ClaudeCode/**" },
-        { "path": "/Library/Managed Preferences/com.anthropic.claudecode.plist" },
-        { "path": "/Library/Managed Preferences/*/com.anthropic.claudecode.plist" },
-        { "path": "/etc/claude-code/**" },
-        { "path": "C:\\Program Files\\ClaudeCode\\**" }
+        { "path": "**/.claude/settings.local.json" }
       ]
     }
   ]
