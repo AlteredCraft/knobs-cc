@@ -27,7 +27,7 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       # Tauri 2's Rust crate links against system webkit/glib on Linux even
       # for `cargo test --lib`, since the lib pulls in tauri's default
@@ -57,7 +57,7 @@ jobs:
           workspaces: src-tauri
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: '22'
           cache: 'npm'
