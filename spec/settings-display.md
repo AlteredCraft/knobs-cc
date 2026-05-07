@@ -185,8 +185,22 @@ Phase 4 work items:
 ### Phase 6 — OS-policy managed sources
 
 - macOS: read `com.anthropic.claudecode` managed-preferences plist.
+  *Shipped 2026-05-06.* `read_managed_layer` checks
+  `/Library/Managed Preferences/<user>/com.anthropic.claudecode.plist`
+  (per-user MDM) and `/Library/Managed Preferences/com.anthropic.claudecode.plist`
+  (system MDM) in that order — same order `cfprefsd` resolves managed
+  defaults. A present plist shadows the file-based source per
+  `inventory.md:50`; if the plist exists but is malformed, the layer
+  reports `error` rather than silently falling back to file-based — the
+  admin should see their broken policy, not have a different source
+  invisibly take over. Plist values are converted from `plist::Value` →
+  `serde_json::Value` (Date/Data are dropped — they have no clean JSON
+  shape and shouldn't appear in claude-code policy). The `plist` crate
+  is a macOS-only `[target.'cfg(target_os = "macos")']` dependency, so
+  Linux and Windows builds don't pull it in. Watcher + opener-scope
+  updated for the new paths.
 - Windows: read `HKLM\SOFTWARE\Policies\ClaudeCode` and
-  `HKCU\SOFTWARE\Policies\ClaudeCode`.
+  `HKCU\SOFTWARE\Policies\ClaudeCode`. *Pending.*
 - Apply managed-tier precedence (`inventory.md:50`) to pick the single
   managed source that wins.
 

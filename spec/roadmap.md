@@ -9,16 +9,16 @@ corresponding spec section. If you discover new work, add it here, not
 inline in another spec.
 
 Last reviewed: 2026-05-06 (Phase 2 + read_catalog + Phase 5 + Phase 7 +
-path-notes click-through shipped).
+path-notes click-through + Phase 6 macOS plist shipped).
 
 ## Next-up candidates
 
 A digest of what's open across the four tracks below — pick from
 here, then jump to the relevant section for shape and rationale.
 
-- **Phase 6 macOS plist** (settings layers) — completes the managed
-  tier on the OS we can dogfood. Windows registry is the natural
-  follow-up but isn't testable on this machine.
+- **Phase 6 Windows registry** (settings layers) — the remaining
+  managed-tier source. Not testable on the current dev machine; needs
+  a Windows runner or VM.
 - **`managed-mcp.json` UI surface** (inspector polish) — backend
   already serves the sibling read; placement TBD.
 - **Hooks catalog pass #2** (catalog sync) — handler types + per-event
@@ -83,9 +83,18 @@ Phase numbering matches the spec.
   filtered out (chip / search) snaps to the first visible row instead
   of clearing the filter. Acceptable for v1; track if it bites.
   (§ "Phase 5".)
-- **Phase 6 — OS-policy managed sources.** macOS
-  `com.anthropic.claudecode` plist; Windows `HKLM`/`HKCU` policy keys.
-  Apply managed-tier precedence (`inventory.md:50`). (§ "Phase 6".)
+- **Phase 6 — OS-policy managed sources.** Partially shipped 2026-05-06.
+  ✅ macOS `com.anthropic.claudecode` plist read via the `plist` crate
+  (macOS-only `[target.'cfg(...)']` dep). Per-user MDM
+  (`/Library/Managed Preferences/<user>/...`) takes precedence over
+  system MDM (`/Library/Managed Preferences/...`); a present plist
+  shadows the file-based source even when it fails to parse — admins
+  see the broken policy rather than have a different layer silently
+  take over. Plist paths added to the file watcher and to the
+  `opener:allow-open-path` scope so the rail's path-note remains
+  clickable. Outstanding: **Windows `HKLM`/`HKCU` policy keys.**
+  Apply managed-tier precedence (`inventory.md:50`); not testable on
+  the current dev machine. (§ "Phase 6".)
 - **Phase 7 — refresh / watch / diagnostics.** ✅ shipped 2026-05-05.
   Manual refresh shipped earlier (`R` key + topbar button). Phase 7
   added:

@@ -13,6 +13,8 @@
         { "path": "**/.claude/settings.json" },
         { "path": "**/.claude/settings.local.json" },
         { "path": "/Library/Application Support/ClaudeCode/**" },
+        { "path": "/Library/Managed Preferences/com.anthropic.claudecode.plist" },
+        { "path": "/Library/Managed Preferences/*/com.anthropic.claudecode.plist" },
         { "path": "/etc/claude-code/**" }
       ]
     }

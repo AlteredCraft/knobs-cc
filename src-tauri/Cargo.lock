@@ -1944,6 +1944,7 @@ name = "knobs-cc"
 version = "0.1.0"
 dependencies = [
  "notify",
+ "plist",
  "serde",
  "serde_json",
  "tauri",

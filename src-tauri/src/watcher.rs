@@ -65,6 +65,10 @@ fn watched_dirs() -> Vec<PathBuf> {
         dirs.push(base.clone());
         dirs.push(base.join("managed-settings.d"));
     }
+    #[cfg(target_os = "macos")]
+    {
+        dirs.extend(crate::managed_layer::macos_plist::watched_dirs());
+    }
     if let Ok(cwd) = std::env::current_dir() {
         dirs.push(cwd.join(".claude"));
     }
@@ -84,7 +88,11 @@ fn is_settings_path(p: &Path) -> bool {
     };
     if matches!(
         name,
-        "settings.json" | "settings.local.json" | "managed-settings.json" | "managed-mcp.json"
+        "settings.json"
+            | "settings.local.json"
+            | "managed-settings.json"
+            | "managed-mcp.json"
+            | "com.anthropic.claudecode.plist"
     ) {
         return true;
     }
@@ -112,6 +120,12 @@ mod tests {
         )));
         assert!(is_settings_path(Path::new(
             "/Library/Application Support/ClaudeCode/managed-mcp.json"
+        )));
+        assert!(is_settings_path(Path::new(
+            "/Library/Managed Preferences/com.anthropic.claudecode.plist"
+        )));
+        assert!(is_settings_path(Path::new(
+            "/Library/Managed Preferences/alice/com.anthropic.claudecode.plist"
         )));
     }
 
