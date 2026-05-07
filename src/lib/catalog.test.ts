@@ -47,9 +47,11 @@ describe("findCatalogEntry", () => {
   });
 
   it("walks up to the closest known parent on miss", () => {
-    // `env` is a catalog entry; `env.ANTHROPIC_MODEL` is not (env is a
-    // user-keyed map). The walk-up should land on `env`.
-    const e = findCatalogEntry("env.ANTHROPIC_MODEL");
+    // `env` is a catalog entry; user-defined keys like `env.MY_CUSTOM_DEBUG_VAR`
+    // are not — upstream documents many specific `env.*` leaves but `env`
+    // remains a user-keyed map for everything else. The walk-up should
+    // land on `env`.
+    const e = findCatalogEntry("env.MY_CUSTOM_DEBUG_VAR");
     expect(e?.key).toBe("env");
   });
 

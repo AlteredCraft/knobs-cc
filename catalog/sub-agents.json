@@ -1,0 +1,87 @@
+{
+  "source": "https://code.claude.com/docs/en/sub-agents.md",
+  "fetchedAt": "2026-05-07T03:21:49.842Z",
+  "count": 16,
+  "fields": [
+    {
+      "name": "background",
+      "required": false,
+      "description": "Set to `true` to always run this subagent as a [background task](#run-subagents-in-foreground-or-background). Default: `false`"
+    },
+    {
+      "name": "color",
+      "required": false,
+      "description": "Display color for the subagent in the task list and transcript. Accepts `red`, `blue`, `green`, `yellow`, `purple`, `orange`, `pink`, or `cyan`"
+    },
+    {
+      "name": "description",
+      "required": true,
+      "description": "When Claude should delegate to this subagent"
+    },
+    {
+      "name": "disallowedTools",
+      "required": false,
+      "description": "Tools to deny, removed from inherited or specified list"
+    },
+    {
+      "name": "effort",
+      "required": false,
+      "description": "Effort level when this subagent is active. Overrides the session effort level. Default: inherits from session. Options: `low`, `medium`, `high`, `xhigh`, `max`; available levels depend on the model"
+    },
+    {
+      "name": "hooks",
+      "required": false,
+      "description": "[Lifecycle hooks](#define-hooks-for-subagents) scoped to this subagent. Ignored for [plugin subagents](#choose-the-subagent-scope)"
+    },
+    {
+      "name": "initialPrompt",
+      "required": false,
+      "description": "Auto-submitted as the first user turn when this agent runs as the main session agent (via `--agent` or the `agent` setting). [Commands](/en/commands) and [skills](/en/skills) are processed. Prepended to any user-provided prompt"
+    },
+    {
+      "name": "isolation",
+      "required": false,
+      "description": "Set to `worktree` to run the subagent in a temporary [git worktree](/en/worktrees), giving it an isolated copy of the repository. The worktree is automatically cleaned up if the subagent makes no changes"
+    },
+    {
+      "name": "maxTurns",
+      "required": false,
+      "description": "Maximum number of agentic turns before the subagent stops"
+    },
+    {
+      "name": "mcpServers",
+      "required": false,
+      "description": "[MCP servers](/en/mcp) available to this subagent. Each entry is either a server name referencing an already-configured server (e.g., `\"slack\"`) or an inline definition with the server name as key and a full [MCP server config](/en/mcp#installing-mcp-servers) as value. Ignored for [plugin subagents](#choose-the-subagent-scope)"
+    },
+    {
+      "name": "memory",
+      "required": false,
+      "description": "[Persistent memory scope](#enable-persistent-memory): `user`, `project`, or `local`. Enables cross-session learning"
+    },
+    {
+      "name": "model",
+      "required": false,
+      "description": "[Model](#choose-a-model) to use: `sonnet`, `opus`, `haiku`, a full model ID (for example, `claude-opus-4-7`), or `inherit`. Defaults to `inherit`"
+    },
+    {
+      "name": "name",
+      "required": true,
+      "description": "Unique identifier using lowercase letters and hyphens"
+    },
+    {
+      "name": "permissionMode",
+      "required": false,
+      "description": "[Permission mode](#permission-modes): `default`, `acceptEdits`, `auto`, `dontAsk`, `bypassPermissions`, or `plan`. Ignored for [plugin subagents](#choose-the-subagent-scope)"
+    },
+    {
+      "name": "skills",
+      "required": false,
+      "description": "[Skills](/en/skills) to load into the subagent's context at startup. The full skill content is injected, not just made available for invocation. Subagents don't inherit skills from the parent conversation"
+    },
+    {
+      "name": "tools",
+      "required": false,
+      "description": "[Tools](#available-tools) the subagent can use. Inherits all tools if omitted"
+    }
+  ]
+}

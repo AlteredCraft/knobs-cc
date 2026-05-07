@@ -35,6 +35,7 @@ export interface CatalogsWire {
   // aren't modeled yet because nothing in the UI reads them.
   env_vars: unknown;
   hooks: unknown;
+  sub_agents: unknown;
 }
 
 export interface CatalogMeta {

@@ -15,6 +15,7 @@ use serde_json::Value;
 const SETTINGS_JSON: &str = include_str!("../../catalog/settings.json");
 const ENV_VARS_JSON: &str = include_str!("../../catalog/env-vars.json");
 const HOOKS_JSON: &str = include_str!("../../catalog/hooks.json");
+const SUB_AGENTS_JSON: &str = include_str!("../../catalog/sub-agents.json");
 
 #[derive(Debug, Serialize)]
 pub struct Catalogs {
@@ -25,6 +26,9 @@ pub struct Catalogs {
     pub env_vars: Value,
     /// Parsed `catalog/hooks.json` — `{source, fetchedAt, count, events: [...]}`.
     pub hooks: Value,
+    /// Parsed `catalog/sub-agents.json` — `{source, fetchedAt, count, fields: [...]}`.
+    #[serde(rename = "sub_agents")]
+    pub sub_agents: Value,
 }
 
 fn read_catalog_inner() -> Result<Catalogs, String> {
@@ -35,6 +39,8 @@ fn read_catalog_inner() -> Result<Catalogs, String> {
             .map_err(|e| format!("catalog/env-vars.json parse: {e}"))?,
         hooks: serde_json::from_str(HOOKS_JSON)
             .map_err(|e| format!("catalog/hooks.json parse: {e}"))?,
+        sub_agents: serde_json::from_str(SUB_AGENTS_JSON)
+            .map_err(|e| format!("catalog/sub-agents.json parse: {e}"))?,
     })
 }
 
@@ -72,6 +78,34 @@ mod tests {
     }
 
     #[test]
+    fn sub_agents_catalog_parses_and_has_fields_array() {
+        let c = read_catalog_inner().expect("catalogs parse");
+        let arr = c.sub_agents.get("fields").and_then(Value::as_array);
+        assert!(arr.is_some(), "sub_agents.fields should be an array");
+        assert!(!arr.unwrap().is_empty(), "fields array should be non-empty");
+    }
+
+    #[test]
+    fn sub_agents_catalog_contains_required_anchor_fields() {
+        // Guard against a sync regression that drops or renames the two
+        // required frontmatter fields. Upstream specifies only `name` and
+        // `description` as required; both must be present and marked so.
+        let c = read_catalog_inner().unwrap();
+        let arr = c.sub_agents.get("fields").unwrap().as_array().unwrap();
+        for expected in ["name", "description"] {
+            let entry = arr
+                .iter()
+                .find(|e| e.get("name").and_then(Value::as_str) == Some(expected))
+                .unwrap_or_else(|| panic!("sub-agents catalog missing field: {expected}"));
+            assert_eq!(
+                entry.get("required").and_then(Value::as_bool),
+                Some(true),
+                "{expected} should be required=true",
+            );
+        }
+    }
+
+    #[test]
     fn settings_entries_have_a_key_field() {
         // Spot-check that the catalog entry shape we rely on is intact —
         // `key` is the field rows.ts joins on.
@@ -104,6 +138,7 @@ mod tests {
         let c = read_catalog_inner().unwrap();
         let json = serde_json::to_value(&c).unwrap();
         assert!(json.get("env_vars").is_some(), "expected snake_case env_vars on the wire");
+        assert!(json.get("sub_agents").is_some(), "expected snake_case sub_agents on the wire");
         assert!(json.get("settings").is_some());
         assert!(json.get("hooks").is_some());
     }
