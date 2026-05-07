@@ -132,7 +132,7 @@ Each gets the same recipe: one script, one catalog file, one test file. Likely c
 
 ## Automation
 
-- **CI on cron — shipped.** [`.github/workflows/catalog-drift.yml`](../.github/workflows/catalog-drift.yml) runs `npm run sync:settings`, `npm run sync:env-vars`, and `npm run sync:hooks` every Monday at 09:00 UTC and on `workflow_dispatch`. The detect step normalises out the always-changing `fetchedAt` field before deciding whether content drifted; if only the timestamp moved, the working tree is restored to HEAD and no PR is opened. Real drift opens (or updates) a single `chore/catalog-drift` PR via `peter-evans/create-pull-request@v7`. Required permissions: `contents: write` + `pull-requests: write`.
+- **CI on cron — shipped.** [`.github/workflows/catalog-drift.yml`](../.github/workflows/catalog-drift.yml) runs `npm run sync:settings`, `npm run sync:env-vars`, and `npm run sync:hooks` every Monday at 09:00 UTC and on `workflow_dispatch`. The detect step normalises out the always-changing `fetchedAt` field before deciding whether content drifted; if only the timestamp moved, the working tree is restored to HEAD and no PR is opened. Real drift opens (or updates) a single `chore/catalog-drift` PR via `peter-evans/create-pull-request@v8` (paired with `actions/checkout@v5` and `actions/setup-node@v5` for the 2026-06-02 Node 24 cutover). Required permissions: `contents: write` + `pull-requests: write`.
 
 ## Future automation (not committed)
 

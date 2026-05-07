@@ -21,8 +21,11 @@ here, then jump to the relevant section for shape and rationale.
   schemas. Investment without an immediate UI consumer.
 - **Rail navigability decision** (inspector polish) — spec question,
   not coding work; needs a fork-vs-fork call before any UI lands.
-- **Inventory canonicalization** — clear `[!verify]` rows in §3
-  env-vars and §5.1 hook-events, or retire the convention.
+- **Inventory canonicalization** — `inventory.md:15` flags §3
+  env-vars and §5.1 hook-events as gaps. Separately, the `[!verify]`
+  convention `CLAUDE.md` describes is unused (zero tags in the
+  inventory) — decide whether to re-tag unverified rows or retire
+  the convention.
 - **New sync scripts** (catalog sync) — `mcp.md`, `sub-agents.md`,
   permissions, `keybindings.md`, `cli-reference.md`. Each gets one
   script + one catalog file + one test.
@@ -47,9 +50,9 @@ Phase numbering matches the spec.
   `inventory.md:46-48`. A malformed file in the managed tier fails the
   whole layer with the offending path named — admins should see their
   policy isn't loading rather than a silently-skipped file. Sibling read
-  of `managed-mcp.json` exposed on the snapshot as `managed_mcp`; UI
-  surfacing of MCP-policy presence is a follow-up. Plist / registry
-  policy sources remain Phase 6.
+  of `managed-mcp.json` exposed on the snapshot as `managed_mcp`
+  (UI surfacing shipped 2026-05-06 as the topbar pill). Plist / registry
+  policy sources shipped 2026-05-06 in Phase 6.
 - **Phase 3 — env vars + array-merge.** ✅ shipped 2026-05-05.
   Phase 3a: array-concat-dedup with per-element provenance for the known
   array-merged paths; `array-merged` chip activated.
@@ -106,7 +109,9 @@ Phase numbering matches the spec.
   Manual refresh shipped earlier (`R` key + topbar button). Phase 7
   added:
   ✅ File watcher via `notify` (not the fs plugin — capability surface
-  stays at `core:default`+`opener:default`). Watches each settings dir
+  stays at `core:default` + `opener:default` plus a tightly-scoped
+  `opener:allow-open-path` allowlist; no fs/shell/process/dialog/updater
+  plugins). Watches each settings dir
   non-recursively, filters by filename, emits `settings-changed` to the
   main window; the frontend debounces by 250ms and re-runs
   `read_settings_layers`.
@@ -157,8 +162,9 @@ Phase numbering matches the spec.
   normalises out the always-changing `fetchedAt` field; if only the
   timestamp moved, the working tree is restored and no PR opens.
   Real drift opens (or updates) a single `chore/catalog-drift` PR
-  via `peter-evans/create-pull-request@v7`. (§ "Automation" in
-  `catalog-sync.md`.)
+  via `peter-evans/create-pull-request@v8` (bumped from v7 alongside
+  `actions/checkout@v5` and `actions/setup-node@v5` for the 2026-06-02
+  Node 24 cutover). (§ "Automation" in `catalog-sync.md`.)
 - **Coverage thresholds.** `--test-coverage-lines/-branches` floors on
   the sync test suites. Premature now.
 - **Inventory's long-term role.** Once catalogs cover the same ground,
@@ -200,12 +206,14 @@ Shipped:
   reveal-in-dir but not path-open) **and** scoping the grant to a
   whitelist of settings-file globs (`$HOME/.claude/**`,
   `**/.claude/settings.json`, `**/.claude/settings.local.json`,
-  managed dirs on macOS/Linux). Without a scope the runtime denies
-  every call; the scope keeps the v1 boundary tight by limiting the
-  webview to opening only the files we surface. Line targeting (`:7`)
-  is deferred — `openPath` doesn't take a line, and adding a
-  `vscode://file` URL scheme would expand the capability surface for
-  VS-Code-only users.
+  managed dirs on macOS/Linux/Windows including
+  `/Library/Managed Preferences/*/com.anthropic.claudecode.plist` and
+  `C:\Program Files\ClaudeCode\**`). Without a scope the runtime
+  denies every call; the scope keeps the v1 boundary tight by
+  limiting the webview to opening only the files we surface. Line
+  targeting (`:7`) is deferred — `openPath` doesn't take a line, and
+  adding a `vscode://file` URL scheme would expand the capability
+  surface for VS-Code-only users.
 - **Related-knobs section.** ✅ shipped with Phase 5
   (`KeyDrawer.tsx` `RelatedKnobs`).
 - **Per-element waterfall** for array-merged fields. ✅ shipped with
