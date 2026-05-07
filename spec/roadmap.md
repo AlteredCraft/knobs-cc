@@ -11,7 +11,7 @@ inline in another spec.
 Last reviewed: 2026-05-07 (Phase 2 + read_catalog + Phase 5 + Phase 7 +
 path-notes click-through + Phase 6 fully shipped + three-OS CI +
 managed-mcp.json topbar pill + catalog-drift cron + sync-sub-agents +
-in-app error log + per-OS capability split + sync-mcp).
+in-app error log + per-OS capability split + sync-mcp + sync-permissions).
 
 ## Next-up candidates
 
@@ -27,10 +27,10 @@ here, then jump to the relevant section for shape and rationale.
   convention `CLAUDE.md` describes is unused (zero tags in the
   inventory) — decide whether to re-tag unverified rows or retire
   the convention.
-- **New sync scripts** (catalog sync) — permissions, `keybindings.md`,
+- **New sync scripts** (catalog sync) — `keybindings.md`,
   `cli-reference.md`. Each gets one script + one catalog file + one
-  test. (`sub-agents.md` and `mcp.md` shipped 2026-05-07; see
-  catalog-sync section below.)
+  test. (`sub-agents.md`, `mcp.md`, and `permissions.md` shipped
+  2026-05-07; see catalog-sync section below.)
 - **CI / drift hardening** (catalog sync) — `$ref` resolution policy;
   staleness signal. (Cron-driven sync with PR-on-diff shipped
   2026-05-06.)
@@ -142,8 +142,26 @@ Phase numbering matches the spec.
   `prompt`, `agent`) and per-event input/output schemas. The current
   `sync-hooks.js` only captures the lifecycle table.
 - **New sync scripts.** Each gets one script + one catalog file + one
-  test, per the recipe. Remaining candidates: permissions doc,
-  `keybindings.md`, `cli-reference.md`.
+  test, per the recipe. Remaining candidates: `keybindings.md`,
+  `cli-reference.md`.
+- **Permissions catalog (modes only).** ✅ shipped 2026-05-07.
+  `scripts/sync-permissions.js` reads
+  `https://code.claude.com/docs/en/permissions.md`'s
+  `## Permission modes` table and writes `catalog/permissions.json`
+  (6 records — `default`, `acceptEdits`, `plan`, `auto`, `dontAsk`,
+  `bypassPermissions`). The page is structurally rich (rule syntax,
+  tool-specific patterns, path-prefix table, managed-only settings
+  table, working-directories table) but the modes table is the
+  single canonical artifact most directly consumable: it enumerates
+  every value `permissions.defaultMode` accepts with prose richer
+  than the short blurbs in the settings JSON Schema. Wired through
+  `read_catalog` as `permissions` on the wire (no UI consumer yet,
+  parallel to env-vars / hooks / sub-agents / mcp). Cron sync covers
+  the new script. Future passes: the path-pattern table
+  (`### Read and Edit`'s `//path` / `~/path` / `/path` / `path`
+  prefixes), the managed-only-settings annotation table (which would
+  let the app flag managed-only settings catalog entries), and the
+  per-tool rule-syntax tables.
 - **MCP catalog (installation scopes).** ✅ shipped 2026-05-07.
   `scripts/sync-mcp.js` reads
   `https://code.claude.com/docs/en/mcp.md`'s

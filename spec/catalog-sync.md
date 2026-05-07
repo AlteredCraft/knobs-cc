@@ -1,6 +1,6 @@
 # Catalog sync — spec
 
-Status: **partial implementation.** `sync-settings.js` shipped 2026-04-28; `sync-env-vars.js` shipped 2026-04-29; `sync-hooks.js` shipped 2026-04-29 (lifecycle table only — handler types and per-event input/output schemas are not yet captured); `sync-sub-agents.js` shipped 2026-05-07 (supported-frontmatter-fields table only); `sync-mcp.js` shipped 2026-05-07 (installation-scopes table only — transport types, managed-mcp.json semantics, and tool-search threshold values are not yet captured).
+Status: **partial implementation.** `sync-settings.js` shipped 2026-04-28; `sync-env-vars.js` shipped 2026-04-29; `sync-hooks.js` shipped 2026-04-29 (lifecycle table only — handler types and per-event input/output schemas are not yet captured); `sync-sub-agents.js` shipped 2026-05-07 (supported-frontmatter-fields table only); `sync-mcp.js` shipped 2026-05-07 (installation-scopes table only — transport types, managed-mcp.json semantics, and tool-search threshold values are not yet captured); `sync-permissions.js` shipped 2026-05-07 (permission-modes table only — rule-syntax, path-pattern, and managed-only-settings tables are not yet captured).
 
 > Open work — new scripts, the hooks pass #2, the `read_catalog` wire-up, and the open questions at the bottom of this doc — is tracked in [`roadmap.md`](./roadmap.md).
 
@@ -33,14 +33,17 @@ scripts/
 ├── sync-sub-agents.js        # implemented
 ├── sync-sub-agents.test.js
 ├── sync-mcp.js               # implemented
-└── sync-mcp.test.js
+├── sync-mcp.test.js
+├── sync-permissions.js       # implemented
+└── sync-permissions.test.js
 
 catalog/
 ├── settings.json             # written by sync-settings.js
 ├── env-vars.json             # written by sync-env-vars.js
 ├── hooks.json                # written by sync-hooks.js
 ├── sub-agents.json           # written by sync-sub-agents.js
-└── mcp.json                  # written by sync-mcp.js
+├── mcp.json                  # written by sync-mcp.js
+└── permissions.json          # written by sync-permissions.js
 ```
 
 ## Sources
@@ -197,13 +200,44 @@ Pragmatic acceptance criteria: every row in the upstream scopes table appears in
 
 **Test plan:** mirror `sync-sub-agents.test.js`. Pure functions (`parseRow`, `parseTable`, `buildRecords`) get unit tests with small fixture strings; `main()` stays uncovered.
 
+### Permissions — implemented (modes only)
+
+| | |
+| --- | --- |
+| Source | `https://code.claude.com/docs/en/permissions.md` |
+| Output | `catalog/permissions.json` (~6 entries) |
+| Script | `scripts/sync-permissions.js` |
+| Run | `npm run sync:permissions` |
+
+The page is structurally rich — it documents the tiered tool-type taxonomy, the permission rule syntax (`Tool` / `Tool(specifier)`), wildcard semantics, tool-specific patterns (Bash, PowerShell, Read/Edit, WebFetch, MCP, Agent), the Read/Edit path-prefix table (4 patterns: `//path` / `~/path` / `/path` / `path`), the managed-only settings table (12 keys), and a working-directories table. Of those, the **`## Permission modes`** table (`| Mode | Description |`) is the single canonical artifact most directly consumable: it enumerates every value `permissions.defaultMode` accepts (`default`, `acceptEdits`, `plan`, `auto`, `dontAsk`, `bypassPermissions`) with prose richer than the short blurbs in the settings JSON Schema. That's the first cut.
+
+**Approach:**
+
+1. `fetch()` the `.md` URL.
+2. Locate the table by header signature `| Mode | Description |` (case-insensitive). The page has other 2-col tables (`Rule | Effect` for rule examples, `Setting | Description` for managed-only settings, plus the 4-col `Pattern | Meaning | Example | Matches` for path syntax) — the `Mode` header disambiguates.
+3. For each row, extract `name` (backtick-stripped) and `description` (prose preserved verbatim including inline code spans).
+4. Sort by `name`, wrap with the standard envelope, write to `catalog/permissions.json`.
+
+**Output shape per record:**
+
+```json
+{
+  "name": "acceptEdits",
+  "description": "Automatically accepts file edits and common filesystem commands (`mkdir`, `touch`, `mv`, `cp`, etc.) for paths in the working directory or `additionalDirectories`"
+}
+```
+
+Pragmatic acceptance criteria: every row in the upstream modes table appears in the output; description prose preserved verbatim. The path-pattern table, managed-only-settings table, rule-syntax tables, and tool-specific patterns are out of scope for this cut and remain candidates for follow-up work — particularly the managed-only-settings table, which is the strongest candidate for a second pass since it would let the app annotate settings catalog entries with "managed-only" provenance.
+
+**Test plan:** mirror `sync-mcp.test.js`. Pure functions (`parseRow`, `parseTable`, `buildRecords`) get unit tests with small fixture strings; `main()` stays uncovered.
+
 ## Future sources (not committed)
 
-Each gets the same recipe: one script, one catalog file, one test file. Remaining candidates in rough priority order: `permissions` doc, `keybindings.md`, `cli-reference.md`. A second `hooks.md` pass to capture handler types and per-event input/output schemas also belongs on this list, as does a second `sub-agents.md` pass to capture built-in subagent identities, and a second `mcp.md` pass to capture transport types and managed-mcp.json semantics. None are committed scope today.
+Each gets the same recipe: one script, one catalog file, one test file. Remaining candidates in rough priority order: `keybindings.md`, `cli-reference.md`. A second `hooks.md` pass to capture handler types and per-event input/output schemas also belongs on this list, as does a second `sub-agents.md` pass to capture built-in subagent identities, a second `mcp.md` pass to capture transport types and managed-mcp.json semantics, and a second `permissions.md` pass to capture the path-pattern and managed-only-settings tables. None are committed scope today.
 
 ## Automation
 
-- **CI on cron — shipped.** [`.github/workflows/catalog-drift.yml`](../.github/workflows/catalog-drift.yml) runs `npm run sync:settings`, `npm run sync:env-vars`, `npm run sync:hooks`, `npm run sync:sub-agents`, and `npm run sync:mcp` every Monday at 09:00 UTC and on `workflow_dispatch`. The detect step normalises out the always-changing `fetchedAt` field before deciding whether content drifted; if only the timestamp moved, the working tree is restored to HEAD and no PR is opened. Real drift opens (or updates) a single `chore/catalog-drift` PR via `peter-evans/create-pull-request@v8` (paired with `actions/checkout@v5` and `actions/setup-node@v5` for the 2026-06-02 Node 24 cutover). Required permissions: `contents: write` + `pull-requests: write`.
+- **CI on cron — shipped.** [`.github/workflows/catalog-drift.yml`](../.github/workflows/catalog-drift.yml) runs `npm run sync:settings`, `npm run sync:env-vars`, `npm run sync:hooks`, `npm run sync:sub-agents`, `npm run sync:mcp`, and `npm run sync:permissions` every Monday at 09:00 UTC and on `workflow_dispatch`. The detect step normalises out the always-changing `fetchedAt` field before deciding whether content drifted; if only the timestamp moved, the working tree is restored to HEAD and no PR is opened. Real drift opens (or updates) a single `chore/catalog-drift` PR via `peter-evans/create-pull-request@v8` (paired with `actions/checkout@v5` and `actions/setup-node@v5` for the 2026-06-02 Node 24 cutover). Required permissions: `contents: write` + `pull-requests: write`.
 
 ## Future automation (not committed)
 

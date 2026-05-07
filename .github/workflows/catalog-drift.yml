@@ -51,6 +51,7 @@ jobs:
           npm run sync:hooks
           npm run sync:sub-agents
           npm run sync:mcp
+          npm run sync:permissions
 
       # `fetchedAt` is rewritten on every sync run — strip it before
       # comparing so we don't open noise PRs that only bump a timestamp.
@@ -64,7 +65,7 @@ jobs:
           set -euo pipefail
           real_drift=false
           drifted_files=()
-          for f in settings env-vars hooks sub-agents mcp; do
+          for f in settings env-vars hooks sub-agents mcp permissions; do
             head_norm=$(git show HEAD:catalog/$f.json | jq 'del(.fetchedAt)')
             new_norm=$(jq 'del(.fetchedAt)' catalog/$f.json)
             if [ "$head_norm" != "$new_norm" ]; then
@@ -111,6 +112,7 @@ jobs:
             - `npm run sync:hooks`
             - `npm run sync:sub-agents`
             - `npm run sync:mcp`
+            - `npm run sync:permissions`
 
             Drifted catalogs:
             ```

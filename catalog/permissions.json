@@ -1,0 +1,31 @@
+{
+  "source": "https://code.claude.com/docs/en/permissions.md",
+  "fetchedAt": "2026-05-07T17:54:50.710Z",
+  "count": 6,
+  "modes": [
+    {
+      "name": "acceptEdits",
+      "description": "Automatically accepts file edits and common filesystem commands (`mkdir`, `touch`, `mv`, `cp`, etc.) for paths in the working directory or `additionalDirectories`"
+    },
+    {
+      "name": "auto",
+      "description": "Auto-approves tool calls with background safety checks that verify actions align with your request. Currently a research preview"
+    },
+    {
+      "name": "bypassPermissions",
+      "description": "Skips all permission prompts. Root and home directory removals such as `rm -rf /` still prompt as a circuit breaker"
+    },
+    {
+      "name": "default",
+      "description": "Standard behavior: prompts for permission on first use of each tool"
+    },
+    {
+      "name": "dontAsk",
+      "description": "Auto-denies tools unless pre-approved via `/permissions` or `permissions.allow` rules"
+    },
+    {
+      "name": "plan",
+      "description": "Plan Mode: Claude reads files and runs read-only shell commands to explore but does not edit your source files"
+    }
+  ]
+}

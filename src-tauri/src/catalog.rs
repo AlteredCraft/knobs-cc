@@ -17,6 +17,7 @@ const ENV_VARS_JSON: &str = include_str!("../../catalog/env-vars.json");
 const HOOKS_JSON: &str = include_str!("../../catalog/hooks.json");
 const SUB_AGENTS_JSON: &str = include_str!("../../catalog/sub-agents.json");
 const MCP_JSON: &str = include_str!("../../catalog/mcp.json");
+const PERMISSIONS_JSON: &str = include_str!("../../catalog/permissions.json");
 
 #[derive(Debug, Serialize)]
 pub struct Catalogs {
@@ -32,6 +33,8 @@ pub struct Catalogs {
     pub sub_agents: Value,
     /// Parsed `catalog/mcp.json` — `{source, fetchedAt, count, scopes: [...]}`.
     pub mcp: Value,
+    /// Parsed `catalog/permissions.json` — `{source, fetchedAt, count, modes: [...]}`.
+    pub permissions: Value,
 }
 
 fn read_catalog_inner() -> Result<Catalogs, String> {
@@ -46,6 +49,8 @@ fn read_catalog_inner() -> Result<Catalogs, String> {
             .map_err(|e| format!("catalog/sub-agents.json parse: {e}"))?,
         mcp: serde_json::from_str(MCP_JSON)
             .map_err(|e| format!("catalog/mcp.json parse: {e}"))?,
+        permissions: serde_json::from_str(PERMISSIONS_JSON)
+            .map_err(|e| format!("catalog/permissions.json parse: {e}"))?,
     })
 }
 
@@ -135,6 +140,31 @@ mod tests {
     }
 
     #[test]
+    fn permissions_catalog_parses_and_has_modes_array() {
+        let c = read_catalog_inner().expect("catalogs parse");
+        let arr = c.permissions.get("modes").and_then(Value::as_array);
+        assert!(arr.is_some(), "permissions.modes should be an array");
+        assert!(!arr.unwrap().is_empty(), "modes array should be non-empty");
+    }
+
+    #[test]
+    fn permissions_catalog_contains_canonical_modes() {
+        // Guard against a sync regression that drops or renames the
+        // anchor permission modes. These four are the values most
+        // commonly set in `permissions.defaultMode` and are stable
+        // identifiers in the upstream schema.
+        let c = read_catalog_inner().unwrap();
+        let arr = c.permissions.get("modes").unwrap().as_array().unwrap();
+        for expected in ["default", "acceptEdits", "plan", "bypassPermissions"] {
+            assert!(
+                arr.iter()
+                    .any(|e| e.get("name").and_then(Value::as_str) == Some(expected)),
+                "permissions catalog missing mode: {expected}",
+            );
+        }
+    }
+
+    #[test]
     fn settings_entries_have_a_key_field() {
         // Spot-check that the catalog entry shape we rely on is intact —
         // `key` is the field rows.ts joins on.
@@ -171,5 +201,6 @@ mod tests {
         assert!(json.get("settings").is_some());
         assert!(json.get("hooks").is_some());
         assert!(json.get("mcp").is_some());
+        assert!(json.get("permissions").is_some());
     }
 }

@@ -10,7 +10,7 @@ The repo holds three coordinated surfaces:
 
 1. **`spec/`** — design, scope, and roadmap. `inventory.md` catalogs every Claude Code config surface; `settings-display.md` and `inspector-ui.md` describe the app's backend and UI in phases; `catalog-sync.md` describes the harness that keeps catalog files in sync with upstream docs; `design-notes.md` carries open questions; `roadmap.md` is the single source of truth for what's shipped and what's pending.
 2. **The Tauri 2 app** (`src/`, `src-tauri/`) — implementation. The Rust backend exposes `read_settings_layers` (five layers — managed / env / project_local / project / user — with per-leaf provenance and array-merge for permissions-style fields) and `read_catalog`, plus a `notify`-based file watcher that emits `settings-changed` so the UI refreshes live (see "Tauri 2 boundaries" — we use `notify` directly, not `tauri-plugin-fs-watch`, to keep the capability surface minimal). The React/Vite frontend is a three-pane DevTools-style Inspector: precedence rail, settings list, key drawer.
-3. **The catalog harness** (`scripts/sync-*.js`, `catalog/*.json`) — pulls upstream JSON Schema and docs into `catalog/{settings,env-vars,hooks,sub-agents,mcp}.json`, which the app reads through `read_catalog`. `catalog/env-settings-map.json` maps env vars to their settings-key equivalents for the env layer. `.github/workflows/catalog-drift.yml` re-runs the sync scripts weekly (and on `workflow_dispatch`), normalises the always-changing `fetchedAt` field out of the comparison, and opens a single rolling `chore/catalog-drift` PR when real content drifts. Don't run the sync scripts and commit by hand unless you have a specific reason — let the workflow drive.
+3. **The catalog harness** (`scripts/sync-*.js`, `catalog/*.json`) — pulls upstream JSON Schema and docs into `catalog/{settings,env-vars,hooks,sub-agents,mcp,permissions}.json`, which the app reads through `read_catalog`. `catalog/env-settings-map.json` maps env vars to their settings-key equivalents for the env layer. `.github/workflows/catalog-drift.yml` re-runs the sync scripts weekly (and on `workflow_dispatch`), normalises the always-changing `fetchedAt` field out of the comparison, and opens a single rolling `chore/catalog-drift` PR when real content drifts. Don't run the sync scripts and commit by hand unless you have a specific reason — let the workflow drive.
 
 **Outstanding work is tracked in [`spec/roadmap.md`](spec/roadmap.md)**, the single source of truth. When you ship something or discover new work, update there rather than scattering status across the individual specs.
 
@@ -59,6 +59,7 @@ npm run sync:env-vars                  # catalog/env-vars.json from upstream doc
 npm run sync:hooks                     # catalog/hooks.json from upstream docs
 npm run sync:sub-agents                # catalog/sub-agents.json from upstream docs
 npm run sync:mcp                       # catalog/mcp.json from upstream docs
+npm run sync:permissions               # catalog/permissions.json from upstream docs
 ```
 
 Notes:
