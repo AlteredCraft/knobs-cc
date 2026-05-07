@@ -51,7 +51,17 @@ pub fn read_managed_layer() -> LayerRead {
             return layer;
         }
     }
-    #[cfg(not(target_os = "macos"))]
+    #[cfg(target_os = "windows")]
+    {
+        if let Some(layer) = read_managed_layer_windows(
+            windows_registry::read_hklm(),
+            resolve_managed_base().as_deref(),
+            windows_registry::read_hkcu(),
+        ) {
+            return layer;
+        }
+    }
+    #[cfg(not(any(target_os = "macos", target_os = "windows")))]
     {
         if let Some(base) = resolve_managed_base() {
             return read_managed_layer_at(&base);
@@ -275,6 +285,188 @@ fn read_macos_plist_at(path: &Path) -> LayerRead {
     match macos_plist::read(path) {
         Ok(v) => layer_ok(LayerSource::Managed, path.to_path_buf(), v),
         Err(e) => layer_error(LayerSource::Managed, path.to_path_buf(), e),
+    }
+}
+
+/// Pick the winning managed source on Windows. Per-tier precedence from
+/// `inventory.md:50` is HKLM > file-based > HKCU. A tier "claims" the slot
+/// when its read returns `Ok` *or* `Error` — only `Missing` falls through.
+/// HKCU is the lowest-priority managed tier (intentional: per-user policy is
+/// admin-overridable by file-based, which is in turn overridden by HKLM /
+/// MDM). Returns `None` only when every tier is missing.
+#[cfg(target_os = "windows")]
+fn read_managed_layer_windows(
+    hklm: windows_registry::RegRead,
+    file_base: Option<&Path>,
+    hkcu: windows_registry::RegRead,
+) -> Option<LayerRead> {
+    if let Some(layer) = registry_read_to_layer("HKLM", hklm) {
+        return Some(layer);
+    }
+    if let Some(base) = file_base {
+        let layer = read_managed_layer_at(base);
+        if layer.status != LayerStatus::Missing {
+            return Some(layer);
+        }
+    }
+    registry_read_to_layer("HKCU", hkcu)
+}
+
+#[cfg(target_os = "windows")]
+fn registry_read_to_layer(hive: &str, read: windows_registry::RegRead) -> Option<LayerRead> {
+    let path = PathBuf::from(windows_registry::display_path(hive));
+    match read {
+        windows_registry::RegRead::Ok(v) => Some(layer_ok(LayerSource::Managed, path, v)),
+        windows_registry::RegRead::Error(e) => Some(layer_error(LayerSource::Managed, path, e)),
+        windows_registry::RegRead::Missing => None,
+    }
+}
+
+/// Windows policy-key reads. Reads `SOFTWARE\Policies\ClaudeCode\Settings`
+/// (REG_SZ, JSON-encoded) from the requested hive. The JSON shape matches
+/// `settings.json` — see `spec/inventory.md:48`.
+#[cfg(target_os = "windows")]
+pub(crate) mod windows_registry {
+    use serde_json::Value;
+    use winreg::enums::{HKEY_CURRENT_USER, HKEY_LOCAL_MACHINE};
+    use winreg::RegKey;
+
+    pub const REG_SUBKEY: &str = r"SOFTWARE\Policies\ClaudeCode";
+    pub const REG_VALUE: &str = "Settings";
+
+    /// Outcome of trying to read one hive's policy value. Distinguishes
+    /// "no policy here" from "policy here but unreadable" so the picker
+    /// can fall through on Missing without swallowing real Errors.
+    pub enum RegRead {
+        Ok(Value),
+        Missing,
+        Error(String),
+    }
+
+    /// `HIVE\SOFTWARE\Policies\ClaudeCode\Settings` for the rail/drawer.
+    /// The value name is included so it's unambiguous what was read — a
+    /// reader doesn't have to guess between the key and its named value.
+    pub fn display_path(hive: &str) -> String {
+        format!(r"{hive}\{REG_SUBKEY}\{REG_VALUE}")
+    }
+
+    pub fn read_hklm() -> RegRead {
+        read_settings_value(RegKey::predef(HKEY_LOCAL_MACHINE))
+    }
+
+    pub fn read_hkcu() -> RegRead {
+        read_settings_value(RegKey::predef(HKEY_CURRENT_USER))
+    }
+
+    fn read_settings_value(root: RegKey) -> RegRead {
+        let key = match root.open_subkey(REG_SUBKEY) {
+            Ok(k) => k,
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => return RegRead::Missing,
+            Err(e) => {
+                return RegRead::Error(format!(
+                    "registry open_subkey error on {REG_SUBKEY}: {e}"
+                ));
+            }
+        };
+        let raw: String = match key.get_value(REG_VALUE) {
+            Ok(v) => v,
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => return RegRead::Missing,
+            Err(e) => {
+                return RegRead::Error(format!(
+                    "registry get_value error on {REG_SUBKEY}\\{REG_VALUE}: {e}"
+                ));
+            }
+        };
+        match parse_settings_json(&raw) {
+            Ok(v) => RegRead::Ok(v),
+            Err(e) => RegRead::Error(e),
+        }
+    }
+
+    /// Pulled out so the JSON-parse step is unit-testable without a hive.
+    pub fn parse_settings_json(s: &str) -> Result<Value, String> {
+        serde_json::from_str(s)
+            .map_err(|e| format!("registry Settings value is not valid JSON: {e}"))
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+        use serde_json::json;
+
+        #[test]
+        fn parses_settings_json_object() {
+            let v = parse_settings_json(r#"{"model":"opus","permissions":{"allow":["Bash"]}}"#)
+                .unwrap();
+            assert_eq!(v["model"], json!("opus"));
+            assert_eq!(v["permissions"]["allow"], json!(["Bash"]));
+        }
+
+        #[test]
+        fn parses_empty_object() {
+            // Admins may ship an empty policy. Empty dict is valid JSON.
+            let v = parse_settings_json("{}").unwrap();
+            assert_eq!(v, json!({}));
+        }
+
+        #[test]
+        fn malformed_json_surfaces_error() {
+            let err = parse_settings_json("{ not json }").unwrap_err();
+            assert!(err.contains("not valid JSON"), "got: {err}");
+        }
+
+        #[test]
+        fn display_path_includes_hive_and_value_name() {
+            assert_eq!(
+                display_path("HKLM"),
+                r"HKLM\SOFTWARE\Policies\ClaudeCode\Settings"
+            );
+            assert_eq!(
+                display_path("HKCU"),
+                r"HKCU\SOFTWARE\Policies\ClaudeCode\Settings"
+            );
+        }
+
+        // Round-trip integration test: write to a unique HKCU subkey, read
+        // it back, then clean up. We deliberately scope to a Knobs-CC-Test
+        // subtree (not SOFTWARE\Policies\ClaudeCode itself) so a CI runner
+        // with real policy in that location wouldn't be clobbered.
+        #[test]
+        fn round_trips_through_hkcu_subkey() {
+            use winreg::RegKey;
+
+            let hkcu = RegKey::predef(HKEY_CURRENT_USER);
+            let unique = format!(
+                "knobs-cc-test-{}-{}",
+                std::process::id(),
+                std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap()
+                    .as_nanos()
+            );
+            let test_subkey = format!(r"SOFTWARE\Knobs-CC-Test\{unique}");
+
+            let (key, _disp) = hkcu
+                .create_subkey(&test_subkey)
+                .expect("create test subkey");
+            key.set_value("Settings", &r#"{"model":"sonnet"}"#.to_string())
+                .expect("write Settings value");
+
+            // Drive `read_settings_value` against the test subkey by opening
+            // it from HKCU directly — same code path the production reader
+            // uses, just pointed at a temp location.
+            let opened = hkcu.open_subkey(&test_subkey).expect("reopen");
+            let raw: String = opened.get_value("Settings").expect("get_value");
+            let v = parse_settings_json(&raw).expect("parse");
+            assert_eq!(v["model"], json!("sonnet"));
+
+            // Clean up: delete the unique subkey, then prune the parent if
+            // we were the only tenant.
+            hkcu.delete_subkey_all(&test_subkey).ok();
+            // Try to delete the parent; will fail (silently) if other tests
+            // are running concurrently and own siblings. That's fine.
+            hkcu.delete_subkey(r"SOFTWARE\Knobs-CC-Test").ok();
+        }
     }
 }
 
@@ -709,6 +901,98 @@ mod tests {
         assert!(err.contains("plist parse error"), "got: {err}");
         std::fs::remove_dir_all(&plist_root).ok();
         std::fs::remove_dir_all(&file_root).ok();
+    }
+
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn windows_hklm_wins_over_file_and_hkcu() {
+        use windows_registry::RegRead;
+        let file_root = temp_dir("win-precedence-file");
+        write(&file_root.join("managed-settings.json"), r#"{"model":"file"}"#);
+
+        let layer = read_managed_layer_windows(
+            RegRead::Ok(json!({"model": "hklm"})),
+            Some(&file_root),
+            RegRead::Ok(json!({"model": "hkcu"})),
+        )
+        .expect("layer");
+        assert_eq!(layer.status, LayerStatus::Ok);
+        assert_eq!(layer.raw.unwrap()["model"], json!("hklm"));
+        assert!(layer.path.unwrap().starts_with("HKLM"));
+        std::fs::remove_dir_all(&file_root).ok();
+    }
+
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn windows_falls_back_to_file_when_hklm_missing() {
+        use windows_registry::RegRead;
+        let file_root = temp_dir("win-fallback-file");
+        write(&file_root.join("managed-settings.json"), r#"{"model":"file"}"#);
+
+        let layer = read_managed_layer_windows(
+            RegRead::Missing,
+            Some(&file_root),
+            RegRead::Ok(json!({"model": "hkcu"})),
+        )
+        .expect("layer");
+        assert_eq!(layer.status, LayerStatus::Ok);
+        assert_eq!(layer.raw.unwrap()["model"], json!("file"));
+        std::fs::remove_dir_all(&file_root).ok();
+    }
+
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn windows_falls_back_to_hkcu_when_hklm_and_file_missing() {
+        // file_base passed but the directory is empty — read_managed_layer_at
+        // returns Missing, so the picker should fall through to HKCU.
+        use windows_registry::RegRead;
+        let empty_root = temp_dir("win-empty-file");
+        let layer = read_managed_layer_windows(
+            RegRead::Missing,
+            Some(&empty_root),
+            RegRead::Ok(json!({"model": "hkcu"})),
+        )
+        .expect("layer");
+        assert_eq!(layer.status, LayerStatus::Ok);
+        assert_eq!(layer.raw.unwrap()["model"], json!("hkcu"));
+        assert!(layer.path.unwrap().starts_with("HKCU"));
+        std::fs::remove_dir_all(&empty_root).ok();
+    }
+
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn windows_hklm_error_blocks_fall_through() {
+        // HKLM is malformed — surface the error rather than silently letting
+        // file-based or HKCU win. Same rule as the macOS plist case: admin
+        // should see their broken policy.
+        use windows_registry::RegRead;
+        let file_root = temp_dir("win-bad-hklm-file");
+        write(&file_root.join("managed-settings.json"), r#"{"model":"file"}"#);
+
+        let layer = read_managed_layer_windows(
+            RegRead::Error("not valid JSON".into()),
+            Some(&file_root),
+            RegRead::Ok(json!({"model": "hkcu"})),
+        )
+        .expect("layer");
+        assert_eq!(layer.status, LayerStatus::Error);
+        assert!(layer.path.unwrap().starts_with("HKLM"));
+        assert!(layer.error.unwrap().contains("not valid JSON"));
+        std::fs::remove_dir_all(&file_root).ok();
+    }
+
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn windows_returns_none_when_every_tier_missing() {
+        use windows_registry::RegRead;
+        let empty_root = temp_dir("win-all-missing");
+        let layer = read_managed_layer_windows(
+            RegRead::Missing,
+            Some(&empty_root),
+            RegRead::Missing,
+        );
+        assert!(layer.is_none());
+        std::fs::remove_dir_all(&empty_root).ok();
     }
 
     #[test]

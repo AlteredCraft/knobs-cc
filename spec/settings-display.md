@@ -200,7 +200,23 @@ Phase 4 work items:
   Linux and Windows builds don't pull it in. Watcher + opener-scope
   updated for the new paths.
 - Windows: read `HKLM\SOFTWARE\Policies\ClaudeCode` and
-  `HKCU\SOFTWARE\Policies\ClaudeCode`. *Pending.*
+  `HKCU\SOFTWARE\Policies\ClaudeCode`. *Shipped 2026-05-06.* Each hive's
+  `Settings` value is a `REG_SZ` containing a JSON-encoded settings
+  document (`inventory.md:48`). The reader uses the `winreg` crate as a
+  Windows-only `[target.'cfg(target_os = "windows")']` dep so other
+  targets don't pull it in. Per-tier order on Windows is
+  HKLM > file-based > HKCU — HKCU is intentionally the lowest-priority
+  managed source per `inventory.md:50`, because per-user policy is
+  meant to be admin-overridable by file-based, which is in turn
+  overridden by HKLM/MDM. Same "present-but-malformed surfaces error
+  rather than silently falling through" rule as the macOS plist
+  case — admins should see their broken policy. Display path on the
+  rail/drawer is `HIVE\SOFTWARE\Policies\ClaudeCode\Settings` so the
+  value name is unambiguous. The frontend's `WaterfallRow.PathNote`
+  detects registry-style paths (`isRegistryPath`) and renders them as
+  a non-clickable label — the opener plugin can't do anything with a
+  registry path, and dangling a button that silently no-ops is worse
+  UX than rendering plain text.
 - Apply managed-tier precedence (`inventory.md:50`) to pick the single
   managed source that wins.
 

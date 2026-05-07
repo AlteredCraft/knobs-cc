@@ -9,16 +9,13 @@ corresponding spec section. If you discover new work, add it here, not
 inline in another spec.
 
 Last reviewed: 2026-05-06 (Phase 2 + read_catalog + Phase 5 + Phase 7 +
-path-notes click-through + Phase 6 macOS plist shipped).
+path-notes click-through + Phase 6 fully shipped + three-OS CI).
 
 ## Next-up candidates
 
 A digest of what's open across the four tracks below — pick from
 here, then jump to the relevant section for shape and rationale.
 
-- **Phase 6 Windows registry** (settings layers) — the remaining
-  managed-tier source. Not testable on the current dev machine; needs
-  a Windows runner or VM.
 - **`managed-mcp.json` UI surface** (inspector polish) — backend
   already serves the sibling read; placement TBD.
 - **Hooks catalog pass #2** (catalog sync) — handler types + per-event
@@ -83,8 +80,8 @@ Phase numbering matches the spec.
   filtered out (chip / search) snaps to the first visible row instead
   of clearing the filter. Acceptable for v1; track if it bites.
   (§ "Phase 5".)
-- **Phase 6 — OS-policy managed sources.** Partially shipped 2026-05-06.
-  ✅ macOS `com.anthropic.claudecode` plist read via the `plist` crate
+- **Phase 6 — OS-policy managed sources.** ✅ shipped 2026-05-06.
+  macOS `com.anthropic.claudecode` plist read via the `plist` crate
   (macOS-only `[target.'cfg(...)']` dep). Per-user MDM
   (`/Library/Managed Preferences/<user>/...`) takes precedence over
   system MDM (`/Library/Managed Preferences/...`); a present plist
@@ -92,9 +89,19 @@ Phase numbering matches the spec.
   see the broken policy rather than have a different layer silently
   take over. Plist paths added to the file watcher and to the
   `opener:allow-open-path` scope so the rail's path-note remains
-  clickable. Outstanding: **Windows `HKLM`/`HKCU` policy keys.**
-  Apply managed-tier precedence (`inventory.md:50`); not testable on
-  the current dev machine. (§ "Phase 6".)
+  clickable.
+  Windows `HKLM\SOFTWARE\Policies\ClaudeCode\Settings` and
+  `HKCU\SOFTWARE\Policies\ClaudeCode\Settings` (REG_SZ JSON) read via
+  the `winreg` crate (Windows-only target dep). Per-tier order is
+  HKLM > file-based > HKCU per `inventory.md:50` — HKCU is
+  intentionally lowest because per-user policy is admin-overridable by
+  file-based, which is in turn overridden by HKLM. Same "present-but-
+  malformed wins" rule as macOS plist. Frontend `WaterfallRow.PathNote`
+  detects registry-style paths and renders them as a non-clickable
+  label (the opener plugin can't do anything with a registry path).
+  Round-trip Windows test writes to a unique `HKCU\SOFTWARE\Knobs-CC-
+  Test\<unique>` subkey to avoid clobbering real policy locations on a
+  shared CI runner. (§ "Phase 6".)
 - **Phase 7 — refresh / watch / diagnostics.** ✅ shipped 2026-05-05.
   Manual refresh shipped earlier (`R` key + topbar button). Phase 7
   added:

@@ -70,6 +70,25 @@ export function WaterfallRow({ entry }: { entry: WaterfallEntry }) {
 }
 
 function PathNote({ path, dimmed }: { path: string; dimmed: boolean }) {
+  // Windows registry paths (HKLM\..., HKCU\...) are not files — `openPath`
+  // can't do anything with them, so render as a non-clickable label rather
+  // than dangle a button that silently no-ops on click.
+  if (isRegistryPath(path)) {
+    return (
+      <div
+        className={cn(
+          "px-5 pb-1.5 -mt-1 flex items-center gap-2",
+          "font-mono text-[10px] text-fg-3",
+          dimmed && "opacity-55",
+        )}
+      >
+        <span className="opacity-50">↳</span>
+        <span className="truncate" title={`Registry path · ${path}`}>
+          {path}
+        </span>
+      </div>
+    );
+  }
   return (
     <div className={cn("px-5 pb-1.5 -mt-1", dimmed && "opacity-55")}>
       <button
@@ -87,6 +106,10 @@ function PathNote({ path, dimmed }: { path: string; dimmed: boolean }) {
       </button>
     </div>
   );
+}
+
+export function isRegistryPath(path: string): boolean {
+  return /^HK(LM|CU|CR|U|CC)\\/.test(path);
 }
 
 function metaLabel(entry: WaterfallEntry): string {
