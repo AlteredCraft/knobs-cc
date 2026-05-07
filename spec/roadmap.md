@@ -23,6 +23,9 @@ here, then jump to the relevant section for shape and rationale.
   schemas. Investment without an immediate UI consumer.
 - **Rail navigability decision** (inspector polish) — spec question,
   not coding work; needs a fork-vs-fork call before any UI lands.
+- **ENV-layer / `env.*`-row seam** (inspector polish) — UX question,
+  not slated. Tracked at
+  [#6](https://github.com/AlteredCraft/knobs-cc/issues/6).
 - **Inventory canonicalization** — `inventory.md:15` flags §3
   env-vars and §5.1 hook-events as gaps. Separately, the `[!verify]`
   convention `CLAUDE.md` describes is unused (zero tags in the
@@ -231,6 +234,15 @@ Open work (what to pick up next within this track):
   rail informational (current behavior) or wire layer-click → centre
   list filtered to keys won by that layer. Needs an explicit decision
   before any work — surface as a question, not a ticket.
+- **ENV layer never contributes to `env.*` rows — confusing waterfall
+  seam.** The waterfall shows the ENV layer for every row, but ENV
+  will never feed an `env.<VAR>` row by design (those come from
+  settings-file `env` objects; ENV folds OS vars into settings keys
+  via `catalog/env-settings-map.json`). Naming overlap looks like a
+  contradiction first time you see it. Tracked at
+  [#6](https://github.com/AlteredCraft/knobs-cc/issues/6); possible
+  directions in the issue body. Surfaced by live smoke of the
+  env-vars drawer wire-up.
 
 Shipped:
 
