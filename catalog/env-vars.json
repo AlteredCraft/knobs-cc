@@ -1,7 +1,7 @@
 {
   "source": "https://code.claude.com/docs/en/env-vars.md",
-  "fetchedAt": "2026-04-29T16:03:52.959Z",
-  "count": 215,
+  "fetchedAt": "2026-05-07T02:18:51.711Z",
+  "count": 220,
   "envVars": [
     {
       "name": "ANTHROPIC_API_KEY",
@@ -250,7 +250,7 @@
     },
     {
       "name": "CLAUDE_CODE_CERT_STORE",
-      "purpose": "Comma-separated list of CA certificate sources for TLS connections. `bundled` is the Mozilla CA set shipped with Claude Code. `system` is the operating system trust store. Default is `bundled,system`. The native binary distribution is required for system store integration. On the Node.js runtime, only the bundled set is used regardless of this value",
+      "purpose": "Comma-separated list of CA certificate sources for TLS connections. `bundled` is the Mozilla CA set shipped with Claude Code. `system` is the operating system trust store. Default is `bundled,system`",
       "default": null
     },
     {
@@ -400,7 +400,12 @@
     },
     {
       "name": "CLAUDE_CODE_ENABLE_FINE_GRAINED_TOOL_STREAMING",
-      "purpose": "Set to `1` to force-enable fine-grained tool input streaming. Without this, the API buffers tool input parameters fully before sending delta events, which can delay display on large tool inputs. Anthropic API only: has no effect on Bedrock, Vertex, or Foundry",
+      "purpose": "Controls whether tool call inputs stream from the API as Claude generates them. With this off, a large tool input such as a long file write arrives only after Claude finishes generating it, which can look like it's hanging. Enabled by default for direct Anthropic API connections. Set to `0` to opt out. Set to `1` to force-enable even when the server-side default is off. Has no effect on Bedrock, Vertex, Foundry, or [gateway](/en/llm-gateway) connections",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY",
+      "purpose": "Set to `1` to populate the `/model` picker from your gateway's `/v1/models` endpoint when `ANTHROPIC_BASE_URL` points at an Anthropic-compatible gateway such as LiteLLM, Kong, or an internal proxy. Off by default because gateways backed by a shared API key would otherwise show every user every model the key can access. Discovered models are still filtered by the [`availableModels`](/en/settings#available-settings) allowlist",
       "default": null
     },
     {
@@ -436,6 +441,11 @@
     {
       "name": "CLAUDE_CODE_FILE_READ_MAX_OUTPUT_TOKENS",
       "purpose": "Override the default token limit for file reads. Useful when you need to read larger files in full",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_FORCE_SYNC_OUTPUT",
+      "purpose": "Set to `1` to force-enable DEC private mode 2026 [synchronized output](https://gist.github.com/christianparpart/d8a62cc1ab659194337d73e399004036) when your terminal supports it but is not auto-detected. Useful for emulators such as Emacs `eat` that implement BSU/ESU but do not reply to the capability probe. Has no effect under tmux",
       "default": null
     },
     {
@@ -549,6 +559,11 @@
       "default": "2000"
     },
     {
+      "name": "CLAUDE_CODE_PACKAGE_MANAGER_AUTO_UPDATE",
+      "purpose": "Set to `1` to let Claude Code run your package manager's upgrade command in the background when a new version is available. Applies to Homebrew and WinGet installations. Other package managers continue to show the upgrade command without running it. See [Auto updates](/en/setup#auto-updates)",
+      "default": null
+    },
+    {
       "name": "CLAUDE_CODE_PERFORCE_MODE",
       "purpose": "Set to `1` to enable Perforce-aware write protection. When set, Edit, Write, and NotebookEdit fail with a `p4 edit <file>` hint if the target file lacks the owner-write bit, which Perforce clears on synced files until `p4 edit` opens them. This prevents Claude Code from bypassing Perforce change tracking",
       "default": null
@@ -571,6 +586,11 @@
     {
       "name": "CLAUDE_CODE_PLUGIN_SEED_DIR",
       "purpose": "Path to one or more read-only plugin seed directories, separated by `:` on Unix or `;` on Windows. Use this to bundle a pre-populated plugins directory into a container image. Claude Code registers marketplaces from these directories at startup and uses pre-cached plugins without re-cloning. See [Pre-populate plugins for containers](/en/plugin-marketplaces#pre-populate-plugins-for-containers)",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_PROVIDER_MANAGED_BY_HOST",
+      "purpose": "Set by host platforms that embed Claude Code and manage model provider routing on its behalf. When set, provider-selection, endpoint, and authentication variables such as `CLAUDE_CODE_USE_BEDROCK`, `ANTHROPIC_BASE_URL`, and `ANTHROPIC_API_KEY` in settings files are ignored so user settings cannot override the host's routing. The automatic telemetry opt-out for Bedrock, Vertex, and Foundry is also skipped, so telemetry follows the standard `DISABLE_TELEMETRY` opt-out. See [Default behaviors by API provider](/en/data-usage#default-behaviors-by-api-provider)",
       "default": null
     },
     {
@@ -615,7 +635,7 @@
     },
     {
       "name": "CLAUDE_CODE_SHELL_PREFIX",
-      "purpose": "Command prefix to wrap all bash commands (for example, for logging or auditing). Example: `/path/to/logger.sh` will execute `/path/to/logger.sh <command>`",
+      "purpose": "Command prefix that wraps shell commands Claude Code spawns: Bash tool calls, [hook](/en/hooks) commands, and stdio [MCP server](/en/mcp) startup commands. Useful for logging or auditing. Example: setting `/path/to/logger.sh` runs each command as `/path/to/logger.sh <command>`",
       "default": null
     },
     {
@@ -755,7 +775,7 @@
     },
     {
       "name": "CLAUDE_STREAM_IDLE_TIMEOUT_MS",
-      "purpose": "Timeout in milliseconds before the streaming idle watchdog closes a stalled connection. For the byte-level watchdog on the Anthropic API: default and minimum `300000` (5 minutes); lower values are silently clamped to absorb extended thinking pauses and proxy buffering. For the event-level watchdog: default `90000` (90 seconds), no minimum. For third-party providers, requires `CLAUDE_ENABLE_STREAM_WATCHDOG=1`",
+      "purpose": "Timeout in milliseconds before the streaming idle watchdog closes a stalled connection. Default and minimum `300000` (5 minutes) for both the byte-level and event-level watchdogs; lower values are silently clamped to absorb extended thinking pauses and proxy buffering. For third-party providers, requires `CLAUDE_ENABLE_STREAM_WATCHDOG=1`",
       "default": null
     },
     {
@@ -801,6 +821,11 @@
     {
       "name": "DISABLE_FEEDBACK_COMMAND",
       "purpose": "Set to `1` to disable the `/feedback` command. The older name `DISABLE_BUG_COMMAND` is also accepted",
+      "default": null
+    },
+    {
+      "name": "DISABLE_GROWTHBOOK",
+      "purpose": "Set to `1` to disable GrowthBook feature-flag fetching and use code defaults for every flag. Telemetry event logging stays on unless `DISABLE_TELEMETRY` is also set",
       "default": null
     },
     {
@@ -850,7 +875,7 @@
     },
     {
       "name": "DISABLE_TELEMETRY",
-      "purpose": "Set to `1` to opt out of Statsig telemetry (note that Statsig events do not include user data like code, file paths, or bash commands)",
+      "purpose": "Set to `1` to opt out of telemetry. Telemetry events do not include user data like code, file paths, or bash commands",
       "default": null
     },
     {
@@ -935,7 +960,7 @@
     },
     {
       "name": "MCP_CONNECTION_NONBLOCKING",
-      "purpose": "Set to `true` in non-interactive mode (`-p`) to skip the MCP connection wait entirely. Useful for scripted pipelines where MCP tools are not needed. Without this variable, the first query waits up to 5 seconds for `--mcp-config` server connections",
+      "purpose": "Set to `true` in non-interactive mode (`-p`) to skip the MCP connection wait entirely. Useful for scripted pipelines where MCP tools are not needed. Without this variable, the first query waits up to 5 seconds for `--mcp-config` server connections. Servers configured with [`alwaysLoad: true`](/en/mcp#exempt-a-server-from-deferral) always block startup regardless of this variable, since their tools must be present when the first prompt is built",
       "default": null
     },
     {
