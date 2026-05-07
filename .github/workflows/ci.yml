@@ -1,0 +1,79 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Cancel in-flight runs for the same ref/PR — pushing again should supersede
+# whatever's still queued, especially with three-OS runs in flight.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      # Don't cancel sibling OSes when one fails — each platform's failure is
+      # independently informative (esp. once Phase 6 Windows registry lands).
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Tauri 2's Rust crate links against system webkit/glib on Linux even
+      # for `cargo test --lib`, since the lib pulls in tauri's default
+      # features. Package list mirrors the upstream prerequisites doc:
+      # https://v2.tauri.app/start/prerequisites/
+      - name: Install Tauri system deps (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            build-essential \
+            curl \
+            wget \
+            file \
+            libxdo-dev \
+            libssl-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install npm deps
+        run: npm ci
+
+      - name: Frontend unit tests
+        run: npm run test:unit
+
+      - name: Catalog sync tests
+        run: npm test
+
+      - name: tsc + vite build
+        run: npm run build
+
+      - name: Rust unit tests
+        working-directory: src-tauri
+        run: cargo test --lib
