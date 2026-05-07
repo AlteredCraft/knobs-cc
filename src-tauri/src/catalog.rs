@@ -16,6 +16,7 @@ const SETTINGS_JSON: &str = include_str!("../../catalog/settings.json");
 const ENV_VARS_JSON: &str = include_str!("../../catalog/env-vars.json");
 const HOOKS_JSON: &str = include_str!("../../catalog/hooks.json");
 const SUB_AGENTS_JSON: &str = include_str!("../../catalog/sub-agents.json");
+const MCP_JSON: &str = include_str!("../../catalog/mcp.json");
 
 #[derive(Debug, Serialize)]
 pub struct Catalogs {
@@ -29,6 +30,8 @@ pub struct Catalogs {
     /// Parsed `catalog/sub-agents.json` — `{source, fetchedAt, count, fields: [...]}`.
     #[serde(rename = "sub_agents")]
     pub sub_agents: Value,
+    /// Parsed `catalog/mcp.json` — `{source, fetchedAt, count, scopes: [...]}`.
+    pub mcp: Value,
 }
 
 fn read_catalog_inner() -> Result<Catalogs, String> {
@@ -41,6 +44,8 @@ fn read_catalog_inner() -> Result<Catalogs, String> {
             .map_err(|e| format!("catalog/hooks.json parse: {e}"))?,
         sub_agents: serde_json::from_str(SUB_AGENTS_JSON)
             .map_err(|e| format!("catalog/sub-agents.json parse: {e}"))?,
+        mcp: serde_json::from_str(MCP_JSON)
+            .map_err(|e| format!("catalog/mcp.json parse: {e}"))?,
     })
 }
 
@@ -106,6 +111,30 @@ mod tests {
     }
 
     #[test]
+    fn mcp_catalog_parses_and_has_scopes_array() {
+        let c = read_catalog_inner().expect("catalogs parse");
+        let arr = c.mcp.get("scopes").and_then(Value::as_array);
+        assert!(arr.is_some(), "mcp.scopes should be an array");
+        assert!(!arr.unwrap().is_empty(), "scopes array should be non-empty");
+    }
+
+    #[test]
+    fn mcp_catalog_contains_three_canonical_scopes() {
+        // Guard against a sync regression that drops or renames the scopes
+        // upstream documents. Local / Project / User are the precedence-
+        // ordered scopes a user-authored MCP server can live at.
+        let c = read_catalog_inner().unwrap();
+        let arr = c.mcp.get("scopes").unwrap().as_array().unwrap();
+        for expected in ["Local", "Project", "User"] {
+            assert!(
+                arr.iter()
+                    .any(|e| e.get("name").and_then(Value::as_str) == Some(expected)),
+                "mcp catalog missing scope: {expected}",
+            );
+        }
+    }
+
+    #[test]
     fn settings_entries_have_a_key_field() {
         // Spot-check that the catalog entry shape we rely on is intact —
         // `key` is the field rows.ts joins on.
@@ -141,5 +170,6 @@ mod tests {
         assert!(json.get("sub_agents").is_some(), "expected snake_case sub_agents on the wire");
         assert!(json.get("settings").is_some());
         assert!(json.get("hooks").is_some());
+        assert!(json.get("mcp").is_some());
     }
 }

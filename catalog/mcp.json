@@ -1,0 +1,25 @@
+{
+  "source": "https://code.claude.com/docs/en/mcp.md",
+  "fetchedAt": "2026-05-07T17:40:21.215Z",
+  "count": 3,
+  "scopes": [
+    {
+      "name": "Local",
+      "loadsIn": "Current project only",
+      "shared": "No",
+      "storedIn": "`~/.claude.json`"
+    },
+    {
+      "name": "Project",
+      "loadsIn": "Current project only",
+      "shared": "Yes, via version control",
+      "storedIn": "`.mcp.json` in project root"
+    },
+    {
+      "name": "User",
+      "loadsIn": "All your projects",
+      "shared": "No",
+      "storedIn": "`~/.claude.json`"
+    }
+  ]
+}

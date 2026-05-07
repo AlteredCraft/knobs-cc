@@ -1,6 +1,6 @@
 # Catalog sync — spec
 
-Status: **partial implementation.** `sync-settings.js` shipped 2026-04-28; `sync-env-vars.js` shipped 2026-04-29; `sync-hooks.js` shipped 2026-04-29 (lifecycle table only — handler types and per-event input/output schemas are not yet captured); `sync-sub-agents.js` shipped 2026-05-07 (supported-frontmatter-fields table only).
+Status: **partial implementation.** `sync-settings.js` shipped 2026-04-28; `sync-env-vars.js` shipped 2026-04-29; `sync-hooks.js` shipped 2026-04-29 (lifecycle table only — handler types and per-event input/output schemas are not yet captured); `sync-sub-agents.js` shipped 2026-05-07 (supported-frontmatter-fields table only); `sync-mcp.js` shipped 2026-05-07 (installation-scopes table only — transport types, managed-mcp.json semantics, and tool-search threshold values are not yet captured).
 
 > Open work — new scripts, the hooks pass #2, the `read_catalog` wire-up, and the open questions at the bottom of this doc — is tracked in [`roadmap.md`](./roadmap.md).
 
@@ -31,13 +31,16 @@ scripts/
 ├── sync-hooks.js             # implemented
 ├── sync-hooks.test.js
 ├── sync-sub-agents.js        # implemented
-└── sync-sub-agents.test.js
+├── sync-sub-agents.test.js
+├── sync-mcp.js               # implemented
+└── sync-mcp.test.js
 
 catalog/
 ├── settings.json             # written by sync-settings.js
 ├── env-vars.json             # written by sync-env-vars.js
 ├── hooks.json                # written by sync-hooks.js
-└── sub-agents.json           # written by sync-sub-agents.js
+├── sub-agents.json           # written by sync-sub-agents.js
+└── mcp.json                  # written by sync-mcp.js
 ```
 
 ## Sources
@@ -161,13 +164,46 @@ Pragmatic acceptance criteria: every row in the upstream frontmatter table appea
 
 **Test plan:** mirror `sync-env-vars.test.js` and `sync-hooks.test.js`. Pure functions (`parseRow`, `parseTable`, `buildRecords`) get unit tests with small fixture strings; `main()` stays uncovered.
 
+### MCP — implemented (installation scopes only)
+
+| | |
+| --- | --- |
+| Source | `https://code.claude.com/docs/en/mcp.md` |
+| Output | `catalog/mcp.json` (~3 entries) |
+| Script | `scripts/sync-mcp.js` |
+| Run | `npm run sync:mcp` |
+
+The page is heterogeneous — it documents transport types (HTTP, SSE-deprecated, stdio), per-scope CLI flows, OAuth credential handling, `managed-mcp.json` exclusive-control + allowlist/denylist semantics, tool-search deferral thresholds, and more. Almost all of that lives under prose-heavy `###`/`####` sections rather than in canonical tables; the few tables that exist are niche (two env vars passed to dynamic-header scripts; the five `MCP_TOOL_SEARCH_DEFER_LOAD` values). The single catalog-friendly artifact is the **MCP installation scopes** table at `## MCP installation scopes` — a 4-column reference for where Local / Project / User scopes live and what they share. That's the first cut.
+
+**Approach:**
+
+1. `fetch()` the `.md` URL.
+2. Locate the table by header signature `| Scope | Loads in | Shared with team | Stored in |` (case-insensitive). The page's other 2-column tables don't share this signature.
+3. For each row, extract `name` (markdown link `[Local](#local-scope)` → `Local`, or backticks stripped from a bare `\`Local\``), `loadsIn`, `shared` (preserved verbatim — qualifier prose like "Yes, via version control" is part of the data), and `storedIn` (preserved verbatim, including code-spans on paths).
+4. Sort by `name`, wrap with the standard envelope, write to `catalog/mcp.json`.
+
+**Output shape per record:**
+
+```json
+{
+  "name": "Project",
+  "loadsIn": "Current project only",
+  "shared": "Yes, via version control",
+  "storedIn": "`.mcp.json` in project root"
+}
+```
+
+Pragmatic acceptance criteria: every row in the upstream scopes table appears in the output; cell prose preserved verbatim except for the link-wrapping on the name. Transport types, managed-mcp.json semantics, OAuth flows, and tool-search threshold values are out of scope for this cut and remain candidates for follow-up work.
+
+**Test plan:** mirror `sync-sub-agents.test.js`. Pure functions (`parseRow`, `parseTable`, `buildRecords`) get unit tests with small fixture strings; `main()` stays uncovered.
+
 ## Future sources (not committed)
 
-Each gets the same recipe: one script, one catalog file, one test file. Remaining candidates in rough priority order: `mcp.md`, `permissions` doc, `keybindings.md`, `cli-reference.md`. A second `hooks.md` pass to capture handler types and per-event input/output schemas also belongs on this list, as does a second `sub-agents.md` pass to capture built-in subagent identities. None are committed scope today.
+Each gets the same recipe: one script, one catalog file, one test file. Remaining candidates in rough priority order: `permissions` doc, `keybindings.md`, `cli-reference.md`. A second `hooks.md` pass to capture handler types and per-event input/output schemas also belongs on this list, as does a second `sub-agents.md` pass to capture built-in subagent identities, and a second `mcp.md` pass to capture transport types and managed-mcp.json semantics. None are committed scope today.
 
 ## Automation
 
-- **CI on cron — shipped.** [`.github/workflows/catalog-drift.yml`](../.github/workflows/catalog-drift.yml) runs `npm run sync:settings`, `npm run sync:env-vars`, `npm run sync:hooks`, and `npm run sync:sub-agents` every Monday at 09:00 UTC and on `workflow_dispatch`. The detect step normalises out the always-changing `fetchedAt` field before deciding whether content drifted; if only the timestamp moved, the working tree is restored to HEAD and no PR is opened. Real drift opens (or updates) a single `chore/catalog-drift` PR via `peter-evans/create-pull-request@v8` (paired with `actions/checkout@v5` and `actions/setup-node@v5` for the 2026-06-02 Node 24 cutover). Required permissions: `contents: write` + `pull-requests: write`.
+- **CI on cron — shipped.** [`.github/workflows/catalog-drift.yml`](../.github/workflows/catalog-drift.yml) runs `npm run sync:settings`, `npm run sync:env-vars`, `npm run sync:hooks`, `npm run sync:sub-agents`, and `npm run sync:mcp` every Monday at 09:00 UTC and on `workflow_dispatch`. The detect step normalises out the always-changing `fetchedAt` field before deciding whether content drifted; if only the timestamp moved, the working tree is restored to HEAD and no PR is opened. Real drift opens (or updates) a single `chore/catalog-drift` PR via `peter-evans/create-pull-request@v8` (paired with `actions/checkout@v5` and `actions/setup-node@v5` for the 2026-06-02 Node 24 cutover). Required permissions: `contents: write` + `pull-requests: write`.
 
 ## Future automation (not committed)
 

@@ -11,7 +11,7 @@ inline in another spec.
 Last reviewed: 2026-05-07 (Phase 2 + read_catalog + Phase 5 + Phase 7 +
 path-notes click-through + Phase 6 fully shipped + three-OS CI +
 managed-mcp.json topbar pill + catalog-drift cron + sync-sub-agents +
-in-app error log + per-OS capability split).
+in-app error log + per-OS capability split + sync-mcp).
 
 ## Next-up candidates
 
@@ -27,9 +27,9 @@ here, then jump to the relevant section for shape and rationale.
   convention `CLAUDE.md` describes is unused (zero tags in the
   inventory) — decide whether to re-tag unverified rows or retire
   the convention.
-- **New sync scripts** (catalog sync) — `mcp.md`, permissions,
-  `keybindings.md`, `cli-reference.md`. Each gets one script + one
-  catalog file + one test. (`sub-agents.md` shipped 2026-05-07; see
+- **New sync scripts** (catalog sync) — permissions, `keybindings.md`,
+  `cli-reference.md`. Each gets one script + one catalog file + one
+  test. (`sub-agents.md` and `mcp.md` shipped 2026-05-07; see
   catalog-sync section below.)
 - **CI / drift hardening** (catalog sync) — `$ref` resolution policy;
   staleness signal. (Cron-driven sync with PR-on-diff shipped
@@ -142,8 +142,23 @@ Phase numbering matches the spec.
   `prompt`, `agent`) and per-event input/output schemas. The current
   `sync-hooks.js` only captures the lifecycle table.
 - **New sync scripts.** Each gets one script + one catalog file + one
-  test, per the recipe. Remaining candidates: `mcp.md`, permissions
-  doc, `keybindings.md`, `cli-reference.md`.
+  test, per the recipe. Remaining candidates: permissions doc,
+  `keybindings.md`, `cli-reference.md`.
+- **MCP catalog (installation scopes).** ✅ shipped 2026-05-07.
+  `scripts/sync-mcp.js` reads
+  `https://code.claude.com/docs/en/mcp.md`'s
+  `## MCP installation scopes` table and writes `catalog/mcp.json`
+  (3 records — Local, Project, User). The page is heterogeneous and
+  most of it lives in prose-heavy `###`/`####` sections; the scopes
+  table is the single canonical tabular artifact. Each record carries
+  `name`, `loadsIn`, `shared` (preserved verbatim — "No" /
+  "Yes, via version control" / "No"), and `storedIn` (preserved
+  verbatim, code-spans intact). Wired through `read_catalog` as `mcp`
+  on the wire (no UI consumer yet, parallel to env-vars / hooks /
+  sub-agents). Cron sync covers the new script. Future passes:
+  transport types (HTTP / SSE / stdio), managed-mcp.json exclusive-
+  control + allowlist/denylist semantics, OAuth credential handling,
+  tool-search deferral thresholds.
 - **Sub-agents catalog (frontmatter pass).** ✅ shipped 2026-05-07.
   `scripts/sync-sub-agents.js` reads
   `https://code.claude.com/docs/en/sub-agents.md`'s

@@ -12,6 +12,7 @@
     "sync:env-vars": "node scripts/sync-env-vars.js",
     "sync:hooks": "node scripts/sync-hooks.js",
     "sync:sub-agents": "node scripts/sync-sub-agents.js",
+    "sync:mcp": "node scripts/sync-mcp.js",
     "test": "node --test scripts/*.test.js",
     "test:coverage": "node --experimental-test-coverage --test-coverage-exclude='scripts/*.test.js' --test scripts/*.test.js",
     "test:unit": "vitest run",

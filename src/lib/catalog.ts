@@ -36,6 +36,7 @@ export interface CatalogsWire {
   env_vars: unknown;
   hooks: unknown;
   sub_agents: unknown;
+  mcp: unknown;
 }
 
 export interface CatalogMeta {

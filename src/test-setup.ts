@@ -7,6 +7,7 @@ import settings from "../catalog/settings.json";
 import envVars from "../catalog/env-vars.json";
 import hooks from "../catalog/hooks.json";
 import subAgents from "../catalog/sub-agents.json";
+import mcp from "../catalog/mcp.json";
 import { hydrateCatalogForTesting, type CatalogsWire } from "@/lib/catalog";
 
 const catalogs: CatalogsWire = {
@@ -14,6 +15,7 @@ const catalogs: CatalogsWire = {
   env_vars: envVars,
   hooks,
   sub_agents: subAgents,
+  mcp,
 };
 
 hydrateCatalogForTesting(catalogs);
