@@ -179,6 +179,11 @@ Phase 4 work items:
 - Pull description, type, default, deprecation, and `verify` flag from
   `catalog.json` (when the catalog-sync harness produces one) or from a
   hand-extracted subset of `inventory.md` until then.
+- For `env.<VAR>` rows, cross-reference the env-vars catalog by name
+  and surface the env-var's `purpose` prose instead of the generic
+  parent-`env` description. (Shipped 2026-05-07 — the first
+  drawer-side consumer of a non-settings catalog, validating the
+  multi-catalog cross-reference seam.)
 - "Default" layer becomes meaningful here — values not set anywhere fall
   through to the catalog-declared default and are tagged `default`.
 

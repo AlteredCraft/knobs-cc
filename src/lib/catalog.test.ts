@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { findRelatedKnobs, findCatalogEntry } from "./catalog";
+import { findRelatedKnobs, findCatalogEntry, findEnvVar } from "./catalog";
 
 describe("findRelatedKnobs", () => {
   it("returns sibling entries under the same parent path", () => {
@@ -57,5 +57,32 @@ describe("findCatalogEntry", () => {
 
   it("returns null when no parent exists either", () => {
     expect(findCatalogEntry("nonexistent.weird.path")).toBeNull();
+  });
+});
+
+describe("findEnvVar", () => {
+  it("looks up a documented env var by exact name", () => {
+    // Anchor on a stable, well-known env var documented upstream. The
+    // exact prose drifts as upstream rewrites; assert structural shape
+    // and that the purpose is non-empty.
+    const e = findEnvVar("ANTHROPIC_API_KEY");
+    expect(e).not.toBeNull();
+    expect(e!.name).toBe("ANTHROPIC_API_KEY");
+    expect(e!.purpose.length).toBeGreaterThan(0);
+  });
+
+  it("returns null for an env var the catalog doesn't document", () => {
+    // Users can set `env.ANYTHING_THEY_WANT` in their settings.json to
+    // inject custom env vars into child processes; only a subset is in
+    // the upstream catalog. Misses must fall back to null so the drawer
+    // can keep its existing parent-walk-up behavior.
+    expect(findEnvVar("MY_PROJECT_NEVER_DOCUMENTED")).toBeNull();
+  });
+
+  it("is case-sensitive — env-var names are conventionally upper-case", () => {
+    // Real env-var names are upper-case; case-folding the lookup would
+    // create false matches (e.g. user typo `anthropic_api_key` lighting
+    // up the docs for ANTHROPIC_API_KEY). Treat case mismatches as misses.
+    expect(findEnvVar("anthropic_api_key")).toBeNull();
   });
 });

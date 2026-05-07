@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { cn } from "@/lib/utils";
-import { findRelatedKnobs, type CatalogEntry } from "@/lib/catalog";
+import { findEnvVar, findRelatedKnobs, type CatalogEntry } from "@/lib/catalog";
 import { formatValue } from "@/lib/format";
 import { buildRows, type Row } from "@/lib/rows";
 import { buildWaterfall } from "@/lib/waterfall";
@@ -23,7 +23,7 @@ export function KeyDrawer({
   onSelect: (keyPath: string) => void;
 }) {
   const formatted = formatValue(row.value);
-  const description = row.catalog?.description?.split("\n")[0] ?? null;
+  const description = resolveDescription(row);
   const isArrayMerged = row.state === "array-merged";
 
   // Look up siblings via the catalog and join with current row state so the
@@ -331,6 +331,37 @@ function prefixOf(keyPath: string): string {
 function leafOf(keyPath: string): string {
   const dot = keyPath.lastIndexOf(".");
   return dot < 0 ? keyPath : keyPath.slice(dot + 1);
+}
+
+/**
+ * Extract the env-var name from an `env.<VAR>` row's keyPath. Returns
+ * null when the path isn't an immediate child of `env`, when the leaf
+ * isn't a valid POSIX-style env identifier (upper-case ASCII +
+ * underscore + digits, not leading-digit), or when the namespace prefix
+ * is anything other than literal `env`. Case-sensitive on purpose:
+ * matching `env.lower_case` would feed false catalog hits to the
+ * drawer.
+ */
+export function envVarNameFromKeyPath(keyPath: string): string | null {
+  const m = /^env\.([A-Z_][A-Z0-9_]*)$/.exec(keyPath);
+  return m ? m[1] : null;
+}
+
+/**
+ * Resolve the description prose shown in the drawer header. For
+ * `env.<VAR>` rows whose var is documented upstream, prefer the
+ * env-vars catalog's purpose over the generic parent-`env` description
+ * the settings catalog walk-up returns. Falls back to the settings
+ * catalog description otherwise; truncates to the first line so the
+ * header band stays a single paragraph.
+ */
+export function resolveDescription(row: Row): string | null {
+  const envVar = envVarNameFromKeyPath(row.keyPath);
+  if (envVar) {
+    const entry = findEnvVar(envVar);
+    if (entry) return entry.purpose.split("\n")[0];
+  }
+  return row.catalog?.description?.split("\n")[0] ?? null;
 }
 
 function describeShape(row: Row): string {

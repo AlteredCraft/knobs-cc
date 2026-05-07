@@ -11,7 +11,8 @@ inline in another spec.
 Last reviewed: 2026-05-07 (Phase 2 + read_catalog + Phase 5 + Phase 7 +
 path-notes click-through + Phase 6 fully shipped + three-OS CI +
 managed-mcp.json topbar pill + catalog-drift cron + sync-sub-agents +
-in-app error log + per-OS capability split + sync-mcp + sync-permissions).
+in-app error log + per-OS capability split + sync-mcp + sync-permissions
++ drawer cross-references env-vars catalog).
 
 ## Next-up candidates
 
@@ -233,6 +234,20 @@ Open work (what to pick up next within this track):
 
 Shipped:
 
+- **Drawer cross-references env-vars catalog.** ✅ shipped 2026-05-07.
+  When a row's keyPath is `env.<VAR>` and `<VAR>` is documented in the
+  env-vars catalog (220 entries upstream), the drawer header surfaces
+  the env-var's `purpose` prose instead of the generic parent-`env`
+  description the settings-catalog walk-up returns. This is the first
+  drawer-side consumer of a non-settings catalog — `findEnvVar(name)`
+  in `src/lib/catalog.ts` joins to a name-indexed Map built at
+  hydration time; `resolveDescription(row)` and `envVarNameFromKeyPath`
+  in `KeyDrawer.tsx` are pure helpers exported for unit testing.
+  Case-sensitive on lookup (env-var convention is upper-case ASCII;
+  case-folding would feed false matches for user typos). Validates
+  the seam for future drawer consumers — `permissions.modes` for
+  `permissions.defaultMode`, `hooks.events` for `hooks.<EventName>`,
+  `mcp.scopes` for the managed-mcp pill.
 - **In-app error log + per-OS capability split.** ✅ shipped 2026-05-07.
   `src/lib/errorLog.ts` is a 50-entry in-memory ring buffer with
   `subscribe`/`reportError`/`markAllSeen`/`clearErrors` and an

@@ -74,7 +74,11 @@ Non-modal. The list and rail remain navigable while the drawer is open.
 
 - Header: key name, type info, scalar/array marker, shadowing flag
 - Description from the catalog (Phase 5+; for Phase 4, fall back to the key
-  alone)
+  alone). For `env.<VAR>` rows whose var is documented in the env-vars
+  catalog, the env-var's `purpose` prose is shown instead of the generic
+  parent-`env` description that the settings-catalog walk-up returns —
+  the env-vars catalog is the more specific authority for what each var
+  does.
 - Effective-value block — value + winning layer badge, accent-coloured
 - **Layer waterfall** (see Design primitives)
 - Path notes for set layers (`./.claude/settings.json`) — clickable to

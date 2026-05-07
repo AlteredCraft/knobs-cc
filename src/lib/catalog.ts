@@ -29,11 +29,26 @@ export interface SettingsCatalogFile {
   settings: CatalogEntry[];
 }
 
+export interface EnvVarEntry {
+  name: string;
+  /** Upstream prose describing what this env var does. */
+  purpose: string;
+  /** Best-effort default extracted from prose; null when not documented. */
+  default: string | null;
+}
+
+export interface EnvVarsCatalogFile {
+  source: string;
+  fetchedAt: string;
+  count: number;
+  envVars: EnvVarEntry[];
+}
+
 export interface CatalogsWire {
   settings: SettingsCatalogFile;
+  env_vars: EnvVarsCatalogFile;
   // Other catalogs are exposed for future Phase 5+ consumers; their shapes
   // aren't modeled yet because nothing in the UI reads them.
-  env_vars: unknown;
   hooks: unknown;
   sub_agents: unknown;
   mcp: unknown;
@@ -51,6 +66,7 @@ interface InitializedCatalog {
   full: CatalogEntry[];
   leaf: CatalogEntry[];
   byKey: Map<string, CatalogEntry>;
+  envVarsByName: Map<string, EnvVarEntry>;
   meta: CatalogMeta;
 }
 
@@ -76,6 +92,7 @@ function buildState(data: CatalogsWire): InitializedCatalog {
     full,
     leaf,
     byKey: new Map(leaf.map((e) => [e.key, e])),
+    envVarsByName: new Map(data.env_vars.envVars.map((e) => [e.name, e])),
     meta: {
       source: data.settings.source,
       fetchedAt: data.settings.fetchedAt,
@@ -140,6 +157,18 @@ export function findRelatedKnobs(keyPath: string): readonly CatalogEntry[] {
     // `permissions.foo.bar`.
     return !e.key.slice(prefix.length).includes(".");
   });
+}
+
+/**
+ * Lookup by env-var name (e.g. `ANTHROPIC_API_KEY`). Returns null when
+ * the catalog doesn't document the var — users can set arbitrary
+ * `env.<VAR>` entries in their settings.json, but only a subset is
+ * upstream-documented. Case-sensitive: real env-var names are
+ * conventionally upper-case, and case-folding would create false
+ * matches for user typos.
+ */
+export function findEnvVar(name: string): EnvVarEntry | null {
+  return requireState().envVarsByName.get(name) ?? null;
 }
 
 /** Lookup by exact dot-path. Walks up to find the closest parent on miss. */
