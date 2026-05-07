@@ -1,4 +1,6 @@
 import { LAYERS_IN_PRECEDENCE_ORDER, type SettingsSnapshot } from "@/types";
+import { describeMcpPolicy } from "@/lib/managedMcp";
+import { openInEditor } from "@/lib/openPath";
 import { StatusDot } from "./StatusDot";
 
 export function Topbar({
@@ -13,6 +15,7 @@ export function Topbar({
   const okLayers = snapshot.layers.filter((l) => l.status === "ok").length;
   const totalLayers = LAYERS_IN_PRECEDENCE_ORDER.length;
   const diagnosticCount = snapshot.diagnostics.length;
+  const mcpPolicy = describeMcpPolicy(snapshot.managed_mcp);
 
   return (
     <header
@@ -49,6 +52,26 @@ export function Topbar({
           <StatusDot variant={diagnosticCount > 0 ? "warn" : "empty"} />
           {diagnosticCount} {diagnosticCount === 1 ? "diagnostic" : "diagnostics"}
         </span>
+        {mcpPolicy && (
+          <button
+            type="button"
+            onClick={() =>
+              mcpPolicy.path && void openInEditor(mcpPolicy.path)
+            }
+            disabled={!mcpPolicy.path}
+            title={
+              mcpPolicy.state === "error" && mcpPolicy.errorText
+                ? `${mcpPolicy.path ?? "(no path)"}\n${mcpPolicy.errorText}`
+                : mcpPolicy.path
+                  ? `Open ${mcpPolicy.path} in your default editor`
+                  : "managed-mcp.json (no path)"
+            }
+            className="flex items-center gap-1.5 rounded-sm border border-line-strong px-2 py-1 hover:border-accent hover:text-fg-1 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:border-line-strong disabled:hover:text-fg-2"
+          >
+            <StatusDot variant={mcpPolicy.state === "ok" ? "ok" : "err"} />
+            {mcpPolicy.label}
+          </button>
+        )}
         <button
           type="button"
           onClick={onRefresh}

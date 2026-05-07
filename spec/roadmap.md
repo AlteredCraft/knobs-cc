@@ -16,8 +16,6 @@ path-notes click-through + Phase 6 fully shipped + three-OS CI).
 A digest of what's open across the four tracks below — pick from
 here, then jump to the relevant section for shape and rationale.
 
-- **`managed-mcp.json` UI surface** (inspector polish) — backend
-  already serves the sibling read; placement TBD.
 - **Hooks catalog pass #2** (catalog sync) — handler types + per-event
   schemas. Investment without an immediate UI consumer.
 - **Rail navigability decision** (inspector polish) — spec question,
@@ -166,12 +164,6 @@ Phase numbering matches the spec.
 
 Open work (what to pick up next within this track):
 
-- **`managed-mcp.json` surface.** Backend exposes the sibling read at
-  `snapshot.managed_mcp` (Phase 2). UI placement TBD — likely a small
-  "MCP policy" indicator near the topbar or a row in the rail's
-  diagnostics dock. Out of scope for the inspector main flow; small
-  visible payoff but only fires on machines with admin-shipped MCP
-  policy.
 - **Rail navigability — undecided.** Spec is silent. Either keep the
   rail informational (current behavior) or wire layer-click → centre
   list filtered to keys won by that layer. Needs an explicit decision
@@ -179,6 +171,19 @@ Open work (what to pick up next within this track):
 
 Shipped:
 
+- **`managed-mcp.json` topbar pill.** ✅ shipped 2026-05-06.
+  `describeMcpPolicy(snapshot.managed_mcp)` (`src/lib/managedMcp.ts`)
+  drives a small clickable pill in the topbar that only renders when
+  the file is present (`status: "ok"` or `"error"`). Reports the
+  server count from the parsed `mcpServers` object (`"3 servers"` /
+  `"1 server"` / `"0 servers"` for present-but-empty); error state
+  surfaces the parse error in the tooltip and renders a red dot.
+  Click opens the JSON via `openInEditor` — added
+  `C:\Program Files\ClaudeCode\**` to `opener:allow-open-path` so
+  Windows users get click-through too (pre-existing gap, surfaced now
+  that the pill makes the path actionable). Drill-down into the
+  parsed contents stays out of scope — the file's small enough that
+  opening it in the user's editor is the right primary action.
 - **Path-notes click-through.** ✅ shipped 2026-05-06. Path notes in
   the drawer waterfall are now clickable; click invokes
   `@tauri-apps/plugin-opener`'s `openPath` to open the file in the OS
