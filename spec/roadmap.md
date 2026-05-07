@@ -8,9 +8,9 @@ If you ship something, mark it ✅ here and (where relevant) update the
 corresponding spec section. If you discover new work, add it here, not
 inline in another spec.
 
-Last reviewed: 2026-05-06 (Phase 2 + read_catalog + Phase 5 + Phase 7 +
+Last reviewed: 2026-05-07 (Phase 2 + read_catalog + Phase 5 + Phase 7 +
 path-notes click-through + Phase 6 fully shipped + three-OS CI +
-managed-mcp.json topbar pill + catalog-drift cron).
+managed-mcp.json topbar pill + catalog-drift cron + sync-sub-agents).
 
 ## Next-up candidates
 
@@ -26,9 +26,10 @@ here, then jump to the relevant section for shape and rationale.
   convention `CLAUDE.md` describes is unused (zero tags in the
   inventory) — decide whether to re-tag unverified rows or retire
   the convention.
-- **New sync scripts** (catalog sync) — `mcp.md`, `sub-agents.md`,
-  permissions, `keybindings.md`, `cli-reference.md`. Each gets one
-  script + one catalog file + one test.
+- **New sync scripts** (catalog sync) — `mcp.md`, permissions,
+  `keybindings.md`, `cli-reference.md`. Each gets one script + one
+  catalog file + one test. (`sub-agents.md` shipped 2026-05-07; see
+  catalog-sync section below.)
 - **CI / drift hardening** (catalog sync) — `$ref` resolution policy;
   staleness signal. (Cron-driven sync with PR-on-diff shipped
   2026-05-06.)
@@ -140,8 +141,21 @@ Phase numbering matches the spec.
   `prompt`, `agent`) and per-event input/output schemas. The current
   `sync-hooks.js` only captures the lifecycle table.
 - **New sync scripts.** Each gets one script + one catalog file + one
-  test, per the recipe. Likely candidates: `mcp.md`, `sub-agents.md`,
-  permissions doc, `keybindings.md`, `cli-reference.md`. None committed.
+  test, per the recipe. Remaining candidates: `mcp.md`, permissions
+  doc, `keybindings.md`, `cli-reference.md`.
+- **Sub-agents catalog (frontmatter pass).** ✅ shipped 2026-05-07.
+  `scripts/sync-sub-agents.js` reads
+  `https://code.claude.com/docs/en/sub-agents.md`'s
+  `#### Supported frontmatter fields` table and writes
+  `catalog/sub-agents.json` (16 fields — `name`, `description`,
+  `tools`, `disallowedTools`, `model`, `permissionMode`, `maxTurns`,
+  `skills`, `mcpServers`, `hooks`, `memory`, `background`, `effort`,
+  `isolation`, `color`, `initialPrompt`). The catalog is wired through
+  `read_catalog` as `sub_agents` (snake-case on the wire to match
+  `env_vars`); no UI consumer yet, parallel to the env-vars/hooks
+  catalogs. Cron sync covers the new script. Future pass: built-in
+  subagent identities (Explore / Plan / general-purpose / etc.) and
+  the operational rules around tool restrictions and hooks.
 - **`read_catalog` Tauri command.** ✅ shipped 2026-05-05. Rust now
   owns `catalog/{settings,env-vars,hooks}.json` via `include_str!` and
   serves them through `read_catalog`. The frontend's `src/lib/catalog.ts`

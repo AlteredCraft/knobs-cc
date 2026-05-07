@@ -6,12 +6,14 @@
 import settings from "../catalog/settings.json";
 import envVars from "../catalog/env-vars.json";
 import hooks from "../catalog/hooks.json";
+import subAgents from "../catalog/sub-agents.json";
 import { hydrateCatalogForTesting, type CatalogsWire } from "@/lib/catalog";
 
 const catalogs: CatalogsWire = {
   settings: settings as CatalogsWire["settings"],
   env_vars: envVars,
   hooks,
+  sub_agents: subAgents,
 };
 
 hydrateCatalogForTesting(catalogs);

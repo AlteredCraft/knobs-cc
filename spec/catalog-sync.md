@@ -1,6 +1,6 @@
 # Catalog sync — spec
 
-Status: **partial implementation.** `sync-settings.js` shipped 2026-04-28; `sync-env-vars.js` shipped 2026-04-29; `sync-hooks.js` shipped 2026-04-29 (lifecycle table only — handler types and per-event input/output schemas are not yet captured).
+Status: **partial implementation.** `sync-settings.js` shipped 2026-04-28; `sync-env-vars.js` shipped 2026-04-29; `sync-hooks.js` shipped 2026-04-29 (lifecycle table only — handler types and per-event input/output schemas are not yet captured); `sync-sub-agents.js` shipped 2026-05-07 (supported-frontmatter-fields table only).
 
 > Open work — new scripts, the hooks pass #2, the `read_catalog` wire-up, and the open questions at the bottom of this doc — is tracked in [`roadmap.md`](./roadmap.md).
 
@@ -29,12 +29,15 @@ scripts/
 ├── sync-env-vars.js          # implemented
 ├── sync-env-vars.test.js
 ├── sync-hooks.js             # implemented
-└── sync-hooks.test.js
+├── sync-hooks.test.js
+├── sync-sub-agents.js        # implemented
+└── sync-sub-agents.test.js
 
 catalog/
 ├── settings.json             # written by sync-settings.js
 ├── env-vars.json             # written by sync-env-vars.js
-└── hooks.json                # written by sync-hooks.js
+├── hooks.json                # written by sync-hooks.js
+└── sub-agents.json           # written by sync-sub-agents.js
 ```
 
 ## Sources
@@ -126,13 +129,45 @@ Pragmatic acceptance criteria: every row in the upstream lifecycle table appears
 
 **Test plan:** mirror `sync-env-vars.test.js`. Pure functions (`parseRow`, `parseTable`, `buildRecords`) get unit tests with small fixture strings; `main()` stays uncovered.
 
+### Sub-agents — implemented (frontmatter fields only)
+
+| | |
+| --- | --- |
+| Source | `https://code.claude.com/docs/en/sub-agents.md` |
+| Output | `catalog/sub-agents.json` (~16 entries) |
+| Script | `scripts/sync-sub-agents.js` |
+| Run | `npm run sync:sub-agents` |
+
+The page documents three things: built-in subagents (Explore / Plan / general-purpose / etc.), the YAML frontmatter that defines a custom subagent, and the operational rules around tool restrictions, hooks, and model selection. Of those, only the frontmatter table (`#### Supported frontmatter fields` — `| Field | Required | Description |`) is a single canonical artifact; the built-in agents are in tabbed prose and the operational rules are scattered across `###` sections. The first cut captures the frontmatter table — every key a `~/.claude/agents/<name>.md` file's YAML can carry, with whether it's required and the prose description.
+
+**Approach:**
+
+1. `fetch()` the `.md` URL.
+2. Locate the table by header signature `| Field | Required | Description |` (case-insensitive). The page has another 3-column table on the "Other" built-in subagents tab (`| Agent | Model | When Claude uses it |`); the header signature disambiguates.
+3. For each row, extract `name` (backtick-stripped), `required` (boolean — "Yes" → `true`, anything else → `false`; upstream uses exactly those two values today), and `description` (prose, preserved verbatim including markdown links and inline code).
+4. Sort by `name`, wrap with the standard envelope, write to `catalog/sub-agents.json`.
+
+**Output shape per record:**
+
+```json
+{
+  "name": "permissionMode",
+  "required": false,
+  "description": "[Permission mode](#permission-modes): `default`, `acceptEdits`, `auto`, `dontAsk`, `bypassPermissions`, or `plan`. Ignored for [plugin subagents](#choose-the-subagent-scope)"
+}
+```
+
+Pragmatic acceptance criteria: every row in the upstream frontmatter table appears in the output; `name` and `description` (the only two fields upstream marks required) are flagged `required: true`. Built-in subagent identities, model-resolution order, and per-event hook semantics are out of scope for this cut and remain candidates for follow-up work.
+
+**Test plan:** mirror `sync-env-vars.test.js` and `sync-hooks.test.js`. Pure functions (`parseRow`, `parseTable`, `buildRecords`) get unit tests with small fixture strings; `main()` stays uncovered.
+
 ## Future sources (not committed)
 
-Each gets the same recipe: one script, one catalog file, one test file. Likely candidates in rough priority order: `mcp.md`, `sub-agents.md`, `permissions` doc, `keybindings.md`, `cli-reference.md`. A second `hooks.md` pass to capture handler types and per-event input/output schemas also belongs on this list. None are committed scope today.
+Each gets the same recipe: one script, one catalog file, one test file. Remaining candidates in rough priority order: `mcp.md`, `permissions` doc, `keybindings.md`, `cli-reference.md`. A second `hooks.md` pass to capture handler types and per-event input/output schemas also belongs on this list, as does a second `sub-agents.md` pass to capture built-in subagent identities. None are committed scope today.
 
 ## Automation
 
-- **CI on cron — shipped.** [`.github/workflows/catalog-drift.yml`](../.github/workflows/catalog-drift.yml) runs `npm run sync:settings`, `npm run sync:env-vars`, and `npm run sync:hooks` every Monday at 09:00 UTC and on `workflow_dispatch`. The detect step normalises out the always-changing `fetchedAt` field before deciding whether content drifted; if only the timestamp moved, the working tree is restored to HEAD and no PR is opened. Real drift opens (or updates) a single `chore/catalog-drift` PR via `peter-evans/create-pull-request@v8` (paired with `actions/checkout@v5` and `actions/setup-node@v5` for the 2026-06-02 Node 24 cutover). Required permissions: `contents: write` + `pull-requests: write`.
+- **CI on cron — shipped.** [`.github/workflows/catalog-drift.yml`](../.github/workflows/catalog-drift.yml) runs `npm run sync:settings`, `npm run sync:env-vars`, `npm run sync:hooks`, and `npm run sync:sub-agents` every Monday at 09:00 UTC and on `workflow_dispatch`. The detect step normalises out the always-changing `fetchedAt` field before deciding whether content drifted; if only the timestamp moved, the working tree is restored to HEAD and no PR is opened. Real drift opens (or updates) a single `chore/catalog-drift` PR via `peter-evans/create-pull-request@v8` (paired with `actions/checkout@v5` and `actions/setup-node@v5` for the 2026-06-02 Node 24 cutover). Required permissions: `contents: write` + `pull-requests: write`.
 
 ## Future automation (not committed)
 
