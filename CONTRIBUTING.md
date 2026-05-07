@@ -14,5 +14,5 @@ Code PRs. The prototype milestone hasn't been reached — the Tauri 2 scaffold i
 
 ## Ground rules
 
-- Be respectful. This is a community project, not an Anthropic one.
+- Be respectful. This is a community, spare-time project, not an Anthropic one.
 - Keep issues specific. "It would be cool if…" belongs in Discussions (when we turn them on); bug-shaped feedback belongs in Issues.

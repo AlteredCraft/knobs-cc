@@ -2,6 +2,8 @@
 
 A local desktop inspector for every knob Claude Code gives you — where it lives, what it's set to, and which layer wins.
 
+![knobs.cc inspector showing the precedence rail, settings list, and key drawer](spec/screenshot.png)
+
 ## Status
 
 **Pre-release.** The read-only inspector runs end-to-end via
@@ -100,13 +102,6 @@ write) is intentionally excluded from coverage.
 
 CI runs the same suites on Linux, macOS, and Windows for every push
 and pull request — see [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
-
-## Roadmap
-
-[`spec/roadmap.md`](spec/roadmap.md) is the live tracker. Pending
-work at a glance: Windows-registry managed source, hooks-catalog
-pass #2, a `managed-mcp.json` UI surface, and the knobs.cc landing
-page.
 
 ## Contributing
 
