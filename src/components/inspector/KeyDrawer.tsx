@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { cn } from "@/lib/utils";
 import {
   findEnvVar,
@@ -230,8 +231,17 @@ const MARKDOWN_COMPONENTS = {
   ),
 };
 
+// `remarkGfm` enables autolink literals so bare URLs in catalog prose
+// (e.g. "See https://code.claude.com/...") render as links without
+// requiring upstream docs to wrap them in [text](url) syntax.
+const MARKDOWN_PLUGINS = [remarkGfm];
+
 function InlineMarkdown({ source }: { source: string }) {
-  return <ReactMarkdown components={MARKDOWN_COMPONENTS}>{source}</ReactMarkdown>;
+  return (
+    <ReactMarkdown remarkPlugins={MARKDOWN_PLUGINS} components={MARKDOWN_COMPONENTS}>
+      {source}
+    </ReactMarkdown>
+  );
 }
 
 function EffectiveBlock({
