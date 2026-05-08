@@ -336,6 +336,17 @@ Open work (what to pick up next within this track):
   [#6](https://github.com/AlteredCraft/knobs-cc/issues/6); possible
   directions in the issue body. Surfaced by live smoke of the
   env-vars drawer wire-up.
+- **Generalize value-conditional drawer annotation.** Today's
+  annotation only fires for `permissions.defaultMode` because
+  permissions.md upstream has a structured per-mode table. Other
+  multi-value enums (`effortLevel`, `teammateMode`, `viewMode`,
+  `env.CLAUDE_CODE_DEBUG_LOG_LEVEL`, ...) would benefit but lack a
+  structured per-value source upstream. Tracked at
+  [#7](https://github.com/AlteredCraft/knobs-cc/issues/7) — solution
+  space (sync more upstream tables vs. hand-curated overlay vs.
+  description-prose parser vs. ship as-is) and a recommended starting
+  step (`model-config.md` for `effortLevel`) live in the issue body.
+  Surfaced by live smoke of the permissions.modes drawer wire-up.
 - **`mcp.scopes` enrichment for the managed-mcp pill.** Lower-bar
   follow-up: the pill currently shows server count and links to
   `openInEditor` on the JSON file. The MCP catalog's 3-record `scopes`
