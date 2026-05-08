@@ -1,0 +1,87 @@
+{
+  "source": "https://code.claude.com/docs/en/keybindings.md",
+  "fetchedAt": "2026-05-08T18:49:00.905Z",
+  "count": 20,
+  "contexts": [
+    {
+      "name": "Attachments",
+      "description": "Image attachment navigation in select dialogs"
+    },
+    {
+      "name": "Autocomplete",
+      "description": "Autocomplete menu is open"
+    },
+    {
+      "name": "Chat",
+      "description": "Main chat input area"
+    },
+    {
+      "name": "Confirmation",
+      "description": "Permission and confirmation dialogs"
+    },
+    {
+      "name": "DiffDialog",
+      "description": "Diff viewer navigation"
+    },
+    {
+      "name": "Doctor",
+      "description": "`/doctor` diagnostics screen"
+    },
+    {
+      "name": "Footer",
+      "description": "Footer indicator navigation (tasks, teams, diff)"
+    },
+    {
+      "name": "Global",
+      "description": "Applies everywhere in the app"
+    },
+    {
+      "name": "Help",
+      "description": "Help menu is visible"
+    },
+    {
+      "name": "HistorySearch",
+      "description": "History search mode (Ctrl+R)"
+    },
+    {
+      "name": "MessageSelector",
+      "description": "Rewind and summarize dialog message selection"
+    },
+    {
+      "name": "ModelPicker",
+      "description": "Model picker effort level"
+    },
+    {
+      "name": "Plugin",
+      "description": "Plugin dialog (browse, discover, manage)"
+    },
+    {
+      "name": "Scroll",
+      "description": "Conversation scrolling and text selection in fullscreen mode"
+    },
+    {
+      "name": "Select",
+      "description": "Generic select/list components"
+    },
+    {
+      "name": "Settings",
+      "description": "Settings menu"
+    },
+    {
+      "name": "Tabs",
+      "description": "Tab navigation components"
+    },
+    {
+      "name": "Task",
+      "description": "Background task is running"
+    },
+    {
+      "name": "ThemePicker",
+      "description": "Theme picker dialog"
+    },
+    {
+      "name": "Transcript",
+      "description": "Transcript viewer"
+    }
+  ]
+}

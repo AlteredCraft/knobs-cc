@@ -8,11 +8,11 @@ If you ship something, mark it ✅ here and (where relevant) update the
 corresponding spec section. If you discover new work, add it here, not
 inline in another spec.
 
-Last reviewed: 2026-05-07 (Phase 2 + read_catalog + Phase 5 + Phase 7 +
+Last reviewed: 2026-05-08 (Phase 2 + read_catalog + Phase 5 + Phase 7 +
 path-notes click-through + Phase 6 fully shipped + three-OS CI +
 managed-mcp.json topbar pill + catalog-drift cron + sync-sub-agents +
 in-app error log + per-OS capability split + sync-mcp + sync-permissions
-+ drawer cross-references env-vars catalog).
++ drawer cross-references env-vars catalog + sync-keybindings).
 
 ## Next-up candidates
 
@@ -31,10 +31,10 @@ here, then jump to the relevant section for shape and rationale.
   convention `CLAUDE.md` describes is unused (zero tags in the
   inventory) — decide whether to re-tag unverified rows or retire
   the convention.
-- **New sync scripts** (catalog sync) — `keybindings.md`,
-  `cli-reference.md`. Each gets one script + one catalog file + one
-  test. (`sub-agents.md`, `mcp.md`, and `permissions.md` shipped
-  2026-05-07; see catalog-sync section below.)
+- **New sync scripts** (catalog sync) — `cli-reference.md`. One
+  script + one catalog file + one test. (`sub-agents.md`, `mcp.md`,
+  and `permissions.md` shipped 2026-05-07; `keybindings.md` shipped
+  2026-05-08; see catalog-sync section below.)
 - **CI / drift hardening** (catalog sync) — `$ref` resolution policy;
   staleness signal. (Cron-driven sync with PR-on-diff shipped
   2026-05-06.)
@@ -146,8 +146,27 @@ Phase numbering matches the spec.
   `prompt`, `agent`) and per-event input/output schemas. The current
   `sync-hooks.js` only captures the lifecycle table.
 - **New sync scripts.** Each gets one script + one catalog file + one
-  test, per the recipe. Remaining candidates: `keybindings.md`,
-  `cli-reference.md`.
+  test, per the recipe. Remaining candidate: `cli-reference.md`.
+- **Keybindings catalog (contexts only).** ✅ shipped 2026-05-08.
+  `scripts/sync-keybindings.js` reads
+  `https://code.claude.com/docs/en/keybindings.md`'s
+  `## Contexts` table and writes `catalog/keybindings.json`
+  (20 records — `Global`, `Chat`, `Autocomplete`, `Settings`,
+  `Confirmation`, `Tabs`, `Help`, `Transcript`, `HistorySearch`,
+  `Task`, `ThemePicker`, `Attachments`, `Footer`, `MessageSelector`,
+  `DiffDialog`, `ModelPicker`, `Select`, `Plugin`, `Scroll`,
+  `Doctor`). The page is rich (per-context action tables, keystroke
+  syntax, reserved shortcuts, terminal conflicts, vim-mode
+  interaction) but the contexts table is the single canonical
+  artifact most directly consumable: it enumerates every value the
+  `context` field accepts inside a `bindings` block of
+  `~/.claude/keybindings.json`. Wired through `read_catalog` as
+  `keybindings` on the wire (no UI consumer yet, parallel to
+  env-vars / hooks / sub-agents / mcp / permissions). Cron sync
+  covers the new script. Future passes: per-context `Action |
+  Default | Description` action tables (would need to be associated
+  with their owning `### foo actions` heading), reserved shortcuts
+  and terminal conflicts tables, keystroke-syntax modifier rules.
 - **Permissions catalog (modes only).** ✅ shipped 2026-05-07.
   `scripts/sync-permissions.js` reads
   `https://code.claude.com/docs/en/permissions.md`'s

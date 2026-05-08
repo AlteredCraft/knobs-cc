@@ -53,6 +53,7 @@ export interface CatalogsWire {
   sub_agents: unknown;
   mcp: unknown;
   permissions: unknown;
+  keybindings: unknown;
 }
 
 export interface CatalogMeta {

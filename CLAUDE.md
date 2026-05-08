@@ -60,6 +60,7 @@ npm run sync:hooks                     # catalog/hooks.json from upstream docs
 npm run sync:sub-agents                # catalog/sub-agents.json from upstream docs
 npm run sync:mcp                       # catalog/mcp.json from upstream docs
 npm run sync:permissions               # catalog/permissions.json from upstream docs
+npm run sync:keybindings               # catalog/keybindings.json from upstream docs
 ```
 
 Notes:

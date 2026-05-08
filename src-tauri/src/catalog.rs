@@ -18,6 +18,7 @@ const HOOKS_JSON: &str = include_str!("../../catalog/hooks.json");
 const SUB_AGENTS_JSON: &str = include_str!("../../catalog/sub-agents.json");
 const MCP_JSON: &str = include_str!("../../catalog/mcp.json");
 const PERMISSIONS_JSON: &str = include_str!("../../catalog/permissions.json");
+const KEYBINDINGS_JSON: &str = include_str!("../../catalog/keybindings.json");
 
 #[derive(Debug, Serialize)]
 pub struct Catalogs {
@@ -35,6 +36,8 @@ pub struct Catalogs {
     pub mcp: Value,
     /// Parsed `catalog/permissions.json` — `{source, fetchedAt, count, modes: [...]}`.
     pub permissions: Value,
+    /// Parsed `catalog/keybindings.json` — `{source, fetchedAt, count, contexts: [...]}`.
+    pub keybindings: Value,
 }
 
 fn read_catalog_inner() -> Result<Catalogs, String> {
@@ -51,6 +54,8 @@ fn read_catalog_inner() -> Result<Catalogs, String> {
             .map_err(|e| format!("catalog/mcp.json parse: {e}"))?,
         permissions: serde_json::from_str(PERMISSIONS_JSON)
             .map_err(|e| format!("catalog/permissions.json parse: {e}"))?,
+        keybindings: serde_json::from_str(KEYBINDINGS_JSON)
+            .map_err(|e| format!("catalog/keybindings.json parse: {e}"))?,
     })
 }
 
@@ -165,6 +170,31 @@ mod tests {
     }
 
     #[test]
+    fn keybindings_catalog_parses_and_has_contexts_array() {
+        let c = read_catalog_inner().expect("catalogs parse");
+        let arr = c.keybindings.get("contexts").and_then(Value::as_array);
+        assert!(arr.is_some(), "keybindings.contexts should be an array");
+        assert!(!arr.unwrap().is_empty(), "contexts array should be non-empty");
+    }
+
+    #[test]
+    fn keybindings_catalog_contains_canonical_contexts() {
+        // Guard against a sync regression that drops or renames the
+        // anchor binding contexts. `Global` and `Chat` are the most
+        // load-bearing — Global covers app-wide actions, Chat is the
+        // primary input area.
+        let c = read_catalog_inner().unwrap();
+        let arr = c.keybindings.get("contexts").unwrap().as_array().unwrap();
+        for expected in ["Global", "Chat"] {
+            assert!(
+                arr.iter()
+                    .any(|e| e.get("name").and_then(Value::as_str) == Some(expected)),
+                "keybindings catalog missing context: {expected}",
+            );
+        }
+    }
+
+    #[test]
     fn settings_entries_have_a_key_field() {
         // Spot-check that the catalog entry shape we rely on is intact —
         // `key` is the field rows.ts joins on.
@@ -202,5 +232,6 @@ mod tests {
         assert!(json.get("hooks").is_some());
         assert!(json.get("mcp").is_some());
         assert!(json.get("permissions").is_some());
+        assert!(json.get("keybindings").is_some());
     }
 }
