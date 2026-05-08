@@ -13,13 +13,19 @@ path-notes click-through + Phase 6 fully shipped + three-OS CI +
 managed-mcp.json topbar pill + catalog-drift cron + sync-sub-agents +
 in-app error log + per-OS capability split + sync-mcp + sync-permissions
 + drawer cross-references env-vars catalog + sync-keybindings +
-sync-cli-reference + hooks catalog pass #2).
+sync-cli-reference + hooks catalog pass #2 + drawer cross-reference
+follow-ups slated).
 
 ## Next-up candidates
 
 A digest of what's open across the four tracks below — pick from
 here, then jump to the relevant section for shape and rationale.
 
+- **Drawer cross-references for `permissions.modes` and
+  `hooks.events`** (inspector polish) — concrete coding follow-ups to
+  the env-vars drawer wire-up (2026-05-07). Both catalogs are loaded
+  through `read_catalog` already; the joinpoints are obvious. See
+  Inspector polish § "Open work".
 - **Rail navigability decision** (inspector polish) — spec question,
   not coding work; needs a fork-vs-fork call before any UI lands.
 - **ENV-layer / `env.*`-row seam** (inspector polish) — UX question,
@@ -304,6 +310,31 @@ Phase numbering matches the spec.
 
 Open work (what to pick up next within this track):
 
+- **Drawer cross-references — `permissions.modes` for
+  `permissions.defaultMode`.** The permissions catalog's 6-record
+  `modes` array (default / acceptEdits / plan / auto / dontAsk /
+  bypassPermissions) carries prose richer than the short blurbs in the
+  settings JSON Schema. When a row's keyPath is
+  `permissions.defaultMode`, look up the row's current (or default)
+  value in `permissions.modes` and surface that mode's description in
+  the drawer header — same pattern as the env-vars wire-up (pure
+  helper in `catalog.ts`, `resolveDescription` extension in
+  `KeyDrawer.tsx`, case-sensitive lookup since mode names are
+  camelCase ASCII). Validates a third drawer-side consumer of a
+  non-settings catalog after env-vars and (if shipped first) hooks.
+- **Drawer cross-references — `hooks.events` for `hooks.<EventName>`.**
+  Hooks pass #2 (2026-05-08) lifted handler types and per-event
+  schemas into `catalog/hooks.json`. The natural drawer consumers are
+  rows whose keyPath is `hooks.<EventName>` (e.g. `hooks.PreToolUse`,
+  `hooks.Stop`): surface the event's `when` cadence in the header.
+  Stretch — collapsible detail with `inputFields` / `outputFields` /
+  `inputExample` and a "common input fields" reference; if any of
+  that doesn't fit cleanly into the existing drawer affordances,
+  scope back to header-only and track the detail panel as a third
+  pass. `hooks.<EventName>` rows hold matcher-group arrays rather
+  than scalars, so the drawer's value rendering may need to handle
+  the array case before the cross-reference is useful — verify
+  with a live row before designing the detail panel.
 - **Rail navigability — undecided.** Spec is silent. Either keep the
   rail informational (current behavior) or wire layer-click → centre
   list filtered to keys won by that layer. Needs an explicit decision
@@ -317,6 +348,14 @@ Open work (what to pick up next within this track):
   [#6](https://github.com/AlteredCraft/knobs-cc/issues/6); possible
   directions in the issue body. Surfaced by live smoke of the
   env-vars drawer wire-up.
+- **`mcp.scopes` enrichment for the managed-mcp pill.** Lower-bar
+  follow-up: the pill currently shows server count and links to
+  `openInEditor` on the JSON file. The MCP catalog's 3-record `scopes`
+  array (Local / Project / User, each with `loadsIn` / `shared` /
+  `storedIn`) could fold into a tooltip or popover so users see scope
+  semantics without leaving the app. Smaller surface than the two
+  drawer items above; pick up only if there's a clear UX win — the
+  existing "open the file" affordance may be sufficient.
 
 Shipped:
 
