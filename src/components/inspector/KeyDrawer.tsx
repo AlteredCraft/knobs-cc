@@ -7,6 +7,8 @@ import {
   type CatalogEntry,
 } from "@/lib/catalog";
 import { formatValue } from "@/lib/format";
+import { parseInlineMarkdown } from "@/lib/markdown";
+import { openExternalUrl } from "@/lib/openPath";
 import { buildRows, type Row } from "@/lib/rows";
 import { buildWaterfall } from "@/lib/waterfall";
 import type { ArrayMergedElement } from "@/lib/flatten";
@@ -192,10 +194,35 @@ function DrawerHeader({
       </div>
       {description && (
         <p className="mt-3 max-w-prose text-[12.5px] leading-relaxed text-fg-2">
-          {description}
+          <InlineMarkdown source={description} />
         </p>
       )}
     </div>
+  );
+}
+
+function InlineMarkdown({ source }: { source: string }) {
+  const tokens = useMemo(() => parseInlineMarkdown(source), [source]);
+  return (
+    <>
+      {tokens.map((tok, i) =>
+        tok.kind === "link" ? (
+          <a
+            key={i}
+            href={tok.href}
+            onClick={(e) => {
+              e.preventDefault();
+              void openExternalUrl(tok.href);
+            }}
+            className="text-accent underline decoration-dotted underline-offset-2 hover:decoration-solid"
+          >
+            {tok.text}
+          </a>
+        ) : (
+          <span key={i}>{tok.value}</span>
+        ),
+      )}
+    </>
   );
 }
 

@@ -1,4 +1,7 @@
-import { openPath as openWithSystem } from "@tauri-apps/plugin-opener";
+import {
+  openPath as openWithSystem,
+  openUrl as openUrlWithSystem,
+} from "@tauri-apps/plugin-opener";
 import { reportError } from "./errorLog";
 
 // Thin wrapper so callers don't import the plugin directly. The opener
@@ -17,6 +20,18 @@ export async function openInEditor(path: string): Promise<void> {
       message: `Couldn't open ${path}`,
       detail: e,
       source: "openInEditor",
+    });
+  }
+}
+
+export async function openExternalUrl(url: string): Promise<void> {
+  try {
+    await openUrlWithSystem(url);
+  } catch (e) {
+    reportError({
+      message: `Couldn't open ${url}`,
+      detail: e,
+      source: "openExternalUrl",
     });
   }
 }
