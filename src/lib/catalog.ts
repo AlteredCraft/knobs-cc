@@ -54,6 +54,7 @@ export interface CatalogsWire {
   mcp: unknown;
   permissions: unknown;
   keybindings: unknown;
+  cli_reference: unknown;
 }
 
 export interface CatalogMeta {

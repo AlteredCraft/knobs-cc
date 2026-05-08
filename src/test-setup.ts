@@ -10,6 +10,7 @@ import subAgents from "../catalog/sub-agents.json";
 import mcp from "../catalog/mcp.json";
 import permissions from "../catalog/permissions.json";
 import keybindings from "../catalog/keybindings.json";
+import cliReference from "../catalog/cli-reference.json";
 import { hydrateCatalogForTesting, type CatalogsWire } from "@/lib/catalog";
 
 const catalogs: CatalogsWire = {
@@ -20,6 +21,7 @@ const catalogs: CatalogsWire = {
   mcp,
   permissions,
   keybindings,
+  cli_reference: cliReference,
 };
 
 hydrateCatalogForTesting(catalogs);

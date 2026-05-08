@@ -19,6 +19,7 @@ const SUB_AGENTS_JSON: &str = include_str!("../../catalog/sub-agents.json");
 const MCP_JSON: &str = include_str!("../../catalog/mcp.json");
 const PERMISSIONS_JSON: &str = include_str!("../../catalog/permissions.json");
 const KEYBINDINGS_JSON: &str = include_str!("../../catalog/keybindings.json");
+const CLI_REFERENCE_JSON: &str = include_str!("../../catalog/cli-reference.json");
 
 #[derive(Debug, Serialize)]
 pub struct Catalogs {
@@ -38,6 +39,9 @@ pub struct Catalogs {
     pub permissions: Value,
     /// Parsed `catalog/keybindings.json` — `{source, fetchedAt, count, contexts: [...]}`.
     pub keybindings: Value,
+    /// Parsed `catalog/cli-reference.json` — `{source, fetchedAt, commandCount, flagCount, commands: [...], flags: [...]}`.
+    #[serde(rename = "cli_reference")]
+    pub cli_reference: Value,
 }
 
 fn read_catalog_inner() -> Result<Catalogs, String> {
@@ -56,6 +60,8 @@ fn read_catalog_inner() -> Result<Catalogs, String> {
             .map_err(|e| format!("catalog/permissions.json parse: {e}"))?,
         keybindings: serde_json::from_str(KEYBINDINGS_JSON)
             .map_err(|e| format!("catalog/keybindings.json parse: {e}"))?,
+        cli_reference: serde_json::from_str(CLI_REFERENCE_JSON)
+            .map_err(|e| format!("catalog/cli-reference.json parse: {e}"))?,
     })
 }
 
@@ -195,6 +201,42 @@ mod tests {
     }
 
     #[test]
+    fn cli_reference_catalog_parses_and_has_both_arrays() {
+        let c = read_catalog_inner().expect("catalogs parse");
+        let cmds = c.cli_reference.get("commands").and_then(Value::as_array);
+        let flags = c.cli_reference.get("flags").and_then(Value::as_array);
+        assert!(cmds.is_some(), "cli_reference.commands should be an array");
+        assert!(flags.is_some(), "cli_reference.flags should be an array");
+        assert!(!cmds.unwrap().is_empty(), "commands array should be non-empty");
+        assert!(!flags.unwrap().is_empty(), "flags array should be non-empty");
+    }
+
+    #[test]
+    fn cli_reference_catalog_contains_canonical_anchors() {
+        // Guard against a sync regression that drops the most load-
+        // bearing entries. `claude` is the bare command; `--model` and
+        // `--permission-mode` are the two flags most directly tied to
+        // settings keys (`model`, `permissions.defaultMode`) and would
+        // anchor any future "CLI layer via process argv" UI consumer.
+        let c = read_catalog_inner().unwrap();
+        let cmds = c.cli_reference.get("commands").unwrap().as_array().unwrap();
+        let flags = c.cli_reference.get("flags").unwrap().as_array().unwrap();
+        assert!(
+            cmds.iter()
+                .any(|e| e.get("name").and_then(Value::as_str) == Some("claude")),
+            "cli_reference.commands missing `claude`",
+        );
+        for expected in ["--model", "--permission-mode"] {
+            assert!(
+                flags
+                    .iter()
+                    .any(|e| e.get("name").and_then(Value::as_str) == Some(expected)),
+                "cli_reference.flags missing: {expected}",
+            );
+        }
+    }
+
+    #[test]
     fn settings_entries_have_a_key_field() {
         // Spot-check that the catalog entry shape we rely on is intact —
         // `key` is the field rows.ts joins on.
@@ -228,6 +270,10 @@ mod tests {
         let json = serde_json::to_value(&c).unwrap();
         assert!(json.get("env_vars").is_some(), "expected snake_case env_vars on the wire");
         assert!(json.get("sub_agents").is_some(), "expected snake_case sub_agents on the wire");
+        assert!(
+            json.get("cli_reference").is_some(),
+            "expected snake_case cli_reference on the wire",
+        );
         assert!(json.get("settings").is_some());
         assert!(json.get("hooks").is_some());
         assert!(json.get("mcp").is_some());

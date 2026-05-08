@@ -15,6 +15,7 @@
     "sync:mcp": "node scripts/sync-mcp.js",
     "sync:permissions": "node scripts/sync-permissions.js",
     "sync:keybindings": "node scripts/sync-keybindings.js",
+    "sync:cli-reference": "node scripts/sync-cli-reference.js",
     "test": "node --test scripts/*.test.js",
     "test:coverage": "node --experimental-test-coverage --test-coverage-exclude='scripts/*.test.js' --test scripts/*.test.js",
     "test:unit": "vitest run",

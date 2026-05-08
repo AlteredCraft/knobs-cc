@@ -61,6 +61,7 @@ npm run sync:sub-agents                # catalog/sub-agents.json from upstream d
 npm run sync:mcp                       # catalog/mcp.json from upstream docs
 npm run sync:permissions               # catalog/permissions.json from upstream docs
 npm run sync:keybindings               # catalog/keybindings.json from upstream docs
+npm run sync:cli-reference             # catalog/cli-reference.json from upstream docs
 ```
 
 Notes:

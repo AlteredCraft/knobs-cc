@@ -12,7 +12,8 @@ Last reviewed: 2026-05-08 (Phase 2 + read_catalog + Phase 5 + Phase 7 +
 path-notes click-through + Phase 6 fully shipped + three-OS CI +
 managed-mcp.json topbar pill + catalog-drift cron + sync-sub-agents +
 in-app error log + per-OS capability split + sync-mcp + sync-permissions
-+ drawer cross-references env-vars catalog + sync-keybindings).
++ drawer cross-references env-vars catalog + sync-keybindings +
+sync-cli-reference).
 
 ## Next-up candidates
 
@@ -31,10 +32,10 @@ here, then jump to the relevant section for shape and rationale.
   convention `CLAUDE.md` describes is unused (zero tags in the
   inventory) — decide whether to re-tag unverified rows or retire
   the convention.
-- **New sync scripts** (catalog sync) — `cli-reference.md`. One
-  script + one catalog file + one test. (`sub-agents.md`, `mcp.md`,
-  and `permissions.md` shipped 2026-05-07; `keybindings.md` shipped
-  2026-05-08; see catalog-sync section below.)
+- **New sync scripts** (catalog sync) — slate complete for now.
+  (`sub-agents.md`, `mcp.md`, and `permissions.md` shipped 2026-05-07;
+  `keybindings.md` and `cli-reference.md` shipped 2026-05-08; see
+  catalog-sync section below.)
 - **CI / drift hardening** (catalog sync) — `$ref` resolution policy;
   staleness signal. (Cron-driven sync with PR-on-diff shipped
   2026-05-06.)
@@ -146,7 +147,30 @@ Phase numbering matches the spec.
   `prompt`, `agent`) and per-event input/output schemas. The current
   `sync-hooks.js` only captures the lifecycle table.
 - **New sync scripts.** Each gets one script + one catalog file + one
-  test, per the recipe. Remaining candidate: `cli-reference.md`.
+  test, per the recipe. No remaining candidates from the
+  documentation index — every page that exposes a canonical tabular
+  artifact is now synced.
+- **CLI reference catalog (commands + flags).** ✅ shipped 2026-05-08.
+  `scripts/sync-cli-reference.js` reads
+  `https://code.claude.com/docs/en/cli-reference.md`'s two top-level
+  reference tables and writes `catalog/cli-reference.json`
+  (20 commands + 63 flags at time of writing). Both tables share a
+  3-col `| X | Description | Example |` shape and are extracted by
+  the same parser parameterized over the header pattern. The page's
+  `### System prompt flags` subsection uses `Flag | Behavior |
+  Example` (not `Description`) and is deliberately skipped — its
+  four entries are a re-statement of flags already in the main
+  table. Required two upstream-driven parser refinements over the
+  keybindings template: tighter `stripBackticks` (`[^`]+` body) so
+  multi-span flag names like `--continue`, `-c` keep their inline
+  code formatting, and unescaped-pipe-aware splitting so the
+  `cat file \| claude -p "query"` row parses cleanly. Wired through
+  `read_catalog` as `cli_reference` (snake-case on the wire to match
+  `env_vars` / `sub_agents`); no UI consumer yet. Cron sync covers
+  the new script. Future use: this catalog is load-bearing for the
+  deferred "CLI layer via process argv" plan — each documented flag
+  is a candidate input the eventual flag-name → settings-key mapping
+  (parallel to `catalog/env-settings-map.json`) will draw on.
 - **Keybindings catalog (contexts only).** ✅ shipped 2026-05-08.
   `scripts/sync-keybindings.js` reads
   `https://code.claude.com/docs/en/keybindings.md`'s
