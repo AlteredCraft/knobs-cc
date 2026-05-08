@@ -15,6 +15,7 @@ This spec replaces a deliberately heavier earlier draft (5-phase harness, snapsh
 - **One script per upstream source.** Independent, runnable solo, easy to delete or replace.
 - **Stdlib only where possible.** Node's built-in `fetch`, `node:test`, and `--experimental-test-coverage` cover the work. No new deps unless a parser genuinely needs one.
 - **The output is the contract.** Each script produces `catalog/<source>.json` with a flat array of records under a small envelope (`{ source, fetchedAt, count, <records> }`).
+- **Prose fields are markdown.** User-facing description fields (`description`, `purpose`, etc.) are CommonMark — links, inline code, and emphasis are passed through verbatim from upstream and rendered as markdown by the inspector. Site-relative links (`[…](/en/…)`) resolve against the docs root in `source`. Sync scripts must not strip backticks, brackets, or HTML-decode these fields.
 - **Idempotent.** Re-running on unchanged upstream produces a one-line diff (`fetchedAt` only). Records are sorted by a stable key.
 - **Reshape on the way in, not on the way out.** Flatten nested schemas to dotted-key rows, drop fields the consumer doesn't use. The committed catalog should be ergonomic for the UI even if the upstream form isn't.
 - **Provenance is part of the data.** `source` URL and `fetchedAt` timestamp ride with every catalog file.
