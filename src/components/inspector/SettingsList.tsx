@@ -159,6 +159,10 @@ export const SettingsList = forwardRef<SettingsListHandle, SettingsListProps>(
                 }
               }}
               placeholder="filter keys… (try permissions.*)"
+              spellCheck={false}
+              autoCorrect="off"
+              autoCapitalize="off"
+              autoComplete="off"
               className={cn(
                 "w-full rounded-sm border border-line-strong bg-bg-1 py-1.5 pr-2 pl-7",
                 "font-mono text-[12px] text-fg-1 placeholder:text-fg-4",
