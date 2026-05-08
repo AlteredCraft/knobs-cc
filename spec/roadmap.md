@@ -13,15 +13,13 @@ path-notes click-through + Phase 6 fully shipped + three-OS CI +
 managed-mcp.json topbar pill + catalog-drift cron + sync-sub-agents +
 in-app error log + per-OS capability split + sync-mcp + sync-permissions
 + drawer cross-references env-vars catalog + sync-keybindings +
-sync-cli-reference).
+sync-cli-reference + hooks catalog pass #2).
 
 ## Next-up candidates
 
 A digest of what's open across the four tracks below — pick from
 here, then jump to the relevant section for shape and rationale.
 
-- **Hooks catalog pass #2** (catalog sync) — handler types + per-event
-  schemas. Investment without an immediate UI consumer.
 - **Rail navigability decision** (inspector polish) — spec question,
   not coding work; needs a fork-vs-fork call before any UI lands.
 - **ENV-layer / `env.*`-row seam** (inspector polish) — UX question,
@@ -143,9 +141,42 @@ Phase numbering matches the spec.
 
 ## Catalog sync — `catalog-sync.md`
 
-- **Hooks pass #2.** Handler types (`command`, `http`, `mcp_tool`,
-  `prompt`, `agent`) and per-event input/output schemas. The current
-  `sync-hooks.js` only captures the lifecycle table.
+- **Hooks pass #2.** ✅ shipped 2026-05-08. `scripts/sync-hooks.js` now
+  walks the page heading-aware (h2..h5) and extracts three additional
+  artifacts on top of the lifecycle table: (1) handler-fields tables
+  under `### Hook handler fields` — `common`, `command`, `http`,
+  `mcp_tool`, and `prompt_and_agent` (the doc collapses prompt + agent
+  into a single shared section because both types accept the same
+  fields), each `{field, required, description}`; (2) the
+  `### Common input fields` tables (the section has two stacked tables
+  — main + the `--agent`/subagent extras — both belong to it, so
+  they're concatenated into a single `commonInput` array of
+  `{field, description}`, 8 fields total); (3) per-event input/output
+  schemas keyed by event name, each `{inputFields, inputExample,
+  outputFields}`. `inputExample` is the verbatim body of the first
+  ```` ```json ```` fence inside `#### <Event> input`; `outputFields`
+  pulls from either `#### <Event> decision control` or
+  `#### <Event> output`, whichever the upstream doc uses for that
+  event. The new envelope lands as
+  `{source, fetchedAt, count, events, handlers, commonInput}`; existing
+  `events` shape is preserved, just enriched with the three new
+  per-event fields. Required two upstream-driven parser refinements:
+  GFM-aware `splitCells` that handles `\|` escapes (load-bearing for
+  the `Edit\|Write` matcher fixture) and a heading-aware table walker
+  that reset deeper levels when a higher heading reopens. Out of scope
+  for pass #2 (tracked as future passes): per-tool nested
+  `tool_input` tables under `#### PreToolUse input` (Bash / Edit /
+  Write / Read / Glob / Grep / WebFetch / WebSearch / Agent /
+  AskUserQuestion — 4-col `Field | Type | Example | Description`
+  shape, deliberately skipped because pass #2 captures only the shared
+  2-col shape); the `### Matcher patterns` cross-reference table
+  (different fields per event); the `### JSON output` universal-fields
+  table (could become a `commonOutput` array in a future pass);
+  exit-code-2 behavior, HTTP response handling, prompt-hook response
+  schema, async-hook config — all prose-rich. Wired through
+  `read_catalog` as `hooks` on the wire (no UI consumer yet — Rust
+  loads it as `serde_json::Value`, so the new keys flow through
+  transparently). Cron sync covers the new shape.
 - **New sync scripts.** Each gets one script + one catalog file + one
   test, per the recipe. No remaining candidates from the
   documentation index — every page that exposes a canonical tabular

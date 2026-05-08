@@ -1,123 +1,619 @@
 {
   "source": "https://code.claude.com/docs/en/hooks.md",
-  "fetchedAt": "2026-05-07T02:18:52.020Z",
+  "fetchedAt": "2026-05-08T21:33:43.607Z",
   "count": 29,
   "events": [
     {
       "name": "ConfigChange",
-      "when": "When a configuration file changes during a session"
+      "when": "When a configuration file changes during a session",
+      "inputFields": [],
+      "inputExample": "{\n  \"session_id\": \"abc123\",\n  \"transcript_path\": \"/Users/.../.claude/projects/.../00893aaf-19fa-41d2-8238-13269b9b3ca0.jsonl\",\n  \"cwd\": \"/Users/...\",\n  \"hook_event_name\": \"ConfigChange\",\n  \"source\": \"project_settings\",\n  \"file_path\": \"/Users/.../my-project/.claude/settings.json\"\n}",
+      "outputFields": [
+        {
+          "field": "decision",
+          "description": "`\"block\"` prevents the configuration change from being applied. Omit to allow the change"
+        },
+        {
+          "field": "reason",
+          "description": "Explanation shown to the user when `decision` is `\"block\"`"
+        }
+      ]
     },
     {
       "name": "CwdChanged",
-      "when": "When the working directory changes, for example when Claude executes a `cd` command. Useful for reactive environment management with tools like direnv"
+      "when": "When the working directory changes, for example when Claude executes a `cd` command. Useful for reactive environment management with tools like direnv",
+      "inputFields": [],
+      "inputExample": "{\n  \"session_id\": \"abc123\",\n  \"transcript_path\": \"/Users/.../.claude/projects/.../transcript.jsonl\",\n  \"cwd\": \"/Users/my-project/src\",\n  \"hook_event_name\": \"CwdChanged\",\n  \"old_cwd\": \"/Users/my-project\",\n  \"new_cwd\": \"/Users/my-project/src\"\n}",
+      "outputFields": [
+        {
+          "field": "watchPaths",
+          "description": "Array of absolute paths. Replaces the current dynamic watch list (paths from your `matcher` configuration are always watched). Returning an empty array clears the dynamic list, which is typical when entering a new directory"
+        }
+      ]
     },
     {
       "name": "Elicitation",
-      "when": "When an MCP server requests user input during a tool call"
+      "when": "When an MCP server requests user input during a tool call",
+      "inputFields": [],
+      "inputExample": "{\n  \"session_id\": \"abc123\",\n  \"transcript_path\": \"/Users/.../.claude/projects/.../00893aaf-19fa-41d2-8238-13269b9b3ca0.jsonl\",\n  \"cwd\": \"/Users/...\",\n  \"permission_mode\": \"default\",\n  \"hook_event_name\": \"Elicitation\",\n  \"mcp_server_name\": \"my-mcp-server\",\n  \"message\": \"Please provide your credentials\",\n  \"mode\": \"form\",\n  \"requested_schema\": {\n    \"type\": \"object\",\n    \"properties\": {\n      \"username\": { \"type\": \"string\", \"title\": \"Username\" }\n    }\n  }\n}",
+      "outputFields": []
     },
     {
       "name": "ElicitationResult",
-      "when": "After a user responds to an MCP elicitation, before the response is sent back to the server"
+      "when": "After a user responds to an MCP elicitation, before the response is sent back to the server",
+      "inputFields": [],
+      "inputExample": "{\n  \"session_id\": \"abc123\",\n  \"transcript_path\": \"/Users/.../.claude/projects/.../00893aaf-19fa-41d2-8238-13269b9b3ca0.jsonl\",\n  \"cwd\": \"/Users/...\",\n  \"permission_mode\": \"default\",\n  \"hook_event_name\": \"ElicitationResult\",\n  \"mcp_server_name\": \"my-mcp-server\",\n  \"action\": \"accept\",\n  \"content\": { \"username\": \"alice\" },\n  \"mode\": \"form\",\n  \"elicitation_id\": \"elicit-123\"\n}",
+      "outputFields": []
     },
     {
       "name": "FileChanged",
-      "when": "When a watched file changes on disk. The `matcher` field specifies which filenames to watch"
+      "when": "When a watched file changes on disk. The `matcher` field specifies which filenames to watch",
+      "inputFields": [
+        {
+          "field": "file_path",
+          "description": "Absolute path to the file that changed"
+        },
+        {
+          "field": "event",
+          "description": "What happened: `\"change\"` (file modified), `\"add\"` (file created), or `\"unlink\"` (file deleted)"
+        }
+      ],
+      "inputExample": "{\n  \"session_id\": \"abc123\",\n  \"transcript_path\": \"/Users/.../.claude/projects/.../transcript.jsonl\",\n  \"cwd\": \"/Users/my-project\",\n  \"hook_event_name\": \"FileChanged\",\n  \"file_path\": \"/Users/my-project/.envrc\",\n  \"event\": \"change\"\n}",
+      "outputFields": [
+        {
+          "field": "watchPaths",
+          "description": "Array of absolute paths. Replaces the current dynamic watch list (paths from your `matcher` configuration are always watched). Use this when your hook script discovers additional files to watch based on the changed file"
+        }
+      ]
     },
     {
       "name": "InstructionsLoaded",
-      "when": "When a CLAUDE.md or `.claude/rules/*.md` file is loaded into context. Fires at session start and when files are lazily loaded during a session"
+      "when": "When a CLAUDE.md or `.claude/rules/*.md` file is loaded into context. Fires at session start and when files are lazily loaded during a session",
+      "inputFields": [
+        {
+          "field": "file_path",
+          "description": "Absolute path to the instruction file that was loaded"
+        },
+        {
+          "field": "memory_type",
+          "description": "Scope of the file: `\"User\"`, `\"Project\"`, `\"Local\"`, or `\"Managed\"`"
+        },
+        {
+          "field": "load_reason",
+          "description": "Why the file was loaded: `\"session_start\"`, `\"nested_traversal\"`, `\"path_glob_match\"`, `\"include\"`, or `\"compact\"`. The `\"compact\"` value fires when instruction files are re-loaded after a compaction event"
+        },
+        {
+          "field": "globs",
+          "description": "Path glob patterns from the file's `paths:` frontmatter, if any. Present only for `path_glob_match` loads"
+        },
+        {
+          "field": "trigger_file_path",
+          "description": "Path to the file whose access triggered this load, for lazy loads"
+        },
+        {
+          "field": "parent_file_path",
+          "description": "Path to the parent instruction file that included this one, for `include` loads"
+        }
+      ],
+      "inputExample": "{\n  \"session_id\": \"abc123\",\n  \"transcript_path\": \"/Users/.../.claude/projects/.../transcript.jsonl\",\n  \"cwd\": \"/Users/my-project\",\n  \"hook_event_name\": \"InstructionsLoaded\",\n  \"file_path\": \"/Users/my-project/CLAUDE.md\",\n  \"memory_type\": \"Project\",\n  \"load_reason\": \"session_start\"\n}",
+      "outputFields": []
     },
     {
       "name": "Notification",
-      "when": "When Claude Code sends a notification"
+      "when": "When Claude Code sends a notification",
+      "inputFields": [],
+      "inputExample": "{\n  \"session_id\": \"abc123\",\n  \"transcript_path\": \"/Users/.../.claude/projects/.../00893aaf-19fa-41d2-8238-13269b9b3ca0.jsonl\",\n  \"cwd\": \"/Users/...\",\n  \"hook_event_name\": \"Notification\",\n  \"message\": \"Claude needs your permission to use Bash\",\n  \"title\": \"Permission needed\",\n  \"notification_type\": \"permission_prompt\"\n}",
+      "outputFields": []
     },
     {
       "name": "PermissionDenied",
-      "when": "When a tool call is denied by the auto mode classifier. Return `{retry: true}` to tell the model it may retry the denied tool call"
+      "when": "When a tool call is denied by the auto mode classifier. Return `{retry: true}` to tell the model it may retry the denied tool call",
+      "inputFields": [
+        {
+          "field": "reason",
+          "description": "The classifier's explanation for why the tool call was denied"
+        }
+      ],
+      "inputExample": "{\n  \"session_id\": \"abc123\",\n  \"transcript_path\": \"/Users/.../.claude/projects/.../00893aaf-19fa-41d2-8238-13269b9b3ca0.jsonl\",\n  \"cwd\": \"/Users/...\",\n  \"permission_mode\": \"auto\",\n  \"hook_event_name\": \"PermissionDenied\",\n  \"tool_name\": \"Bash\",\n  \"tool_input\": {\n    \"command\": \"rm -rf /tmp/build\",\n    \"description\": \"Clean build directory\"\n  },\n  \"tool_use_id\": \"toolu_01ABC123...\",\n  \"reason\": \"Auto mode denied: command targets a path outside the project\"\n}",
+      "outputFields": []
     },
     {
       "name": "PermissionRequest",
-      "when": "When a permission dialog appears"
+      "when": "When a permission dialog appears",
+      "inputFields": [],
+      "inputExample": "{\n  \"session_id\": \"abc123\",\n  \"transcript_path\": \"/Users/.../.claude/projects/.../00893aaf-19fa-41d2-8238-13269b9b3ca0.jsonl\",\n  \"cwd\": \"/Users/...\",\n  \"permission_mode\": \"default\",\n  \"hook_event_name\": \"PermissionRequest\",\n  \"tool_name\": \"Bash\",\n  \"tool_input\": {\n    \"command\": \"rm -rf node_modules\",\n    \"description\": \"Remove node_modules directory\"\n  },\n  \"permission_suggestions\": [\n    {\n      \"type\": \"addRules\",\n      \"rules\": [{ \"toolName\": \"Bash\", \"ruleContent\": \"rm -rf node_modules\" }],\n      \"behavior\": \"allow\",\n      \"destination\": \"localSettings\"\n    }\n  ]\n}",
+      "outputFields": [
+        {
+          "field": "behavior",
+          "description": "`\"allow\"` grants the permission, `\"deny\"` denies it. [Deny and ask rules](/en/permissions#manage-permissions) are still evaluated, so a hook returning `\"allow\"` does not override a matching deny rule"
+        },
+        {
+          "field": "updatedInput",
+          "description": "For `\"allow\"` only: modifies the tool's input parameters before execution. Replaces the entire input object, so include unchanged fields alongside modified ones. The modified input is re-evaluated against deny and ask rules"
+        },
+        {
+          "field": "updatedPermissions",
+          "description": "For `\"allow\"` only: array of [permission update entries](#permission-update-entries) to apply, such as adding an allow rule or changing the session permission mode"
+        },
+        {
+          "field": "message",
+          "description": "For `\"deny\"` only: tells Claude why the permission was denied"
+        },
+        {
+          "field": "interrupt",
+          "description": "For `\"deny\"` only: if `true`, stops Claude"
+        }
+      ]
     },
     {
       "name": "PostCompact",
-      "when": "After context compaction completes"
+      "when": "After context compaction completes",
+      "inputFields": [],
+      "inputExample": "{\n  \"session_id\": \"abc123\",\n  \"transcript_path\": \"/Users/.../.claude/projects/.../00893aaf-19fa-41d2-8238-13269b9b3ca0.jsonl\",\n  \"cwd\": \"/Users/...\",\n  \"hook_event_name\": \"PostCompact\",\n  \"trigger\": \"manual\",\n  \"compact_summary\": \"Summary of the compacted conversation...\"\n}",
+      "outputFields": []
     },
     {
       "name": "PostToolBatch",
-      "when": "After a full batch of parallel tool calls resolves, before the next model call"
+      "when": "After a full batch of parallel tool calls resolves, before the next model call",
+      "inputFields": [],
+      "inputExample": "{\n  \"session_id\": \"abc123\",\n  \"transcript_path\": \"/Users/.../.claude/projects/.../00893aaf-19fa-41d2-8238-13269b9b3ca0.jsonl\",\n  \"cwd\": \"/Users/...\",\n  \"permission_mode\": \"default\",\n  \"hook_event_name\": \"PostToolBatch\",\n  \"tool_calls\": [\n    {\n      \"tool_name\": \"Read\",\n      \"tool_input\": {\"file_path\": \"/.../ledger/accounts.py\"},\n      \"tool_use_id\": \"toolu_01...\",\n      \"tool_response\": \"     1\\tfrom __future__ import annotations\\n     2\\t...\"\n    },\n    {\n      \"tool_name\": \"Read\",\n      \"tool_input\": {\"file_path\": \"/.../ledger/transactions.py\"},\n      \"tool_use_id\": \"toolu_02...\",\n      \"tool_response\": \"     1\\tfrom __future__ import annotations\\n     2\\t...\"\n    }\n  ]\n}",
+      "outputFields": [
+        {
+          "field": "additionalContext",
+          "description": "Context string injected once before the next model call. See [Add context for Claude](#add-context-for-claude) for delivery details, what to put in it, and how resumed sessions handle past values"
+        }
+      ]
     },
     {
       "name": "PostToolUse",
-      "when": "After a tool call succeeds"
+      "when": "After a tool call succeeds",
+      "inputFields": [
+        {
+          "field": "duration_ms",
+          "description": "Optional. Tool execution time in milliseconds. Excludes time spent in permission prompts and PreToolUse hooks"
+        }
+      ],
+      "inputExample": "{\n  \"session_id\": \"abc123\",\n  \"transcript_path\": \"/Users/.../.claude/projects/.../00893aaf-19fa-41d2-8238-13269b9b3ca0.jsonl\",\n  \"cwd\": \"/Users/...\",\n  \"permission_mode\": \"default\",\n  \"hook_event_name\": \"PostToolUse\",\n  \"tool_name\": \"Write\",\n  \"tool_input\": {\n    \"file_path\": \"/path/to/file.txt\",\n    \"content\": \"file content\"\n  },\n  \"tool_response\": {\n    \"filePath\": \"/path/to/file.txt\",\n    \"success\": true\n  },\n  \"tool_use_id\": \"toolu_01ABC123...\",\n  \"duration_ms\": 12\n}",
+      "outputFields": [
+        {
+          "field": "decision",
+          "description": "`\"block\"` adds the `reason` next to the tool result. Claude still sees the original output; to replace it, use `updatedToolOutput`"
+        },
+        {
+          "field": "reason",
+          "description": "Explanation shown to Claude when `decision` is `\"block\"`"
+        },
+        {
+          "field": "additionalContext",
+          "description": "String added to Claude's context alongside the tool result. See [Add context for Claude](#add-context-for-claude)"
+        },
+        {
+          "field": "updatedToolOutput",
+          "description": "Replaces the tool's output with the provided value before it is sent to Claude. The value must match the tool's output shape"
+        },
+        {
+          "field": "updatedMCPToolOutput",
+          "description": "Replaces the output for [MCP tools](#match-mcp-tools) only. Prefer `updatedToolOutput`, which works for all tools"
+        }
+      ]
     },
     {
       "name": "PostToolUseFailure",
-      "when": "After a tool call fails"
+      "when": "After a tool call fails",
+      "inputFields": [
+        {
+          "field": "error",
+          "description": "String describing what went wrong"
+        },
+        {
+          "field": "is_interrupt",
+          "description": "Optional boolean indicating whether the failure was caused by user interruption"
+        },
+        {
+          "field": "duration_ms",
+          "description": "Optional. Tool execution time in milliseconds. Excludes time spent in permission prompts and PreToolUse hooks"
+        }
+      ],
+      "inputExample": "{\n  \"session_id\": \"abc123\",\n  \"transcript_path\": \"/Users/.../.claude/projects/.../00893aaf-19fa-41d2-8238-13269b9b3ca0.jsonl\",\n  \"cwd\": \"/Users/...\",\n  \"permission_mode\": \"default\",\n  \"hook_event_name\": \"PostToolUseFailure\",\n  \"tool_name\": \"Bash\",\n  \"tool_input\": {\n    \"command\": \"npm test\",\n    \"description\": \"Run test suite\"\n  },\n  \"tool_use_id\": \"toolu_01ABC123...\",\n  \"error\": \"Command exited with non-zero status code 1\",\n  \"is_interrupt\": false,\n  \"duration_ms\": 4187\n}",
+      "outputFields": [
+        {
+          "field": "additionalContext",
+          "description": "String added to Claude's context alongside the error. See [Add context for Claude](#add-context-for-claude)"
+        }
+      ]
     },
     {
       "name": "PreCompact",
-      "when": "Before context compaction"
+      "when": "Before context compaction",
+      "inputFields": [],
+      "inputExample": "{\n  \"session_id\": \"abc123\",\n  \"transcript_path\": \"/Users/.../.claude/projects/.../00893aaf-19fa-41d2-8238-13269b9b3ca0.jsonl\",\n  \"cwd\": \"/Users/...\",\n  \"hook_event_name\": \"PreCompact\",\n  \"trigger\": \"manual\",\n  \"custom_instructions\": \"\"\n}",
+      "outputFields": []
     },
     {
       "name": "PreToolUse",
-      "when": "Before a tool call executes. Can block it"
+      "when": "Before a tool call executes. Can block it",
+      "inputFields": [],
+      "inputExample": null,
+      "outputFields": [
+        {
+          "field": "permissionDecision",
+          "description": "`\"allow\"` skips the permission prompt. `\"deny\"` prevents the tool call. `\"ask\"` prompts the user to confirm. `\"defer\"` exits gracefully so the tool can be resumed later. [Deny and ask rules](/en/permissions#manage-permissions) are still evaluated regardless of what the hook returns"
+        },
+        {
+          "field": "permissionDecisionReason",
+          "description": "For `\"allow\"` and `\"ask\"`, shown to the user but not Claude. For `\"deny\"`, shown to Claude. For `\"defer\"`, ignored"
+        },
+        {
+          "field": "updatedInput",
+          "description": "Modifies the tool's input parameters before execution. Replaces the entire input object, so include unchanged fields alongside modified ones. Combine with `\"allow\"` to auto-approve, or `\"ask\"` to show the modified input to the user. For `\"defer\"`, ignored"
+        },
+        {
+          "field": "additionalContext",
+          "description": "String added to Claude's context alongside the tool result. Ignored when `permissionDecision` is `\"defer\"`. See [Add context for Claude](#add-context-for-claude)"
+        }
+      ]
     },
     {
       "name": "SessionEnd",
-      "when": "When a session terminates"
+      "when": "When a session terminates",
+      "inputFields": [],
+      "inputExample": "{\n  \"session_id\": \"abc123\",\n  \"transcript_path\": \"/Users/.../.claude/projects/.../00893aaf-19fa-41d2-8238-13269b9b3ca0.jsonl\",\n  \"cwd\": \"/Users/...\",\n  \"hook_event_name\": \"SessionEnd\",\n  \"reason\": \"other\"\n}",
+      "outputFields": []
     },
     {
       "name": "SessionStart",
-      "when": "When a session begins or resumes"
+      "when": "When a session begins or resumes",
+      "inputFields": [],
+      "inputExample": "{\n  \"session_id\": \"abc123\",\n  \"transcript_path\": \"/Users/.../.claude/projects/.../00893aaf-19fa-41d2-8238-13269b9b3ca0.jsonl\",\n  \"cwd\": \"/Users/...\",\n  \"hook_event_name\": \"SessionStart\",\n  \"source\": \"startup\",\n  \"model\": \"claude-sonnet-4-6\"\n}",
+      "outputFields": [
+        {
+          "field": "additionalContext",
+          "description": "String added to Claude's context at the start of the conversation, before the first prompt. See [Add context for Claude](#add-context-for-claude) for how the text is delivered and what to put in it"
+        }
+      ]
     },
     {
       "name": "Setup",
-      "when": "When you start Claude Code with `--init-only`, or with `--init` or `--maintenance` in `-p` mode. For one-time preparation in CI or scripts"
+      "when": "When you start Claude Code with `--init-only`, or with `--init` or `--maintenance` in `-p` mode. For one-time preparation in CI or scripts",
+      "inputFields": [],
+      "inputExample": "{\n  \"session_id\": \"abc123\",\n  \"transcript_path\": \"/Users/.../.claude/projects/.../00893aaf-19fa-41d2-8238-13269b9b3ca0.jsonl\",\n  \"cwd\": \"/Users/...\",\n  \"hook_event_name\": \"Setup\",\n  \"trigger\": \"init\"\n}",
+      "outputFields": [
+        {
+          "field": "additionalContext",
+          "description": "String added to Claude's context. Multiple hooks' values are concatenated"
+        }
+      ]
     },
     {
       "name": "Stop",
-      "when": "When Claude finishes responding"
+      "when": "When Claude finishes responding",
+      "inputFields": [],
+      "inputExample": "{\n  \"session_id\": \"abc123\",\n  \"transcript_path\": \"~/.claude/projects/.../00893aaf-19fa-41d2-8238-13269b9b3ca0.jsonl\",\n  \"cwd\": \"/Users/...\",\n  \"permission_mode\": \"default\",\n  \"hook_event_name\": \"Stop\",\n  \"stop_hook_active\": true,\n  \"last_assistant_message\": \"I've completed the refactoring. Here's a summary...\"\n}",
+      "outputFields": [
+        {
+          "field": "decision",
+          "description": "`\"block\"` prevents Claude from stopping. Omit to allow Claude to stop"
+        },
+        {
+          "field": "reason",
+          "description": "Required when `decision` is `\"block\"`. Tells Claude why it should continue"
+        }
+      ]
     },
     {
       "name": "StopFailure",
-      "when": "When the turn ends due to an API error. Output and exit code are ignored"
+      "when": "When the turn ends due to an API error. Output and exit code are ignored",
+      "inputFields": [
+        {
+          "field": "error",
+          "description": "Error type: `rate_limit`, `authentication_failed`, `oauth_org_not_allowed`, `billing_error`, `invalid_request`, `server_error`, `max_output_tokens`, or `unknown`"
+        },
+        {
+          "field": "error_details",
+          "description": "Additional details about the error, when available"
+        },
+        {
+          "field": "last_assistant_message",
+          "description": "The rendered error text shown in the conversation. Unlike `Stop` and `SubagentStop`, where this field holds Claude's conversational output, for `StopFailure` it contains the API error string itself, such as `\"API Error: Rate limit reached\"`"
+        }
+      ],
+      "inputExample": "{\n  \"session_id\": \"abc123\",\n  \"transcript_path\": \"/Users/.../.claude/projects/.../00893aaf-19fa-41d2-8238-13269b9b3ca0.jsonl\",\n  \"cwd\": \"/Users/...\",\n  \"hook_event_name\": \"StopFailure\",\n  \"error\": \"rate_limit\",\n  \"error_details\": \"429 Too Many Requests\",\n  \"last_assistant_message\": \"API Error: Rate limit reached\"\n}",
+      "outputFields": []
     },
     {
       "name": "SubagentStart",
-      "when": "When a subagent is spawned"
+      "when": "When a subagent is spawned",
+      "inputFields": [
+        {
+          "field": "additionalContext",
+          "description": "String added to the subagent's context at the start of its conversation, before its first prompt. See [Add context for Claude](#add-context-for-claude)"
+        }
+      ],
+      "inputExample": "{\n  \"session_id\": \"abc123\",\n  \"transcript_path\": \"/Users/.../.claude/projects/.../00893aaf-19fa-41d2-8238-13269b9b3ca0.jsonl\",\n  \"cwd\": \"/Users/...\",\n  \"hook_event_name\": \"SubagentStart\",\n  \"agent_id\": \"agent-abc123\",\n  \"agent_type\": \"Explore\"\n}",
+      "outputFields": []
     },
     {
       "name": "SubagentStop",
-      "when": "When a subagent finishes"
+      "when": "When a subagent finishes",
+      "inputFields": [],
+      "inputExample": "{\n  \"session_id\": \"abc123\",\n  \"transcript_path\": \"~/.claude/projects/.../abc123.jsonl\",\n  \"cwd\": \"/Users/...\",\n  \"permission_mode\": \"default\",\n  \"hook_event_name\": \"SubagentStop\",\n  \"stop_hook_active\": false,\n  \"agent_id\": \"def456\",\n  \"agent_type\": \"Explore\",\n  \"agent_transcript_path\": \"~/.claude/projects/.../abc123/subagents/agent-def456.jsonl\",\n  \"last_assistant_message\": \"Analysis complete. Found 3 potential issues...\"\n}",
+      "outputFields": []
     },
     {
       "name": "TaskCompleted",
-      "when": "When a task is being marked as completed"
+      "when": "When a task is being marked as completed",
+      "inputFields": [
+        {
+          "field": "task_id",
+          "description": "Identifier of the task being completed"
+        },
+        {
+          "field": "task_subject",
+          "description": "Title of the task"
+        },
+        {
+          "field": "task_description",
+          "description": "Detailed description of the task. May be absent"
+        },
+        {
+          "field": "teammate_name",
+          "description": "Name of the teammate completing the task. May be absent"
+        },
+        {
+          "field": "team_name",
+          "description": "Name of the team. May be absent"
+        }
+      ],
+      "inputExample": "{\n  \"session_id\": \"abc123\",\n  \"transcript_path\": \"/Users/.../.claude/projects/.../00893aaf-19fa-41d2-8238-13269b9b3ca0.jsonl\",\n  \"cwd\": \"/Users/...\",\n  \"permission_mode\": \"default\",\n  \"hook_event_name\": \"TaskCompleted\",\n  \"task_id\": \"task-001\",\n  \"task_subject\": \"Implement user authentication\",\n  \"task_description\": \"Add login and signup endpoints\",\n  \"teammate_name\": \"implementer\",\n  \"team_name\": \"my-project\"\n}",
+      "outputFields": []
     },
     {
       "name": "TaskCreated",
-      "when": "When a task is being created via `TaskCreate`"
+      "when": "When a task is being created via `TaskCreate`",
+      "inputFields": [
+        {
+          "field": "task_id",
+          "description": "Identifier of the task being created"
+        },
+        {
+          "field": "task_subject",
+          "description": "Title of the task"
+        },
+        {
+          "field": "task_description",
+          "description": "Detailed description of the task. May be absent"
+        },
+        {
+          "field": "teammate_name",
+          "description": "Name of the teammate creating the task. May be absent"
+        },
+        {
+          "field": "team_name",
+          "description": "Name of the team. May be absent"
+        }
+      ],
+      "inputExample": "{\n  \"session_id\": \"abc123\",\n  \"transcript_path\": \"/Users/.../.claude/projects/.../00893aaf-19fa-41d2-8238-13269b9b3ca0.jsonl\",\n  \"cwd\": \"/Users/...\",\n  \"permission_mode\": \"default\",\n  \"hook_event_name\": \"TaskCreated\",\n  \"task_id\": \"task-001\",\n  \"task_subject\": \"Implement user authentication\",\n  \"task_description\": \"Add login and signup endpoints\",\n  \"teammate_name\": \"implementer\",\n  \"team_name\": \"my-project\"\n}",
+      "outputFields": []
     },
     {
       "name": "TeammateIdle",
-      "when": "When an [agent team](/en/agent-teams) teammate is about to go idle"
+      "when": "When an [agent team](/en/agent-teams) teammate is about to go idle",
+      "inputFields": [
+        {
+          "field": "teammate_name",
+          "description": "Name of the teammate that is about to go idle"
+        },
+        {
+          "field": "team_name",
+          "description": "Name of the team"
+        }
+      ],
+      "inputExample": "{\n  \"session_id\": \"abc123\",\n  \"transcript_path\": \"/Users/.../.claude/projects/.../00893aaf-19fa-41d2-8238-13269b9b3ca0.jsonl\",\n  \"cwd\": \"/Users/...\",\n  \"permission_mode\": \"default\",\n  \"hook_event_name\": \"TeammateIdle\",\n  \"teammate_name\": \"researcher\",\n  \"team_name\": \"my-project\"\n}",
+      "outputFields": []
     },
     {
       "name": "UserPromptExpansion",
-      "when": "When a user-typed command expands into a prompt, before it reaches Claude. Can block the expansion"
+      "when": "When a user-typed command expands into a prompt, before it reaches Claude. Can block the expansion",
+      "inputFields": [],
+      "inputExample": "{\n  \"session_id\": \"abc123\",\n  \"transcript_path\": \"/Users/.../00893aaf.jsonl\",\n  \"cwd\": \"/Users/...\",\n  \"permission_mode\": \"default\",\n  \"hook_event_name\": \"UserPromptExpansion\",\n  \"expansion_type\": \"slash_command\",\n  \"command_name\": \"example-skill\",\n  \"command_args\": \"arg1 arg2\",\n  \"command_source\": \"plugin\",\n  \"prompt\": \"/example-skill arg1 arg2\"\n}",
+      "outputFields": [
+        {
+          "field": "decision",
+          "description": "`\"block\"` prevents the slash command from expanding. Omit to allow it to proceed"
+        },
+        {
+          "field": "reason",
+          "description": "Shown to the user when `decision` is `\"block\"`"
+        },
+        {
+          "field": "additionalContext",
+          "description": "String added to Claude's context alongside the expanded prompt. See [Add context for Claude](#add-context-for-claude)"
+        }
+      ]
     },
     {
       "name": "UserPromptSubmit",
-      "when": "When you submit a prompt, before Claude processes it"
+      "when": "When you submit a prompt, before Claude processes it",
+      "inputFields": [],
+      "inputExample": "{\n  \"session_id\": \"abc123\",\n  \"transcript_path\": \"/Users/.../.claude/projects/.../00893aaf-19fa-41d2-8238-13269b9b3ca0.jsonl\",\n  \"cwd\": \"/Users/...\",\n  \"permission_mode\": \"default\",\n  \"hook_event_name\": \"UserPromptSubmit\",\n  \"prompt\": \"Write a function to calculate the factorial of a number\"\n}",
+      "outputFields": [
+        {
+          "field": "decision",
+          "description": "`\"block\"` prevents the prompt from being processed and erases it from context. Omit to allow the prompt to proceed"
+        },
+        {
+          "field": "reason",
+          "description": "Shown to the user when `decision` is `\"block\"`. Not added to context"
+        },
+        {
+          "field": "additionalContext",
+          "description": "String added to Claude's context alongside the submitted prompt. See [Add context for Claude](#add-context-for-claude)"
+        },
+        {
+          "field": "sessionTitle",
+          "description": "Sets the session title. Use to name sessions automatically based on the prompt content"
+        }
+      ]
     },
     {
       "name": "WorktreeCreate",
-      "when": "When a worktree is being created via `--worktree` or `isolation: \"worktree\"`. Replaces default git behavior"
+      "when": "When a worktree is being created via `--worktree` or `isolation: \"worktree\"`. Replaces default git behavior",
+      "inputFields": [],
+      "inputExample": "{\n  \"session_id\": \"abc123\",\n  \"transcript_path\": \"/Users/.../.claude/projects/.../00893aaf-19fa-41d2-8238-13269b9b3ca0.jsonl\",\n  \"cwd\": \"/Users/...\",\n  \"hook_event_name\": \"WorktreeCreate\",\n  \"name\": \"feature-auth\"\n}",
+      "outputFields": []
     },
     {
       "name": "WorktreeRemove",
-      "when": "When a worktree is being removed, either at session exit or when a subagent finishes"
+      "when": "When a worktree is being removed, either at session exit or when a subagent finishes",
+      "inputFields": [],
+      "inputExample": "{\n  \"session_id\": \"abc123\",\n  \"transcript_path\": \"/Users/.../.claude/projects/.../00893aaf-19fa-41d2-8238-13269b9b3ca0.jsonl\",\n  \"cwd\": \"/Users/...\",\n  \"hook_event_name\": \"WorktreeRemove\",\n  \"worktree_path\": \"/Users/.../my-project/.claude/worktrees/feature-auth\"\n}",
+      "outputFields": []
+    }
+  ],
+  "handlers": [
+    {
+      "name": "common",
+      "fields": [
+        {
+          "field": "type",
+          "required": "yes",
+          "description": "`\"command\"`, `\"http\"`, `\"mcp_tool\"`, `\"prompt\"`, or `\"agent\"`"
+        },
+        {
+          "field": "if",
+          "required": "no",
+          "description": "Permission rule syntax to filter when this hook runs, such as `\"Bash(git *)\"` or `\"Edit(*.ts)\"`. The hook only spawns if the tool call matches the pattern, or if a Bash command is too complex to parse. Only evaluated on tool events: `PreToolUse`, `PostToolUse`, `PostToolUseFailure`, `PermissionRequest`, and `PermissionDenied`. On other events, a hook with `if` set never runs. Uses the same syntax as [permission rules](/en/permissions)"
+        },
+        {
+          "field": "timeout",
+          "required": "no",
+          "description": "Seconds before canceling. Defaults: 600 for command, 30 for prompt, 60 for agent"
+        },
+        {
+          "field": "statusMessage",
+          "required": "no",
+          "description": "Custom spinner message displayed while the hook runs"
+        },
+        {
+          "field": "once",
+          "required": "no",
+          "description": "If `true`, runs once per session then is removed. Only honored for hooks declared in [skill frontmatter](#hooks-in-skills-and-agents); ignored in settings files and agent frontmatter"
+        }
+      ]
+    },
+    {
+      "name": "command",
+      "fields": [
+        {
+          "field": "command",
+          "required": "yes",
+          "description": "Shell command to execute"
+        },
+        {
+          "field": "async",
+          "required": "no",
+          "description": "If `true`, runs in the background without blocking. See [Run hooks in the background](#run-hooks-in-the-background)"
+        },
+        {
+          "field": "asyncRewake",
+          "required": "no",
+          "description": "If `true`, runs in the background and wakes Claude on exit code 2. Implies `async`. The hook's stderr, or stdout if stderr is empty, is shown to Claude as a system reminder so it can react to a long-running background failure"
+        },
+        {
+          "field": "shell",
+          "required": "no",
+          "description": "Shell to use for this hook. Accepts `\"bash\"` (default) or `\"powershell\"`. Setting `\"powershell\"` runs the command via PowerShell on Windows. Does not require `CLAUDE_CODE_USE_POWERSHELL_TOOL` since hooks spawn PowerShell directly"
+        }
+      ]
+    },
+    {
+      "name": "http",
+      "fields": [
+        {
+          "field": "url",
+          "required": "yes",
+          "description": "URL to send the POST request to"
+        },
+        {
+          "field": "headers",
+          "required": "no",
+          "description": "Additional HTTP headers as key-value pairs. Values support environment variable interpolation using `$VAR_NAME` or `${VAR_NAME}` syntax. Only variables listed in `allowedEnvVars` are resolved"
+        },
+        {
+          "field": "allowedEnvVars",
+          "required": "no",
+          "description": "List of environment variable names that may be interpolated into header values. References to unlisted variables are replaced with empty strings. Required for any env var interpolation to work"
+        }
+      ]
+    },
+    {
+      "name": "mcp_tool",
+      "fields": [
+        {
+          "field": "server",
+          "required": "yes",
+          "description": "Name of a configured MCP server. The server must already be connected; the hook never triggers an OAuth or connection flow"
+        },
+        {
+          "field": "tool",
+          "required": "yes",
+          "description": "Name of the tool to call on that server"
+        },
+        {
+          "field": "input",
+          "required": "no",
+          "description": "Arguments passed to the tool. String values support `${path}` substitution from the hook's [JSON input](#hook-input-and-output), such as `\"${tool_input.file_path}\"`"
+        }
+      ]
+    },
+    {
+      "name": "prompt_and_agent",
+      "fields": [
+        {
+          "field": "prompt",
+          "required": "yes",
+          "description": "Prompt text to send to the model. Use `$ARGUMENTS` as a placeholder for the hook input JSON"
+        },
+        {
+          "field": "model",
+          "required": "no",
+          "description": "Model to use for evaluation. Defaults to a fast model"
+        }
+      ]
+    }
+  ],
+  "commonInput": [
+    {
+      "field": "session_id",
+      "description": "Current session identifier"
+    },
+    {
+      "field": "transcript_path",
+      "description": "Path to conversation JSON"
+    },
+    {
+      "field": "cwd",
+      "description": "Current working directory when the hook is invoked"
+    },
+    {
+      "field": "permission_mode",
+      "description": "Current [permission mode](/en/permissions#permission-modes): `\"default\"`, `\"plan\"`, `\"acceptEdits\"`, `\"auto\"`, `\"dontAsk\"`, or `\"bypassPermissions\"`. Not all events receive this field: see each event's JSON example below to check"
+    },
+    {
+      "field": "effort",
+      "description": "Object with a `level` field holding the active [effort level](/en/model-config#adjust-effort-level) for the turn: `\"low\"`, `\"medium\"`, `\"high\"`, `\"xhigh\"`, or `\"max\"`. If the requested effort exceeds what the current model supports, this is the downgraded level the model actually used, not the level you requested. The object matches the [status line](/en/statusline#available-data) `effort` field. Present for events that fire within a tool-use context, such as `PreToolUse`, `PostToolUse`, `Stop`, and `SubagentStop`, when the current model supports the effort parameter. The level is also available to hook commands and the Bash tool as the `$CLAUDE_EFFORT` environment variable."
+    },
+    {
+      "field": "hook_event_name",
+      "description": "Name of the event that fired"
+    },
+    {
+      "field": "agent_id",
+      "description": "Unique identifier for the subagent. Present only when the hook fires inside a subagent call. Use this to distinguish subagent hook calls from main-thread calls."
+    },
+    {
+      "field": "agent_type",
+      "description": "Agent name (for example, `\"Explore\"` or `\"security-reviewer\"`). Present when the session uses `--agent` or the hook fires inside a subagent. For subagents, the subagent's type takes precedence over the session's `--agent` value."
     }
   ]
 }
