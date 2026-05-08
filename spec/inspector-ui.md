@@ -78,7 +78,9 @@ Non-modal. The list and rail remain navigable while the drawer is open.
   catalog, the env-var's `purpose` prose is shown instead of the generic
   parent-`env` description that the settings-catalog walk-up returns —
   the env-vars catalog is the more specific authority for what each var
-  does.
+  does. Rendered as markdown (see catalog-sync.md "Prose fields are
+  markdown") — links open in the system browser via the opener plugin,
+  with site-relative URLs resolved against the docs root.
 - Effective-value block — value + winning layer badge, accent-coloured
 - **Layer waterfall** (see Design primitives)
 - Path notes for set layers (`./.claude/settings.json`) — clickable to

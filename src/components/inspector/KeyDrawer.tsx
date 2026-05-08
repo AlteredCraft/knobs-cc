@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import ReactMarkdown from "react-markdown";
 import { cn } from "@/lib/utils";
 import {
   findEnvVar,
@@ -7,6 +8,8 @@ import {
   type CatalogEntry,
 } from "@/lib/catalog";
 import { formatValue } from "@/lib/format";
+import { resolveDocsUrl } from "@/lib/markdown";
+import { openExternalUrl } from "@/lib/openPath";
 import { buildRows, type Row } from "@/lib/rows";
 import { buildWaterfall } from "@/lib/waterfall";
 import type { ArrayMergedElement } from "@/lib/flatten";
@@ -191,12 +194,44 @@ function DrawerHeader({
         )}
       </div>
       {description && (
-        <p className="mt-3 max-w-prose text-[12.5px] leading-relaxed text-fg-2">
-          {description}
-        </p>
+        <div className="mt-3 max-w-prose text-[12.5px] leading-relaxed text-fg-2">
+          <InlineMarkdown source={description} />
+        </div>
       )}
     </div>
   );
+}
+
+// react-markdown wraps top-level content in a <p>; everything else
+// (links, code, em/strong) is opt-in via the `components` map. We only
+// override the nodes that show up in catalog descriptions and route
+// link clicks through the opener plugin so URLs open in the system
+// browser instead of the WebView.
+const MARKDOWN_COMPONENTS = {
+  p: ({ children }: { children?: React.ReactNode }) => (
+    <p className="m-0">{children}</p>
+  ),
+  a: ({ href, children }: { href?: string; children?: React.ReactNode }) => (
+    <a
+      href={href}
+      onClick={(e) => {
+        e.preventDefault();
+        if (href) void openExternalUrl(resolveDocsUrl(href));
+      }}
+      className="text-accent underline decoration-dotted underline-offset-2 hover:decoration-solid"
+    >
+      {children}
+    </a>
+  ),
+  code: ({ children }: { children?: React.ReactNode }) => (
+    <code className="rounded-[2px] bg-bg-2 px-1 py-px font-mono text-[11.5px] text-fg-1">
+      {children}
+    </code>
+  ),
+};
+
+function InlineMarkdown({ source }: { source: string }) {
+  return <ReactMarkdown components={MARKDOWN_COMPONENTS}>{source}</ReactMarkdown>;
 }
 
 function EffectiveBlock({
