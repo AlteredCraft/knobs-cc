@@ -14,7 +14,8 @@ managed-mcp.json topbar pill + catalog-drift cron + sync-sub-agents +
 in-app error log + per-OS capability split + sync-mcp + sync-permissions
 + drawer cross-references env-vars catalog + sync-keybindings +
 sync-cli-reference + hooks catalog pass #2 + drawer cross-references
-permissions.modes).
+permissions.modes as a value-conditional annotation under EFFECTIVE +
+issue #7 filed for generalizing the annotation seam).
 
 ## Next-up candidates
 
@@ -26,6 +27,14 @@ here, then jump to the relevant section for shape and rationale.
   wire-ups. Catalog already loads through `read_catalog`; main
   open question is whether the array-typed `hooks.<EventName>` rows
   fit the existing drawer shape. See Inspector polish § "Open work".
+- **Generalize value-conditional drawer annotation** (inspector
+  polish) — the annotation that ships today only fires for
+  `permissions.defaultMode`. Other multi-value enums (`effortLevel`,
+  `teammateMode`, `viewMode`, ...) would benefit but lack a
+  structured per-value source upstream. Tracked at
+  [#7](https://github.com/AlteredCraft/knobs-cc/issues/7); solution
+  space and a recommended starting step (`model-config.md` for
+  `effortLevel`) live in the issue body.
 - **Rail navigability decision** (inspector polish) — spec question,
   not coding work; needs a fork-vs-fork call before any UI lands.
 - **ENV-layer / `env.*`-row seam** (inspector polish) — UX question,
