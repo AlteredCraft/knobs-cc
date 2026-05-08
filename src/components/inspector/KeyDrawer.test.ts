@@ -112,4 +112,79 @@ describe("resolveDescription", () => {
     });
     expect(resolveDescription(row)).toBe("First line.");
   });
+
+  test("uses the permissions catalog mode description for permissions.defaultMode rows whose value is documented", () => {
+    // The permissions catalog has prose richer than the settings
+    // schema's mash-up of every mode in one description. When the row's
+    // effective value is a cataloged mode, surface that mode's prose.
+    const row = rowWithKey("permissions.defaultMode", {
+      value: "acceptEdits",
+      catalog: {
+        key: "permissions.defaultMode",
+        description: "Default permission mode.\nGeneric multi-line prose.",
+      },
+    });
+    const desc = resolveDescription(row);
+    expect(desc).not.toBe("Default permission mode.");
+    expect(desc).toMatch(/edits/i);
+  });
+
+  test("falls back to the settings catalog description for permissions.defaultMode when the value is undocumented", () => {
+    // `delegate` is in the settings JSON Schema enum but isn't in the
+    // upstream permissions docs (experimental agent-team mode). The
+    // drawer must fall back to the settings catalog's first line.
+    const row = rowWithKey("permissions.defaultMode", {
+      value: "delegate",
+      catalog: {
+        key: "permissions.defaultMode",
+        description: "Default permission mode.\nGeneric multi-line prose.",
+      },
+    });
+    expect(resolveDescription(row)).toBe("Default permission mode.");
+  });
+
+  test("uses catalog default when permissions.defaultMode row is unset", () => {
+    // Unset rows carry their value from `catalog.default` (see rows.ts).
+    // The cross-reference must work for the unset case too — that's the
+    // common state for new users who haven't customized permissions.
+    const row = rowWithKey("permissions.defaultMode", {
+      value: "default",
+      state: "unset",
+      catalog: {
+        key: "permissions.defaultMode",
+        description: "Default permission mode.\nGeneric prose.",
+        default: "default",
+      },
+    });
+    const desc = resolveDescription(row);
+    expect(desc).not.toBe("Default permission mode.");
+    expect(desc?.length ?? 0).toBeGreaterThan(0);
+  });
+
+  test("ignores non-string values on permissions.defaultMode without throwing", () => {
+    // Defensive: a malformed settings.json could put a non-string here.
+    // The lookup must not crash; fall back to the settings catalog prose.
+    const row = rowWithKey("permissions.defaultMode", {
+      value: 42 as unknown,
+      catalog: {
+        key: "permissions.defaultMode",
+        description: "Default permission mode.",
+      },
+    });
+    expect(resolveDescription(row)).toBe("Default permission mode.");
+  });
+
+  test("permissions catalog override does not bleed into other permissions.* rows", () => {
+    // Only `permissions.defaultMode` joins to `permissions.modes`. Other
+    // permissions.* rows (allow/deny/ask/...) keep the existing
+    // catalog-description behavior.
+    const row = rowWithKey("permissions.allow", {
+      value: ["Bash"],
+      catalog: {
+        key: "permissions.allow",
+        description: "Tools permitted without prompting",
+      },
+    });
+    expect(resolveDescription(row)).toBe("Tools permitted without prompting");
+  });
 });

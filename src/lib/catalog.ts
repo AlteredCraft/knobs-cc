@@ -44,15 +44,28 @@ export interface EnvVarsCatalogFile {
   envVars: EnvVarEntry[];
 }
 
+export interface PermissionMode {
+  name: string;
+  /** Upstream prose describing how the mode behaves. */
+  description: string;
+}
+
+export interface PermissionsCatalogFile {
+  source: string;
+  fetchedAt: string;
+  count: number;
+  modes: PermissionMode[];
+}
+
 export interface CatalogsWire {
   settings: SettingsCatalogFile;
   env_vars: EnvVarsCatalogFile;
+  permissions: PermissionsCatalogFile;
   // Other catalogs are exposed for future Phase 5+ consumers; their shapes
   // aren't modeled yet because nothing in the UI reads them.
   hooks: unknown;
   sub_agents: unknown;
   mcp: unknown;
-  permissions: unknown;
   keybindings: unknown;
   cli_reference: unknown;
 }
@@ -69,6 +82,7 @@ interface InitializedCatalog {
   leaf: CatalogEntry[];
   byKey: Map<string, CatalogEntry>;
   envVarsByName: Map<string, EnvVarEntry>;
+  permissionModesByName: Map<string, PermissionMode>;
   meta: CatalogMeta;
 }
 
@@ -95,6 +109,9 @@ function buildState(data: CatalogsWire): InitializedCatalog {
     leaf,
     byKey: new Map(leaf.map((e) => [e.key, e])),
     envVarsByName: new Map(data.env_vars.envVars.map((e) => [e.name, e])),
+    permissionModesByName: new Map(
+      data.permissions.modes.map((m) => [m.name, m]),
+    ),
     meta: {
       source: data.settings.source,
       fetchedAt: data.settings.fetchedAt,
@@ -171,6 +188,18 @@ export function findRelatedKnobs(keyPath: string): readonly CatalogEntry[] {
  */
 export function findEnvVar(name: string): EnvVarEntry | null {
   return requireState().envVarsByName.get(name) ?? null;
+}
+
+/**
+ * Lookup by permission-mode name (e.g. `acceptEdits`). Returns null
+ * when the catalog doesn't document the mode — the settings JSON
+ * Schema has additional enum values like `delegate` (experimental
+ * agent-team only) that aren't in the upstream permissions docs.
+ * Case-sensitive: mode names are camelCase ASCII; case-folding would
+ * create false matches for user typos.
+ */
+export function findPermissionMode(name: string): PermissionMode | null {
+  return requireState().permissionModesByName.get(name) ?? null;
 }
 
 /** Lookup by exact dot-path. Walks up to find the closest parent on miss. */

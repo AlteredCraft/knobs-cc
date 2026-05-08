@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { findRelatedKnobs, findCatalogEntry, findEnvVar } from "./catalog";
+import {
+  findRelatedKnobs,
+  findCatalogEntry,
+  findEnvVar,
+  findPermissionMode,
+} from "./catalog";
 
 describe("findRelatedKnobs", () => {
   it("returns sibling entries under the same parent path", () => {
@@ -84,5 +89,34 @@ describe("findEnvVar", () => {
     // create false matches (e.g. user typo `anthropic_api_key` lighting
     // up the docs for ANTHROPIC_API_KEY). Treat case mismatches as misses.
     expect(findEnvVar("anthropic_api_key")).toBeNull();
+  });
+});
+
+describe("findPermissionMode", () => {
+  it("looks up a documented mode by exact name", () => {
+    // Stable anchors — `default`, `acceptEdits`, `plan`, `auto`, `dontAsk`,
+    // and `bypassPermissions` are the six modes that have lived in the
+    // upstream docs since the catalog landed. Assert structural shape
+    // and that the description is non-empty; the prose drifts.
+    const e = findPermissionMode("acceptEdits");
+    expect(e).not.toBeNull();
+    expect(e!.name).toBe("acceptEdits");
+    expect(e!.description.length).toBeGreaterThan(0);
+  });
+
+  it("returns null for an undocumented mode", () => {
+    // Settings JSON Schema lists `delegate` as a valid enum value but
+    // the upstream permissions docs don't describe it (it's
+    // experimental, agent-team only). The drawer must fall back to the
+    // settings catalog's first-line description when the mode isn't
+    // cataloged, not silently render the wrong prose.
+    expect(findPermissionMode("delegate")).toBeNull();
+  });
+
+  it("is case-sensitive — mode names are conventionally camelCase", () => {
+    // Real mode names are camelCase ASCII; case-folding the lookup would
+    // create false matches for user typos.
+    expect(findPermissionMode("AcceptEdits")).toBeNull();
+    expect(findPermissionMode("acceptedits")).toBeNull();
   });
 });

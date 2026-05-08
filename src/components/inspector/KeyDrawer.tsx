@@ -1,6 +1,11 @@
 import { useMemo } from "react";
 import { cn } from "@/lib/utils";
-import { findEnvVar, findRelatedKnobs, type CatalogEntry } from "@/lib/catalog";
+import {
+  findEnvVar,
+  findPermissionMode,
+  findRelatedKnobs,
+  type CatalogEntry,
+} from "@/lib/catalog";
 import { formatValue } from "@/lib/format";
 import { buildRows, type Row } from "@/lib/rows";
 import { buildWaterfall } from "@/lib/waterfall";
@@ -348,18 +353,29 @@ export function envVarNameFromKeyPath(keyPath: string): string | null {
 }
 
 /**
- * Resolve the description prose shown in the drawer header. For
- * `env.<VAR>` rows whose var is documented upstream, prefer the
- * env-vars catalog's purpose over the generic parent-`env` description
- * the settings catalog walk-up returns. Falls back to the settings
- * catalog description otherwise; truncates to the first line so the
- * header band stays a single paragraph.
+ * Resolve the description prose shown in the drawer header.
+ *
+ * - For `env.<VAR>` rows whose var is documented upstream, prefer the
+ *   env-vars catalog's purpose over the generic parent-`env`
+ *   description the settings catalog walk-up returns.
+ * - For `permissions.defaultMode` rows whose effective value matches a
+ *   cataloged mode, prefer the permissions catalog's mode-specific
+ *   prose over the settings catalog's first line ("Default permission
+ *   mode."), which is just a placeholder before the multi-line mash-up
+ *   of every mode.
+ *
+ * Falls back to the settings catalog description otherwise; truncates
+ * to the first line so the header band stays a single paragraph.
  */
 export function resolveDescription(row: Row): string | null {
   const envVar = envVarNameFromKeyPath(row.keyPath);
   if (envVar) {
     const entry = findEnvVar(envVar);
     if (entry) return entry.purpose.split("\n")[0];
+  }
+  if (row.keyPath === "permissions.defaultMode" && typeof row.value === "string") {
+    const mode = findPermissionMode(row.value);
+    if (mode) return mode.description.split("\n")[0];
   }
   return row.catalog?.description?.split("\n")[0] ?? null;
 }
