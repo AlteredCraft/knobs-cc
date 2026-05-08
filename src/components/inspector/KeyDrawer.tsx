@@ -206,6 +206,7 @@ function EffectiveBlock({
   row: Row;
   formatted: ReturnType<typeof formatValue>;
 }) {
+  const annotation = resolveValueAnnotation(row);
   return (
     <div className="border-b border-line px-5 py-4">
       <span className="corner-tag mb-2 block">Effective</span>
@@ -238,6 +239,15 @@ function EffectiveBlock({
           )}
         </span>
       </div>
+      {annotation ? (
+        <div
+          className="mt-2 flex gap-2 pl-3 text-[11.5px] leading-snug text-fg-3"
+          data-testid="value-annotation"
+        >
+          <span aria-hidden className="text-fg-4">→</span>
+          <span>{annotation}</span>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -353,19 +363,12 @@ export function envVarNameFromKeyPath(keyPath: string): string | null {
 }
 
 /**
- * Resolve the description prose shown in the drawer header.
- *
- * - For `env.<VAR>` rows whose var is documented upstream, prefer the
- *   env-vars catalog's purpose over the generic parent-`env`
- *   description the settings catalog walk-up returns.
- * - For `permissions.defaultMode` rows whose effective value matches a
- *   cataloged mode, prefer the permissions catalog's mode-specific
- *   prose over the settings catalog's first line ("Default permission
- *   mode."), which is just a placeholder before the multi-line mash-up
- *   of every mode.
- *
- * Falls back to the settings catalog description otherwise; truncates
- * to the first line so the header band stays a single paragraph.
+ * Resolve the description prose shown in the drawer header. For
+ * `env.<VAR>` rows whose var is documented upstream, prefer the
+ * env-vars catalog's purpose over the generic parent-`env` description
+ * the settings catalog walk-up returns. Falls back to the settings
+ * catalog description otherwise; truncates to the first line so the
+ * header band stays a single paragraph.
  */
 export function resolveDescription(row: Row): string | null {
   const envVar = envVarNameFromKeyPath(row.keyPath);
@@ -373,11 +376,26 @@ export function resolveDescription(row: Row): string | null {
     const entry = findEnvVar(envVar);
     if (entry) return entry.purpose.split("\n")[0];
   }
+  return row.catalog?.description?.split("\n")[0] ?? null;
+}
+
+/**
+ * Resolve a value-conditional annotation rendered under the EFFECTIVE
+ * block — explains what the current value *does* without conflating it
+ * with the description of the knob itself.
+ *
+ * Currently fires only for `permissions.defaultMode` rows whose
+ * effective value matches a cataloged mode (the 6 documented modes,
+ * not the experimental `delegate` enum value). Returns null for
+ * undocumented values, non-string values, and any other keyPath, so
+ * the drawer renders nothing rather than mislead.
+ */
+export function resolveValueAnnotation(row: Row): string | null {
   if (row.keyPath === "permissions.defaultMode" && typeof row.value === "string") {
     const mode = findPermissionMode(row.value);
-    if (mode) return mode.description.split("\n")[0];
+    if (mode) return mode.description;
   }
-  return row.catalog?.description?.split("\n")[0] ?? null;
+  return null;
 }
 
 function describeShape(row: Row): string {

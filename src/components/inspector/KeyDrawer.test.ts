@@ -1,6 +1,10 @@
 import { describe, expect, test } from "vitest";
 
-import { envVarNameFromKeyPath, resolveDescription } from "./KeyDrawer";
+import {
+  envVarNameFromKeyPath,
+  resolveDescription,
+  resolveValueAnnotation,
+} from "./KeyDrawer";
 import type { Row } from "@/lib/rows";
 
 function rowWithKey(keyPath: string, partial: Partial<Row> = {}): Row {
@@ -113,10 +117,10 @@ describe("resolveDescription", () => {
     expect(resolveDescription(row)).toBe("First line.");
   });
 
-  test("uses the permissions catalog mode description for permissions.defaultMode rows whose value is documented", () => {
-    // The permissions catalog has prose richer than the settings
-    // schema's mash-up of every mode in one description. When the row's
-    // effective value is a cataloged mode, surface that mode's prose.
+  test("keeps the generic settings catalog description for permissions.defaultMode regardless of value", () => {
+    // The mode-specific prose moved out of the header — it's value-
+    // conditional and belongs under the EFFECTIVE block. The header
+    // describes the knob itself, not its current value.
     const row = rowWithKey("permissions.defaultMode", {
       value: "acceptEdits",
       catalog: {
@@ -124,67 +128,73 @@ describe("resolveDescription", () => {
         description: "Default permission mode.\nGeneric multi-line prose.",
       },
     });
-    const desc = resolveDescription(row);
-    expect(desc).not.toBe("Default permission mode.");
-    expect(desc).toMatch(/edits/i);
-  });
-
-  test("falls back to the settings catalog description for permissions.defaultMode when the value is undocumented", () => {
-    // `delegate` is in the settings JSON Schema enum but isn't in the
-    // upstream permissions docs (experimental agent-team mode). The
-    // drawer must fall back to the settings catalog's first line.
-    const row = rowWithKey("permissions.defaultMode", {
-      value: "delegate",
-      catalog: {
-        key: "permissions.defaultMode",
-        description: "Default permission mode.\nGeneric multi-line prose.",
-      },
-    });
     expect(resolveDescription(row)).toBe("Default permission mode.");
   });
+});
 
-  test("uses catalog default when permissions.defaultMode row is unset", () => {
-    // Unset rows carry their value from `catalog.default` (see rows.ts).
-    // The cross-reference must work for the unset case too — that's the
-    // common state for new users who haven't customized permissions.
+describe("resolveValueAnnotation", () => {
+  test("returns the cataloged mode description for permissions.defaultMode when the value is documented", () => {
+    // The annotation surfaces what the current *value* does, not what
+    // the knob does. Anchor on `acceptEdits` — its prose is stable.
+    const row = rowWithKey("permissions.defaultMode", { value: "acceptEdits" });
+    const anno = resolveValueAnnotation(row);
+    expect(anno).not.toBeNull();
+    expect(anno).toMatch(/edits/i);
+  });
+
+  test("returns null for permissions.defaultMode when the value is undocumented", () => {
+    // `delegate` is in the JSON Schema enum but not in the upstream
+    // permissions docs. Don't render an annotation — the alternative is
+    // misleading prose.
+    const row = rowWithKey("permissions.defaultMode", { value: "delegate" });
+    expect(resolveValueAnnotation(row)).toBeNull();
+  });
+
+  test("fires for unset permissions.defaultMode rows whose value is the catalog default", () => {
+    // Unset rows carry value from `catalog.default` (see rows.ts). The
+    // unset case is the common state for new users; the annotation
+    // should still help them understand what the default actually does.
     const row = rowWithKey("permissions.defaultMode", {
       value: "default",
       state: "unset",
-      catalog: {
-        key: "permissions.defaultMode",
-        description: "Default permission mode.\nGeneric prose.",
-        default: "default",
-      },
+      catalog: { key: "permissions.defaultMode", default: "default" },
     });
-    const desc = resolveDescription(row);
-    expect(desc).not.toBe("Default permission mode.");
-    expect(desc?.length ?? 0).toBeGreaterThan(0);
+    const anno = resolveValueAnnotation(row);
+    expect(anno).not.toBeNull();
+    expect(anno!.length).toBeGreaterThan(0);
   });
 
-  test("ignores non-string values on permissions.defaultMode without throwing", () => {
-    // Defensive: a malformed settings.json could put a non-string here.
-    // The lookup must not crash; fall back to the settings catalog prose.
-    const row = rowWithKey("permissions.defaultMode", {
-      value: 42 as unknown,
-      catalog: {
-        key: "permissions.defaultMode",
-        description: "Default permission mode.",
-      },
-    });
-    expect(resolveDescription(row)).toBe("Default permission mode.");
+  test("returns null for non-string values without throwing", () => {
+    // Defensive: malformed settings.json could put a non-string here.
+    const row = rowWithKey("permissions.defaultMode", { value: 42 as unknown });
+    expect(resolveValueAnnotation(row)).toBeNull();
   });
 
-  test("permissions catalog override does not bleed into other permissions.* rows", () => {
-    // Only `permissions.defaultMode` joins to `permissions.modes`. Other
-    // permissions.* rows (allow/deny/ask/...) keep the existing
-    // catalog-description behavior.
-    const row = rowWithKey("permissions.allow", {
-      value: ["Bash"],
-      catalog: {
-        key: "permissions.allow",
-        description: "Tools permitted without prompting",
-      },
-    });
-    expect(resolveDescription(row)).toBe("Tools permitted without prompting");
+  test("returns null for any other keyPath", () => {
+    // Only permissions.defaultMode joins to permissions.modes today.
+    // Other permissions.* rows (allow / deny / ask / ...) and unrelated
+    // rows must not get an annotation.
+    expect(
+      resolveValueAnnotation(rowWithKey("permissions.allow", { value: ["Bash"] })),
+    ).toBeNull();
+    expect(
+      resolveValueAnnotation(rowWithKey("model", { value: "claude-sonnet-4-6" })),
+    ).toBeNull();
+    expect(
+      resolveValueAnnotation(rowWithKey("env.ANTHROPIC_API_KEY", { value: "sk-x" })),
+    ).toBeNull();
+  });
+
+  test("preserves the full multi-line description (no first-line truncation)", () => {
+    // The annotation lives in a block of its own under EFFECTIVE, not
+    // a single-line header band. Keep the full prose so the user sees
+    // qualifiers like 'Currently a research preview' that follow on
+    // later lines if upstream ever adds them.
+    const row = rowWithKey("permissions.defaultMode", { value: "auto" });
+    const anno = resolveValueAnnotation(row);
+    // Real catalog prose for `auto` includes a second clause that the
+    // header would have truncated; assert structurally — the prose drifts.
+    expect(anno).not.toBeNull();
+    expect(anno!.length).toBeGreaterThan(40);
   });
 });

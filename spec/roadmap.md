@@ -351,22 +351,30 @@ Shipped:
   `permissions.defaultMode`.** ✅ shipped 2026-05-08. When a row's
   keyPath is `permissions.defaultMode` and the row's effective value
   (set or `catalog.default` for unset) matches one of the 6 cataloged
-  modes, the drawer header surfaces that mode's specific prose
-  (`acceptEdits` → "Automatically accepts file edits and common
-  filesystem commands…") instead of the settings catalog's first-line
-  placeholder ("Default permission mode."). Joins through
-  `findPermissionMode(name)` in `src/lib/catalog.ts` (name-indexed Map
-  built at hydration time) and an extension to `resolveDescription` in
-  `KeyDrawer.tsx`. Case-sensitive lookup — mode names are camelCase
-  ASCII and case-folding would feed false matches for user typos.
-  Defensive: only attempts the lookup when `typeof row.value ===
-  "string"`, so a malformed settings.json with a non-string value
-  falls back cleanly to the settings catalog prose. Undocumented
-  enum values (`delegate` — experimental agent-team only, in the JSON
-  Schema enum but not in the upstream permissions docs) also fall
-  back to the settings catalog. Second drawer-side consumer of a
-  non-settings catalog after env-vars; further validates the seam for
-  `hooks.events` next.
+  modes, the drawer surfaces that mode's specific prose as a
+  *value-conditional annotation* below the EFFECTIVE block — keeping
+  the header description ("Default permission mode.") tied to the
+  knob itself, not its current value. The structural separation
+  matters: a header that silently changes prose when the value
+  changes would be misleading; an annotation labelled by position
+  (under EFFECTIVE, prefixed `→`) makes it obvious the prose
+  describes the *value*. Joins through `findPermissionMode(name)` in
+  `src/lib/catalog.ts` (name-indexed Map built at hydration time) and
+  a new `resolveValueAnnotation(row)` helper in `KeyDrawer.tsx`,
+  parallel to `resolveDescription`. Case-sensitive lookup — mode
+  names are camelCase ASCII and case-folding would feed false matches
+  for user typos. Defensive: only attempts the lookup when
+  `typeof row.value === "string"`, so a malformed settings.json with
+  a non-string value renders no annotation rather than misleading
+  prose. Undocumented enum values (`delegate` — experimental
+  agent-team only, in the JSON Schema enum but not in the upstream
+  permissions docs) also render no annotation. The annotation
+  preserves the full multi-line catalog prose (no first-line
+  truncation) since it lives in its own block — qualifiers like
+  "Currently a research preview" stay visible. Second drawer-side
+  consumer of a non-settings catalog after env-vars; further
+  validates the seam for `hooks.events` next, where the same
+  value-vs-knob distinction will apply.
 - **Drawer cross-references env-vars catalog.** ✅ shipped 2026-05-07.
   When a row's keyPath is `env.<VAR>` and `<VAR>` is documented in the
   env-vars catalog (220 entries upstream), the drawer header surfaces
