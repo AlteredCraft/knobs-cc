@@ -219,7 +219,7 @@ const MARKDOWN_COMPONENTS = {
         e.preventDefault();
         if (href) void openExternalUrl(resolveDocsUrl(href));
       }}
-      className="text-accent underline decoration-dotted underline-offset-2 hover:decoration-solid"
+      className="text-link underline decoration-dotted underline-offset-2 hover:decoration-solid"
     >
       {children}
     </a>

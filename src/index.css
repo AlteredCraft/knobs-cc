@@ -26,6 +26,10 @@
   --color-accent-soft: rgba(255, 182, 39, 0.08);
   --color-accent-ring: rgba(255, 182, 39, 0.35);
 
+  /* Hyperlink color — light blue, kept distinct from the amber accent so
+     links don't read as a project/proj-source treatment. */
+  --color-link: #79b8ff;
+
   /* Status. */
   --color-ok: #5fa75e;
   --color-warn: #d6a64f;
