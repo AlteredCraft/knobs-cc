@@ -10,11 +10,13 @@ export function Topbar({
   onRefresh,
   onHelp,
   onShowErrors,
+  onShowEnvVars,
 }: {
   snapshot: SettingsSnapshot;
   onRefresh?: () => void;
   onHelp?: () => void;
   onShowErrors?: () => void;
+  onShowEnvVars?: () => void;
 }) {
   const errorEntries = useSyncExternalStore(subscribe, getEntries);
   const unseenErrors = useSyncExternalStore(subscribe, getUnseenCount);
@@ -58,6 +60,16 @@ export function Topbar({
           <StatusDot variant={diagnosticCount > 0 ? "warn" : "empty"} />
           {diagnosticCount} {diagnosticCount === 1 ? "diagnostic" : "diagnostics"}
         </span>
+        {onShowEnvVars && (
+          <button
+            type="button"
+            onClick={onShowEnvVars}
+            title="Browse the env-vars catalog and what's set in your shell + settings.json"
+            className="flex items-center gap-1.5 rounded-sm border border-line-strong px-2 py-1 hover:border-accent hover:text-fg-1"
+          >
+            env vars
+          </button>
+        )}
         {errorEntries.length > 0 && onShowErrors && (
           <ErrorsPill
             count={errorEntries.length}

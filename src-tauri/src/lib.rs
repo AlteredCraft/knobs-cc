@@ -1,5 +1,6 @@
 mod catalog;
 mod env_layer;
+mod env_vars;
 mod managed_layer;
 mod settings;
 mod watcher;
@@ -23,6 +24,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             settings::read_settings_layers,
             catalog::read_catalog,
+            env_vars::read_shell_env_vars,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

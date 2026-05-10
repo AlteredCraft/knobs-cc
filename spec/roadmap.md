@@ -8,14 +8,15 @@ If you ship something, mark it ✅ here and (where relevant) update the
 corresponding spec section. If you discover new work, add it here, not
 inline in another spec.
 
-Last reviewed: 2026-05-08 (Phase 2 + read_catalog + Phase 5 + Phase 7 +
+Last reviewed: 2026-05-10 (Phase 2 + read_catalog + Phase 5 + Phase 7 +
 path-notes click-through + Phase 6 fully shipped + three-OS CI +
 managed-mcp.json topbar pill + catalog-drift cron + sync-sub-agents +
 in-app error log + per-OS capability split + sync-mcp + sync-permissions
 + drawer cross-references env-vars catalog + sync-keybindings +
 sync-cli-reference + hooks catalog pass #2 + drawer cross-references
 permissions.modes as a value-conditional annotation under EFFECTIVE +
-issue #7 filed for generalizing the annotation seam).
+issue #7 filed for generalizing the annotation seam + EnvVarsPanel
+shipped, closing #6).
 
 ## Next-up candidates
 
@@ -37,9 +38,6 @@ here, then jump to the relevant section for shape and rationale.
   `effortLevel`) live in the issue body.
 - **Rail navigability decision** (inspector polish) — spec question,
   not coding work; needs a fork-vs-fork call before any UI lands.
-- **ENV-layer / `env.*`-row seam** (inspector polish) — UX question,
-  not slated. Tracked at
-  [#6](https://github.com/AlteredCraft/knobs-cc/issues/6).
 - **Inventory canonicalization** — `inventory.md:15` flags §3
   env-vars and §5.1 hook-events as gaps. Separately, the `[!verify]`
   convention `CLAUDE.md` describes is unused (zero tags in the
@@ -336,15 +334,6 @@ Open work (what to pick up next within this track):
   rail informational (current behavior) or wire layer-click → centre
   list filtered to keys won by that layer. Needs an explicit decision
   before any work — surface as a question, not a ticket.
-- **ENV layer never contributes to `env.*` rows — confusing waterfall
-  seam.** The waterfall shows the ENV layer for every row, but ENV
-  will never feed an `env.<VAR>` row by design (those come from
-  settings-file `env` objects; ENV folds OS vars into settings keys
-  via `catalog/env-settings-map.json`). Naming overlap looks like a
-  contradiction first time you see it. Tracked at
-  [#6](https://github.com/AlteredCraft/knobs-cc/issues/6); possible
-  directions in the issue body. Surfaced by live smoke of the
-  env-vars drawer wire-up.
 - **Generalize value-conditional drawer annotation.** Today's
   annotation only fires for `permissions.defaultMode` because
   permissions.md upstream has a structured per-mode table. Other
@@ -367,6 +356,30 @@ Open work (what to pick up next within this track):
 
 Shipped:
 
+- **EnvVarsPanel — surface every cataloged env var.** ✅ shipped
+  2026-05-10. The inspector-side `env` settings-precedence layer only
+  projects 8 mapped OS env vars (`catalog/env-settings-map.json`) onto
+  settings keys; the upstream env-vars catalog has 220 entries, so
+  ~95% of documented env vars never showed up in the inspector at all.
+  The new topbar-pill-driven panel (modeled on `ErrorPanel`/`HelpView`)
+  lists every cataloged env var as a row with: shell-set value (read
+  via the new `read_shell_env_vars` Tauri command), settings.json
+  `env.<NAME>` contributors per layer in precedence order, an
+  effective-value badge (shell wins when both routes set the same
+  name), and full `purpose` prose on click-expand. Names matching
+  `/key|token|secret|password/i` mask their value to `•••••••• abcd`
+  (last 4 chars) until clicked — demo-safe by default. Filter chips:
+  `all` / `set` / `shell` / `settings.json` / `unset`; substring
+  search across name and purpose. Sister change in the inspector: the
+  ENV settings-precedence layer slot is suppressed in the waterfall
+  on `env.*` keypaths (it can never contribute to those rows by
+  design — closes [#6](https://github.com/AlteredCraft/knobs-cc/issues/6)),
+  and the drawer header carries a small note pointing `env.*` rows
+  to the panel for shell-set vars. Caveat surfaced in the panel
+  footnote: knobs.cc reads its own process env, which usually matches
+  the user's shell but can differ for Finder/Spotlight launches that
+  use LaunchServices' env. Dotenv files Claude Code reads at startup
+  are out of scope for this pass.
 - **Drawer cross-references `permissions.modes` for
   `permissions.defaultMode`.** ✅ shipped 2026-05-08. When a row's
   keyPath is `permissions.defaultMode` and the row's effective value

@@ -81,6 +81,7 @@ interface InitializedCatalog {
   full: CatalogEntry[];
   leaf: CatalogEntry[];
   byKey: Map<string, CatalogEntry>;
+  envVars: EnvVarEntry[];
   envVarsByName: Map<string, EnvVarEntry>;
   permissionModesByName: Map<string, PermissionMode>;
   meta: CatalogMeta;
@@ -108,6 +109,7 @@ function buildState(data: CatalogsWire): InitializedCatalog {
     full,
     leaf,
     byKey: new Map(leaf.map((e) => [e.key, e])),
+    envVars: data.env_vars.envVars,
     envVarsByName: new Map(data.env_vars.envVars.map((e) => [e.name, e])),
     permissionModesByName: new Map(
       data.permissions.modes.map((m) => [m.name, m]),
@@ -188,6 +190,16 @@ export function findRelatedKnobs(keyPath: string): readonly CatalogEntry[] {
  */
 export function findEnvVar(name: string): EnvVarEntry | null {
   return requireState().envVarsByName.get(name) ?? null;
+}
+
+/**
+ * Full env-vars catalog (220 entries at time of writing). The order
+ * matches the upstream docs page, which is the order users saw them in
+ * when they read the docs — useful for the EnvVarsPanel's "browse the
+ * catalog" use case.
+ */
+export function getEnvVarCatalog(): readonly EnvVarEntry[] {
+  return requireState().envVars;
 }
 
 /**

@@ -199,6 +199,33 @@ function DrawerHeader({
           <InlineMarkdown source={description} />
         </div>
       )}
+      {row.keyPath.startsWith("env.") && <EnvDotRowNote />}
+    </div>
+  );
+}
+
+/**
+ * Surface the shape of `env.*` rows: they reflect `settings.json`'s
+ * `env` block (Claude Code injects these into its own process). Vars set
+ * in the user's shell are a separate route — same destination, different
+ * source — and live in the EnvVarsPanel. Without this note the drawer
+ * looks like it should also reflect the shell, which it doesn't (and
+ * can't, by design — settings layers are file-based).
+ */
+function EnvDotRowNote() {
+  return (
+    <div
+      className="mt-3 rounded-sm border border-line bg-bg-2/40 px-2.5 py-2 font-mono text-[10.5px] leading-relaxed text-fg-3"
+      data-testid="env-dot-row-note"
+    >
+      <div className="text-fg-2">
+        Reflects <code className="rounded-[2px] bg-bg-2 px-1 text-fg-1">settings.json</code>
+        &apos;s <code className="rounded-[2px] bg-bg-2 px-1 text-fg-1">env</code> block.
+      </div>
+      <div className="mt-1">
+        For shell-set OS env vars, open <span className="text-fg-2">env vars</span>{" "}
+        in the topbar.
+      </div>
     </div>
   );
 }

@@ -52,9 +52,17 @@ export function buildWaterfall(
     snapshot.layers.map((l) => [l.source, l] as const),
   );
 
-  return LAYERS_IN_PRECEDENCE_ORDER.map((source) =>
-    buildEntry(source, row, layersByKey.get(source)),
-  );
+  // The ENV layer projects 8 mapped OS env vars onto settings keys
+  // (e.g. ANTHROPIC_MODEL → `model`). It can never contribute to an
+  // `env.<NAME>` row by design — those come from settings.json's `env`
+  // block. Showing the ENV layer with "— not set —" on every env.* row
+  // looks like a contradiction. Suppress it for that keypath shape;
+  // users can browse OS env vars in the EnvVarsPanel instead.
+  const isEnvDotRow = row.keyPath.startsWith("env.");
+
+  return LAYERS_IN_PRECEDENCE_ORDER.filter(
+    (source) => !(isEnvDotRow && source === "env"),
+  ).map((source) => buildEntry(source, row, layersByKey.get(source)));
 }
 
 function buildEntry(
