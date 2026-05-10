@@ -202,7 +202,10 @@ Topbar-pill-driven takeover panel; full-pane modal modeled on
 - Caveat in the panel footnote: knobs.cc reads its own process env,
   which usually matches the user's shell but can differ for
   Finder/Spotlight launches via LaunchServices. Dotenv files Claude
-  Code reads at startup are out of scope.
+  Code reads at startup are out of scope. Closing this gap (reading
+  another `claude` process's actual environ) is tracked at
+  [#11](https://github.com/AlteredCraft/knobs-cc/issues/11) alongside
+  the related `cli` precedence-slot gap.
 
 The inspector's column-header banner points users at this panel so a
 filter for `env` in the inspector (which now returns zero rows)

@@ -250,6 +250,10 @@ Phase 4 work items:
 
 ## Out of v1 entirely
 
-- Resolving CLI flags of a running `claude` process.
+- Resolving CLI flags or env of a running `claude` process. Both gaps
+  (the empty `cli` precedence slot, and the EnvVarsPanel showing
+  knobs.cc's own env rather than claude's) are tracked together as the
+  runtime-introspection feature at
+  [#11](https://github.com/AlteredCraft/knobs-cc/issues/11).
 - Plugin/skill/agent frontmatter as a settings source.
 - Any write path.

@@ -51,9 +51,11 @@ here, then jump to the relevant section for shape and rationale.
   staleness signal. (Cron-driven sync with PR-on-diff shipped
   2026-05-06.)
 
-Deferred / open-ended (kept warm, not slated): CLI layer via process
-argv, goals view, cross-cutting surfaces, landing page, nomenclature.
-See "Deferred plan" and "Design surfaces" further down.
+Deferred / open-ended (kept warm, not slated): runtime introspection
+(CLI layer + cross-process env reading,
+[#11](https://github.com/AlteredCraft/knobs-cc/issues/11)), goals view,
+cross-cutting surfaces, landing page, nomenclature. See "Deferred plan"
+and "Design surfaces" further down.
 
 ---
 
@@ -145,10 +147,16 @@ Phase numbering matches the spec.
 
 ### Deferred plan (kept warm, not slated)
 
-- **CLI layer via process argv.** Reading another `claude` process's
-  flags through `sysinfo`. Plan written at
-  `~/.claude/plans/1-is-interesting-did-steady-seahorse.md`. Currently
-  documented as out of v1 in `settings-display.md:200`.
+- **Runtime introspection — CLI layer + cross-process env reading.**
+  Reach into a running `claude` process to read its argv (populating the
+  empty `cli` precedence slot, parsed against `catalog/cli-reference.json`)
+  and its environ (grounding the EnvVarsPanel in what claude actually
+  inherited rather than what knobs.cc inherited). Same OS APIs, same
+  process-discovery problem — treated as one feature. Unix-first via the
+  `sysinfo` crate; Windows deferred until Unix proves out. Tracked at
+  [#11](https://github.com/AlteredCraft/knobs-cc/issues/11) — that issue
+  is the SSOT for problem statement, limitations, and proposals.
+  Currently documented as out of v1 in `settings-display.md:253`.
 
 ---
 
@@ -212,7 +220,8 @@ Phase numbering matches the spec.
   `read_catalog` as `cli_reference` (snake-case on the wire to match
   `env_vars` / `sub_agents`); no UI consumer yet. Cron sync covers
   the new script. Future use: this catalog is load-bearing for the
-  deferred "CLI layer via process argv" plan — each documented flag
+  deferred runtime introspection feature
+  ([#11](https://github.com/AlteredCraft/knobs-cc/issues/11)) — each documented flag
   is a candidate input the eventual flag-name → settings-key mapping
   (parallel to `catalog/env-settings-map.json`) will draw on.
 - **Keybindings catalog (contexts only).** ✅ shipped 2026-05-08.
@@ -386,7 +395,10 @@ Shipped:
   process env, which usually matches the user's shell but can
   differ for Finder/Spotlight launches that use LaunchServices'
   env. Dotenv files Claude Code reads at startup are out of scope
-  for this pass.
+  for this pass. Both gaps tracked at
+  [#11](https://github.com/AlteredCraft/knobs-cc/issues/11) (runtime
+  introspection — reads another `claude` process's environ to ground-
+  truth the panel).
 - **Drawer cross-references `permissions.modes` for
   `permissions.defaultMode`.** ✅ shipped 2026-05-08. When a row's
   keyPath is `permissions.defaultMode` and the row's effective value
