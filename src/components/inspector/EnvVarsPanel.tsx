@@ -4,7 +4,7 @@ import remarkGfm from "remark-gfm";
 import { cn } from "@/lib/utils";
 import { getEnvVarCatalog } from "@/lib/catalog";
 import { resolveDocsUrl } from "@/lib/markdown";
-import { openExternalUrl } from "@/lib/openPath";
+import { openExternalUrl, openInEditor } from "@/lib/openPath";
 import {
   applyEnvVarChip,
   applyEnvVarFilter,
@@ -20,6 +20,7 @@ import {
 import type { SettingsSnapshot } from "@/types";
 import { reportError } from "@/lib/errorLog";
 import { SourceBadge } from "./SourceBadge";
+import { isRegistryPath } from "./WaterfallRow";
 
 const CHIP_LABELS: Record<EnvVarChip, string> = {
   all: "all",
@@ -526,12 +527,23 @@ function ContributorRow({
         {sensitive ? maskValue(contributor.value) : contributor.value}
       </span>
       {contributor.path && (
-        <span
-          className="truncate font-mono text-[10px] text-fg-4"
-          title={contributor.path}
-        >
-          {shortenPath(contributor.path)}
-        </span>
+        isRegistryPath(contributor.path) ? (
+          <span
+            className="truncate font-mono text-[10px] text-fg-4"
+            title={`Registry path · ${contributor.path}`}
+          >
+            {contributor.path}
+          </span>
+        ) : (
+          <button
+            type="button"
+            onClick={() => void openInEditor(contributor.path!)}
+            title={`Open ${contributor.path} in your default editor`}
+            className="truncate text-left font-mono text-[10px] text-fg-4 hover:text-fg-1 hover:underline focus:text-fg-1 focus:underline focus:outline-none"
+          >
+            {shortenPath(contributor.path)}
+          </button>
+        )
       )}
     </li>
   );
