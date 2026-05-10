@@ -53,9 +53,12 @@ here, then jump to the relevant section for shape and rationale.
 
 Deferred / open-ended (kept warm, not slated): runtime introspection
 (CLI layer + cross-process env reading,
-[#11](https://github.com/AlteredCraft/knobs-cc/issues/11)), goals view,
-cross-cutting surfaces, landing page, nomenclature. See "Deferred plan"
-and "Design surfaces" further down.
+[#11](https://github.com/AlteredCraft/knobs-cc/issues/11)), grounding
+`project` / `project_local` in a real claude session
+([#12](https://github.com/AlteredCraft/knobs-cc/issues/12); shares
+process-discovery plumbing with #11), goals view, cross-cutting
+surfaces, landing page, nomenclature. See "Deferred plan" and
+"Design surfaces" further down.
 
 ---
 
@@ -157,6 +160,13 @@ Phase numbering matches the spec.
   [#11](https://github.com/AlteredCraft/knobs-cc/issues/11) — that issue
   is the SSOT for problem statement, limitations, and proposals.
   Currently documented as out of v1 in `settings-display.md:253`.
+- **Ground `project` / `project_local` in a real claude session.**
+  Today both layers resolve relative to knobs.cc's own CWD, which is
+  rarely the user's claude project; the rail rows are greyed out for
+  now (shipped 2026-05-10). Long-term framings — attach to a running
+  claude (shares plumbing with #11), launch claude as a harness, or
+  ship a plain path picker independent of #11 — are scoped in
+  [#12](https://github.com/AlteredCraft/knobs-cc/issues/12).
 
 ---
 

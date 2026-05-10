@@ -34,15 +34,17 @@ Per `spec/inventory.md:55`, plus env vars folded in:
 | # | Layer                  | Source                                                            | Phase |
 |---|------------------------|-------------------------------------------------------------------|-------|
 | 1 | `managed`              | Server-managed > MDM (plist/registry) > file-based > HKCU         | 2 / 6 |
-| 2 | `cli`                  | Flags passed to `claude` (out of v1 scope — not inspectable)      | —     |
+| 2 | `cli`                  | Flags passed to `claude` (out of v1 scope — not inspectable, see [#11](https://github.com/AlteredCraft/knobs-cc/issues/11)) | — |
 | 3 | `env`                  | Process env + dotenv files Claude Code reads                      | 3     |
-| 4 | `project_local`        | `<project>/.claude/settings.local.json`                           | 1     |
-| 5 | `project`              | `<project>/.claude/settings.json`                                 | 1     |
+| 4 | `project_local`        | `<project>/.claude/settings.local.json` *(see [#12](https://github.com/AlteredCraft/knobs-cc/issues/12) — `<project>` is knobs.cc's launch dir today)* | 1 |
+| 5 | `project`              | `<project>/.claude/settings.json` *(see [#12](https://github.com/AlteredCraft/knobs-cc/issues/12) — `<project>` is knobs.cc's launch dir today)* | 1 |
 | 6 | `user`                 | `~/.claude/settings.json`                                         | 1     |
 | 7 | `default`              | Claude Code's compiled-in defaults (catalog-derived)              | 5     |
 
 CLI flags are listed for completeness but cannot be inspected from a separate
-process. The UI should display the slot with an explanatory empty state.
+process. The UI displays that slot with an explanatory empty state, and rows
+4–5 are greyed out in the rail until project resolution is grounded in a
+real claude session (see [#12](https://github.com/AlteredCraft/knobs-cc/issues/12)).
 
 ## Merge semantics
 
@@ -121,7 +123,11 @@ interface SettingsSnapshot {
   2. `<cwd>/.claude/settings.json` (`project`)
   3. `~/.claude/settings.json` (`user`)
 - Project root for Phase 1 = the Tauri app's current working directory. Walking
-  up to find the nearest `.claude/` is Phase 4.
+  up to find the nearest `.claude/` was originally slated as Phase 4 but
+  never shipped, and the broader limitation (that knobs.cc's CWD isn't
+  the user's claude session in the first place) is now tracked at
+  [#12](https://github.com/AlteredCraft/knobs-cc/issues/12). Rows 4–5 of
+  the precedence rail are greyed out until that lands.
 - Each layer reports `ok` / `missing` / `error` independently — a malformed
   user file does not block reading the project file.
 - `effective` is computed last-wins. Array-merge semantics are deferred to
@@ -255,5 +261,10 @@ Phase 4 work items:
   knobs.cc's own env rather than claude's) are tracked together as the
   runtime-introspection feature at
   [#11](https://github.com/AlteredCraft/knobs-cc/issues/11).
+- Grounding `project` / `project_local` resolution in a user-chosen
+  claude session rather than knobs.cc's CWD. Tracked at
+  [#12](https://github.com/AlteredCraft/knobs-cc/issues/12); shares
+  process-discovery plumbing with #11 but is also addressable on its
+  own via a path picker.
 - Plugin/skill/agent frontmatter as a settings source.
 - Any write path.

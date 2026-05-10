@@ -122,7 +122,7 @@ across rail, list, drawer, and waterfall:
 - `PROJ` — amber tint (team-shared)
 - `USER` — neutral grey
 - `DEFAULT` — muted, no tint
-- `CLI` — never appears in v1 (not inspectable)
+- `CLI` — never appears in v1 (not inspectable, [#11](https://github.com/AlteredCraft/knobs-cc/issues/11))
 
 ### Waterfall
 
@@ -135,15 +135,21 @@ per-element list (each element shows its source).
 
 ## Empty-state copy
 
-Three layers will be absent for typical users. Copy matters because
-generic "—" or "missing" is misleading.
+Some layers are absent or ungrounded for typical users. Copy matters
+because generic "—" or "missing" is misleading.
 
 - `managed` (no MDM): **"no MDM policy detected"**
 - `cli` (sibling process can't read): **"not inspectable from sibling proc"**
+  ([#11](https://github.com/AlteredCraft/knobs-cc/issues/11))
 - `env` (no relevant vars): **"$ANTHROPIC_MODEL not set for this key"**
   (per-key, not per-layer; applies to the 8 settings keys ENV projects
   via `catalog/env-settings-map.json` — the rest of the env-vars
   surface lives in the EnvVarsPanel)
+- `project` / `project_local` (scoped to knobs.cc's launch dir, not the
+  user's claude session): **"knobs.cc's launch dir, not your claude
+  session"** — rail row is greyed out regardless of whether the file
+  was read. Tracked at
+  [#12](https://github.com/AlteredCraft/knobs-cc/issues/12).
 - `default` (always present): **"catalog (compiled-in)"**
 
 Per `settings-display.md`, a malformed user file does not block reading

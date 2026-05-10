@@ -9,6 +9,15 @@ A local desktop inspector for every knob Claude Code gives you — where it live
 **Pre-release.** The read-only inspector runs end-to-end via
 `npm run tauri dev`. No signed installer or auto-update yet.
 
+Two known gaps in the precedence rail are tracked openly: the `cli`
+slot stays empty because knobs.cc can't read another process's flags
+([#11](https://github.com/AlteredCraft/knobs-cc/issues/11)), and the
+`project` / `project_local` rows resolve relative to knobs.cc's own
+working directory rather than a chosen claude session, so they're
+greyed out in the rail
+([#12](https://github.com/AlteredCraft/knobs-cc/issues/12)). The
+managed / env / user / default layers are unaffected.
+
 ## Premise
 
 Claude Code has a sprawling configuration surface: settings files
