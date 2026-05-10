@@ -38,7 +38,7 @@ v1 should keep the desktop security model tight:
 - No `fs` plugin — file reads are done via explicit Rust commands, not by granting the frontend filesystem plugin permissions.
 - No `shell` plugin — no shell execution permitted.
 - No `updater` plugin until signing and release flow are stable.
-- Expose explicit commands (`read_settings_layers`, `read_env_snapshot`, `read_catalog`) registered via `generate_handler![]` instead of granting generic file access.
+- Expose explicit commands (`read_settings_layers`, `read_catalog`, `read_shell_env_vars`) registered via `generate_handler![]` instead of granting generic file access.
 - Capability files in `src-tauri/capabilities/` (`default.json` for cross-platform plus per-OS files `default-macos.json` / `default-linux.json` / `default-windows.json` gated via `platforms`) grant only `core:default` + `opener:default` + a tightly-scoped `opener:allow-open-path` — no `fs`, `shell`, or `updater`. The per-OS split is load-bearing: Tauri compiles every glob on every target, and a Windows backslash pattern (`C:\Program Files\…\**`) fails to compile on macOS/Linux unless gated.
 
 ## Security model (Tauri 2 capabilities)

@@ -27,3 +27,4 @@ src-tauri/target/
 
 # Tooling workspace
 .kilo/
+.claude/*.lock

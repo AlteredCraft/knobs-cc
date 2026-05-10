@@ -51,7 +51,7 @@ bottom of the rail.
 
 Toolbar:
 
-- Filter input (live, prefix-aware: `permissions.*`, `env.*`)
+- Filter input (live, prefix-aware: `permissions.*`, `hooks.*`)
 - Filter chips: `all` · `set` · `shadowed` · `array-merged` · `unset`
 - Sort selector (default: precedence order, secondary: alphabetical)
 
@@ -73,14 +73,12 @@ keys.
 Non-modal. The list and rail remain navigable while the drawer is open.
 
 - Header: key name, type info, scalar/array marker, shadowing flag
-- Description from the catalog (Phase 5+; for Phase 4, fall back to the key
-  alone). For `env.<VAR>` rows whose var is documented in the env-vars
-  catalog, the env-var's `purpose` prose is shown instead of the generic
-  parent-`env` description that the settings-catalog walk-up returns —
-  the env-vars catalog is the more specific authority for what each var
-  does. Rendered as markdown (see catalog-sync.md "Prose fields are
-  markdown") — links open in the system browser via the opener plugin,
-  with site-relative URLs resolved against the docs root.
+- Description from the catalog (Phase 5+; for Phase 4, fall back to the
+  key alone). Rendered as markdown (see catalog-sync.md "Prose fields
+  are markdown") — links open in the system browser via the opener
+  plugin, with site-relative URLs resolved against the docs root.
+  Env vars are not surfaced here — `env.*` rows are filtered out of
+  the inspector entirely; see "Sibling surfaces" below.
 - Effective-value block — value + winning layer badge, accent-coloured
 - **Layer waterfall** (see Design primitives)
 - Path notes for set layers (`./.claude/settings.json`) — clickable to
@@ -143,7 +141,9 @@ generic "—" or "missing" is misleading.
 - `managed` (no MDM): **"no MDM policy detected"**
 - `cli` (sibling process can't read): **"not inspectable from sibling proc"**
 - `env` (no relevant vars): **"$ANTHROPIC_MODEL not set for this key"**
-  (per-key, not per-layer)
+  (per-key, not per-layer; applies to the 8 settings keys ENV projects
+  via `catalog/env-settings-map.json` — the rest of the env-vars
+  surface lives in the EnvVarsPanel)
 - `default` (always present): **"catalog (compiled-in)"**
 
 Per `settings-display.md`, a malformed user file does not block reading
@@ -169,6 +169,49 @@ user can J/K through neighbouring rows while the drawer updates in place.
 - Per-key history or time-travel diffs.
 - Comparing snapshots across machines or moments in time.
 - Goal-framed grouping — deferred (see `design-notes.md`).
+- Env vars — `env.*` rows are filtered out of the inspector entirely;
+  the EnvVarsPanel (below) is the SSOT.
+
+## Sibling surfaces
+
+The inspector is one of two top-level surfaces. Each owns a different
+question; deliberate separation, not duplication.
+
+### EnvVarsPanel (modal takeover)
+
+Topbar-pill-driven takeover panel; full-pane modal modeled on
+`ErrorPanel` / `HelpView`. Owns the env-var surface end-to-end:
+
+- One row per cataloged env var (220 entries from
+  `catalog/env-vars.json`), plus a top section for **non-catalog**
+  names — `env.<NAME>` set in `settings.json` but not documented
+  upstream, surfaced as the highest-signal entries since they're
+  invisible everywhere else. Shell-set names that aren't in the
+  catalog are deliberately *not* surfaced (a user's shell carries
+  hundreds of unrelated vars: `PATH`, `HOME`, …).
+- Each row joins shell-set values (read via `read_shell_env_vars`)
+  with `settings.json` `env.<NAME>` contributors per layer, in
+  precedence order. Shell wins when both routes set the same name.
+- Names matching `/key|token|secret|password/i` mask their value to
+  `•••••••• abcd` until clicked — demo-safe by default.
+- Filter chips: `all` / `set` / `shell` / `settings.json` / `unset`;
+  substring search across name and purpose.
+- Click a row to expand inline — full markdown `purpose` prose,
+  default, contributor list (winner first; shadowed values
+  struck-through with their layer + path).
+- Caveat in the panel footnote: knobs.cc reads its own process env,
+  which usually matches the user's shell but can differ for
+  Finder/Spotlight launches via LaunchServices. Dotenv files Claude
+  Code reads at startup are out of scope.
+
+The inspector's column-header banner points users at this panel so a
+filter for `env` in the inspector (which now returns zero rows)
+isn't a dead end.
+
+### ErrorPanel and HelpView
+
+Existing modal takeovers, unchanged by the EnvVarsPanel work. Same
+pattern: topbar-button-driven, full-pane, Esc to close.
 
 ## Implementation notes
 

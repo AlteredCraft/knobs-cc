@@ -101,6 +101,10 @@ interface SettingsSnapshot {
   project_root: string | null;
   // Diagnostics not tied to a single layer (e.g., HOME unresolvable).
   diagnostics: { level: "warn" | "error"; message: string }[];
+  // Sibling read of `managed-mcp.json` (Phase 2). Not part of the
+  // precedence merge; surfaced so the UI can indicate admin-shipped
+  // MCP policy. Same LayerRead shape as a precedence layer.
+  managed_mcp: LayerRead;
 }
 ```
 
@@ -151,6 +155,16 @@ discovery, catalog cross-reference, list/badge UI, refresh, file watcher.
   records which env var (if any) maps to it.
 - Implement array-concat-dedup for the known array-merged fields. Populate
   `elements` for those fields, set `source: null` at the field level.
+
+> The `env` *settings-precedence* layer (described above) projects 8
+> mapped OS env vars onto settings keys via `catalog/env-settings-map.json`
+> — that's its only job. The orthogonal "what env vars from the full
+> 220-entry catalog is Claude Code seeing right now?" surface is the
+> **EnvVarsPanel** (see `inspector-ui.md` § "Sibling surfaces"), which
+> reads the user's process env via the `read_shell_env_vars` Tauri
+> command and joins it with settings.json's `env` block per layer. The
+> two surfaces don't overlap: inspector `env.*` rows are filtered out
+> entirely; the panel owns that question end-to-end.
 
 ### Phase 4 — Settings list UI with provenance badges
 
