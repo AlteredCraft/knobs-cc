@@ -11,7 +11,8 @@ export interface RailRow {
   detailIsError?: boolean;
   /** Set-key count, or null to render an em-dash. */
   count: number | null;
-  /** Layers we can't ever inspect (managed w/o policy, cli) read as disabled. */
+  /** Layers we can't faithfully attribute to the user's claude session
+   * (managed w/o policy, cli per #11, project/project_local per #12). */
   disabled?: boolean;
 }
 

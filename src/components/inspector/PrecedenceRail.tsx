@@ -42,7 +42,43 @@ function unreachableLayerDetail(source: LayerSource): string {
   }
 }
 
+// Layers we can't faithfully attribute to the user's claude session yet.
+// `cli` has no live process to read argv from (tracked in #11); `project`
+// and `project_local` resolve relative to knobs.cc's own CWD rather than
+// the user's chosen claude project (tracked in #12). Greying these out in
+// the rail prevents users from trusting values that came from an
+// unrelated dir.
+const UNGROUNDED_LAYERS: ReadonlySet<LayerSource> = new Set([
+  "cli",
+  "project",
+  "project_local",
+]);
+
 function buildRow(
+  source: LayerSource,
+  layer: LayerRead | undefined,
+  defaultCount: number,
+): RailRow {
+  // Tack `disabled: true` onto every row for an ungrounded layer so the
+  // greyout applies regardless of which status branch the layer hits
+  // (ok / missing / error / not-read). Wrapping here avoids drift if a
+  // future branch forgets the field — which is exactly how #12 slipped
+  // past first review. For project/project_local we also overwrite the
+  // detail line: the underlying path is knobs.cc's own CWD, so showing
+  // it suggests a real, authoritative project entry. Cli is unchanged —
+  // its ABSENT_DETAIL message already reads correctly.
+  const row = buildRowCore(source, layer, defaultCount);
+  if (UNGROUNDED_LAYERS.has(source)) {
+    row.disabled = true;
+    if (source === "project" || source === "project_local") {
+      row.detail = "knobs.cc's launch dir, not your claude session";
+      row.detailIsError = false;
+    }
+  }
+  return row;
+}
+
+function buildRowCore(
   source: LayerSource,
   layer: LayerRead | undefined,
   defaultCount: number,
@@ -54,7 +90,7 @@ function buildRow(
       dot: source === "default" ? "ok" : "empty",
       detail: ABSENT_DETAIL[source] ?? "—",
       count: source === "default" ? defaultCount : null,
-      disabled: source === "managed" || source === "cli",
+      disabled: source === "managed",
     };
   }
 
