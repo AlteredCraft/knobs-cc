@@ -28,6 +28,43 @@ const CHIPS: ReadonlyArray<{ id: ChipFilter; label: string; disabled?: boolean; 
   { id: "unset", label: "unset" },
 ];
 
+// Resizable column widths. `key` is null by default so it uses the flex
+// track (minmax(180px, 1fr)) and absorbs slack like before; once the user
+// drags the Key/Value boundary it becomes a fixed pixel width.
+type ColName = "key" | "value" | "source" | "presence";
+type ColWidths = { key: number | null; value: number; source: number; presence: number };
+const DEFAULT_WIDTHS: ColWidths = { key: null, value: 320, source: 86, presence: 76 };
+const MIN_WIDTHS: Record<ColName, number> = { key: 120, value: 120, source: 60, presence: 60 };
+const WIDTHS_STORAGE_KEY = "knobscc.inspector.colWidths.v1";
+
+function loadStoredWidths(): ColWidths {
+  try {
+    const raw = localStorage.getItem(WIDTHS_STORAGE_KEY);
+    if (!raw) return DEFAULT_WIDTHS;
+    const p = JSON.parse(raw) as Partial<ColWidths>;
+    return {
+      key:
+        typeof p.key === "number" && Number.isFinite(p.key)
+          ? Math.max(MIN_WIDTHS.key, p.key)
+          : null,
+      value:
+        typeof p.value === "number" && Number.isFinite(p.value)
+          ? Math.max(MIN_WIDTHS.value, p.value)
+          : DEFAULT_WIDTHS.value,
+      source:
+        typeof p.source === "number" && Number.isFinite(p.source)
+          ? Math.max(MIN_WIDTHS.source, p.source)
+          : DEFAULT_WIDTHS.source,
+      presence:
+        typeof p.presence === "number" && Number.isFinite(p.presence)
+          ? Math.max(MIN_WIDTHS.presence, p.presence)
+          : DEFAULT_WIDTHS.presence,
+    };
+  } catch {
+    return DEFAULT_WIDTHS;
+  }
+}
+
 export interface SettingsListHandle {
   focusFilter: () => void;
   moveCursor: (delta: 1 | -1) => void;
@@ -56,9 +93,51 @@ export const SettingsList = forwardRef<SettingsListHandle, SettingsListProps>(
     const [chip, setChip] = useState<ChipFilter>("all");
     const [sort, setSort] = useState<SortMode>("precedence");
     const [cursorKeyPath, setCursorKeyPath] = useState<string | null>(null);
+    const [widths, setWidths] = useState<ColWidths>(loadStoredWidths);
 
     const filterRef = useRef<HTMLInputElement>(null);
     const bodyRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+      try {
+        localStorage.setItem(WIDTHS_STORAGE_KEY, JSON.stringify(widths));
+      } catch {
+        // ignore — storage may be unavailable (private mode, tests)
+      }
+    }, [widths]);
+
+    const gridTemplate = useMemo(() => {
+      const keyCol = widths.key == null ? "minmax(180px, 1fr)" : `${widths.key}px`;
+      return `32px ${keyCol} ${widths.value}px ${widths.source}px ${widths.presence}px 16px`;
+    }, [widths]);
+
+    // Start a drag-resize on a column. We measure the column's current
+    // rendered width on mousedown (rather than reading state) so resizing
+    // the still-flex Key column starts from its actual pixel size.
+    const startResize = (col: ColName) => (e: React.MouseEvent<HTMLSpanElement>) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const handle = e.currentTarget;
+      const cell = handle.parentElement;
+      if (!cell) return;
+      const startCellWidth = cell.getBoundingClientRect().width;
+      const startX = e.clientX;
+      const min = MIN_WIDTHS[col];
+      const onMove = (ev: MouseEvent) => {
+        const next = Math.max(min, Math.round(startCellWidth + (ev.clientX - startX)));
+        setWidths((w) => ({ ...w, [col]: next }));
+      };
+      const onUp = () => {
+        window.removeEventListener("mousemove", onMove);
+        window.removeEventListener("mouseup", onUp);
+        document.body.style.cursor = "";
+        document.body.style.userSelect = "";
+      };
+      window.addEventListener("mousemove", onMove);
+      window.addEventListener("mouseup", onUp);
+      document.body.style.cursor = "col-resize";
+      document.body.style.userSelect = "none";
+    };
 
     const rows = useMemo(() => buildRows(snapshot), [snapshot]);
     const counts = useMemo(() => chipCounts(rows), [rows]);
@@ -240,17 +319,28 @@ export const SettingsList = forwardRef<SettingsListHandle, SettingsListProps>(
             {/* Column header — sticky so it survives vertical scroll but
                 tracks horizontal scroll with the body. */}
             <div
-              className={cn(
-                "sticky top-0 z-10 grid h-[26px] items-center gap-x-3 border-b border-line-strong bg-bg-1 px-3.5",
-                "grid-cols-[32px_minmax(180px,1fr)_320px_86px_76px_16px]",
-              )}
+              className="sticky top-0 z-10 grid h-[26px] items-center gap-x-3 border-b border-line-strong bg-bg-1 px-3.5"
+              style={{ gridTemplateColumns: gridTemplate }}
             >
               <span />
-              <span className="corner-tag">Key</span>
-              <span className="corner-tag">Effective Value</span>
-              <span className="corner-tag">Source</span>
-              <span className="corner-tag" title="Layer presence: M C E PL P U D">
+              <span className="corner-tag relative flex h-full items-center">
+                Key
+                <ResizeHandle onMouseDown={startResize("key")} />
+              </span>
+              <span className="corner-tag relative flex h-full items-center">
+                Effective Value
+                <ResizeHandle onMouseDown={startResize("value")} />
+              </span>
+              <span className="corner-tag relative flex h-full items-center">
+                Source
+                <ResizeHandle onMouseDown={startResize("source")} />
+              </span>
+              <span
+                className="corner-tag relative flex h-full items-center"
+                title="Layer presence: M C E PL P U D"
+              >
                 M·C·E·PL·P·U·D
+                <ResizeHandle onMouseDown={startResize("presence")} />
               </span>
               <span />
             </div>
@@ -268,6 +358,7 @@ export const SettingsList = forwardRef<SettingsListHandle, SettingsListProps>(
                   selected={row.keyPath === activeKeyPath}
                   cursor={row.keyPath === cursorKeyPath}
                   onSelect={() => handleRowSelect(row.keyPath)}
+                  gridTemplate={gridTemplate}
                 />
               ))
             )}
@@ -291,3 +382,26 @@ export const SettingsList = forwardRef<SettingsListHandle, SettingsListProps>(
     );
   },
 );
+
+// Drag affordance on the right edge of a header cell. The hit area is 6px
+// wide and centred on the column boundary (which sits in the 12px gap
+// between header cells), so the cursor flips to col-resize a few pixels
+// before and after the visual edge.
+function ResizeHandle({
+  onMouseDown,
+}: {
+  onMouseDown: (e: React.MouseEvent<HTMLSpanElement>) => void;
+}) {
+  return (
+    <span
+      role="separator"
+      aria-orientation="vertical"
+      onMouseDown={onMouseDown}
+      title="Drag to resize column"
+      className={cn(
+        "absolute top-0 -right-[3px] z-20 h-full w-1.5 cursor-col-resize select-none",
+        "hover:bg-line-strong active:bg-accent",
+      )}
+    />
+  );
+}

@@ -23,12 +23,16 @@ export function SettingsRow({
   selected,
   cursor,
   onSelect,
+  gridTemplate,
 }: {
   row: Row;
   index: number;
   selected?: boolean;
   cursor?: boolean;
   onSelect?: () => void;
+  /** Shared grid-template-columns string from SettingsList so rows stay
+   * aligned with the resizable header. */
+  gridTemplate: string;
 }) {
   const formatted = formatValue(row.value);
 
@@ -44,10 +48,9 @@ export function SettingsRow({
           onSelect?.();
         }
       }}
+      style={{ gridTemplateColumns: gridTemplate }}
       className={cn(
         "grid h-[30px] cursor-pointer items-center gap-x-3 border-b border-line px-3.5 text-[12px]",
-        // 32 ix · key (min 180, flex) · 320 value · 86 source · 76 presence · 16 chevron
-        "grid-cols-[32px_minmax(180px,1fr)_320px_86px_76px_16px]",
         row.state === "unset" && "opacity-45",
         selected
           ? "bg-accent-soft shadow-[inset_2px_0_0_var(--color-accent)]"
