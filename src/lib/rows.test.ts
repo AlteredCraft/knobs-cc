@@ -72,16 +72,20 @@ describe("buildRows — unset rows", () => {
     expect(rows.every((r) => r.state === "unset")).toBe(true);
   });
 
-  it("does not emit an unset row for a catalog ancestor when a deeper key is set", () => {
-    // User sets env.ANTHROPIC_MODEL → catalog `env` (parent) should NOT
-    // appear as a separate unset row.
+  it("filters env.* (and the env parent) out of inspector rows entirely", () => {
+    // Env vars have their own SSOT surface (EnvVarsPanel), which is the
+    // *only* place env.<NAME> appears. The inspector list is settings-
+    // precedence focused and skips the env subtree. Verifies both that
+    // a set env.<NAME> doesn't appear AND that the catalog-derived
+    // unset `env` parent row is suppressed.
     const snap = snapshot(
       [ok("user", { env: { ANTHROPIC_MODEL: "opus" } })],
       { env: { ANTHROPIC_MODEL: { value: "opus", source: "user" } } },
     );
     const rows = buildRows(snap);
     expect(rows.find((r) => r.keyPath === "env")).toBeUndefined();
-    expect(rows.find((r) => r.keyPath === "env.ANTHROPIC_MODEL")?.state).toBe("set");
+    expect(rows.find((r) => r.keyPath === "env.ANTHROPIC_MODEL")).toBeUndefined();
+    expect(rows.find((r) => r.keyPath.startsWith("env."))).toBeUndefined();
   });
 });
 

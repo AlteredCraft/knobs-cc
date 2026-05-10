@@ -356,12 +356,12 @@ Open work (what to pick up next within this track):
 
 Shipped:
 
-- **EnvVarsPanel — surface every cataloged env var.** ✅ shipped
-  2026-05-10. The inspector-side `env` settings-precedence layer only
-  projects 8 mapped OS env vars (`catalog/env-settings-map.json`) onto
-  settings keys; the upstream env-vars catalog has 220 entries, so
-  ~95% of documented env vars never showed up in the inspector at all.
-  The new topbar-pill-driven panel (modeled on `ErrorPanel`/`HelpView`)
+- **EnvVarsPanel — SSOT for env vars.** ✅ shipped 2026-05-10. The
+  inspector-side `env` settings-precedence layer only projects 8
+  mapped OS env vars (`catalog/env-settings-map.json`) onto settings
+  keys; the upstream env-vars catalog has 220 entries, so ~95% of
+  documented env vars never showed up in the inspector at all. The
+  new topbar-pill-driven panel (modeled on `ErrorPanel`/`HelpView`)
   lists every cataloged env var as a row with: shell-set value (read
   via the new `read_shell_env_vars` Tauri command), settings.json
   `env.<NAME>` contributors per layer in precedence order, an
@@ -370,16 +370,23 @@ Shipped:
   `/key|token|secret|password/i` mask their value to `•••••••• abcd`
   (last 4 chars) until clicked — demo-safe by default. Filter chips:
   `all` / `set` / `shell` / `settings.json` / `unset`; substring
-  search across name and purpose. Sister change in the inspector: the
-  ENV settings-precedence layer slot is suppressed in the waterfall
-  on `env.*` keypaths (it can never contribute to those rows by
-  design — closes [#6](https://github.com/AlteredCraft/knobs-cc/issues/6)),
-  and the drawer header carries a small note pointing `env.*` rows
-  to the panel for shell-set vars. Caveat surfaced in the panel
-  footnote: knobs.cc reads its own process env, which usually matches
-  the user's shell but can differ for Finder/Spotlight launches that
-  use LaunchServices' env. Dotenv files Claude Code reads at startup
-  are out of scope for this pass.
+  search across name and purpose. **Non-catalog entries** — names
+  users set under `env.<NAME>` in `settings.json` that aren't in the
+  upstream catalog — surface at the top of the panel in their own
+  group with a `non-catalog` chip, so explicit user intent that's
+  invisible everywhere else gets first-class billing. Shell-set
+  names that aren't in the catalog are deliberately *not* surfaced
+  (a user's shell carries hundreds of unrelated vars; only
+  settings.json `env` is treated as Claude-Code-specific intent).
+  Sister structural change: `env.*` rows are now filtered out of
+  the inspector entirely (`buildRows` skips the `env` subtree) and
+  a one-line banner above the inspector's column header points
+  users at the panel — closes [#6](https://github.com/AlteredCraft/knobs-cc/issues/6).
+  Caveat surfaced in the panel footnote: knobs.cc reads its own
+  process env, which usually matches the user's shell but can
+  differ for Finder/Spotlight launches that use LaunchServices'
+  env. Dotenv files Claude Code reads at startup are out of scope
+  for this pass.
 - **Drawer cross-references `permissions.modes` for
   `permissions.defaultMode`.** ✅ shipped 2026-05-08. When a row's
   keyPath is `permissions.defaultMode` and the row's effective value

@@ -184,6 +184,7 @@ export function InspectorShell({
           snapshot={snapshot}
           activeKeyPath={activeKeyPath}
           onSelect={handleSelect}
+          onShowEnvVars={() => setEnvVarsOpen(true)}
         />
         {activeRow ? (
           <KeyDrawer

@@ -258,17 +258,54 @@ function RowList({
   expanded: string | null;
   onToggle: (name: string) => void;
 }) {
+  // Non-catalog rows come first from the builder; render them in their
+  // own group with a header so users see the "user-defined, not in
+  // upstream docs" signal once instead of per-row.
+  const nonCatalog = rows.filter((r) => r.isNonCatalog);
+  const catalog = rows.filter((r) => !r.isNonCatalog);
+
   return (
-    <ul className="space-y-1">
-      {rows.map((row) => (
-        <RowItem
-          key={row.name}
-          row={row}
-          isExpanded={expanded === row.name}
-          onToggle={() => onToggle(row.name)}
-        />
-      ))}
-    </ul>
+    <div className="space-y-4">
+      {nonCatalog.length > 0 && (
+        <section>
+          <div className="mb-1.5 flex items-baseline gap-2 font-mono text-[9.5px] uppercase tracking-[0.05em] text-fg-4">
+            <span>non-catalog ({nonCatalog.length})</span>
+            <span className="text-fg-4 normal-case tracking-normal">
+              · set in your settings.json but not documented upstream
+            </span>
+          </div>
+          <ul className="space-y-1">
+            {nonCatalog.map((row) => (
+              <RowItem
+                key={row.name}
+                row={row}
+                isExpanded={expanded === row.name}
+                onToggle={() => onToggle(row.name)}
+              />
+            ))}
+          </ul>
+        </section>
+      )}
+      {catalog.length > 0 && (
+        <section>
+          {nonCatalog.length > 0 && (
+            <div className="mb-1.5 font-mono text-[9.5px] uppercase tracking-[0.05em] text-fg-4">
+              catalog ({catalog.length})
+            </div>
+          )}
+          <ul className="space-y-1">
+            {catalog.map((row) => (
+              <RowItem
+                key={row.name}
+                row={row}
+                isExpanded={expanded === row.name}
+                onToggle={() => onToggle(row.name)}
+              />
+            ))}
+          </ul>
+        </section>
+      )}
+    </div>
   );
 }
 
@@ -295,6 +332,14 @@ function RowItem({
       >
         <span className="min-w-0 flex-1 truncate font-mono text-[12px] text-fg-1">
           {row.name}
+          {row.isNonCatalog && (
+            <span
+              className="ml-2 rounded-[2px] border border-warn px-1 py-px font-mono text-[9.5px] uppercase tracking-[0.05em] text-warn"
+              title="Set in settings.json but not documented in the upstream env-vars catalog"
+            >
+              non-catalog
+            </span>
+          )}
         </span>
         <EffectiveCell row={row} />
       </button>
@@ -377,31 +422,49 @@ function DetailBlock({ row }: { row: EnvVarRow }) {
   return (
     <div className="border-t border-line px-3 py-3">
       <div className="mb-3 max-w-prose text-[12px] leading-relaxed text-fg-2">
-        <ReactMarkdown
-          remarkPlugins={[remarkGfm]}
-          components={{
-            p: ({ children }) => <p className="m-0">{children}</p>,
-            a: ({ href, children }) => (
-              <a
-                href={href}
-                onClick={(e) => {
-                  e.preventDefault();
-                  if (href) void openExternalUrl(resolveDocsUrl(href));
-                }}
-                className="text-accent underline decoration-dotted underline-offset-2 hover:decoration-solid"
-              >
-                {children}
-              </a>
-            ),
-            code: ({ children }) => (
-              <code className="rounded-[2px] bg-bg-2 px-1 py-px font-mono text-[11.5px] text-fg-1">
-                {children}
-              </code>
-            ),
-          }}
-        >
-          {row.purpose}
-        </ReactMarkdown>
+        {row.isNonCatalog ? (
+          <p className="m-0 text-fg-3">
+            User-defined env var. Not documented in the upstream{" "}
+            <code className="rounded-[2px] bg-bg-2 px-1 py-px font-mono text-[11.5px] text-fg-1">
+              env-vars
+            </code>{" "}
+            catalog — Claude Code reads this from{" "}
+            <code className="rounded-[2px] bg-bg-2 px-1 py-px font-mono text-[11.5px] text-fg-1">
+              settings.json
+            </code>
+            &apos;s{" "}
+            <code className="rounded-[2px] bg-bg-2 px-1 py-px font-mono text-[11.5px] text-fg-1">
+              env
+            </code>{" "}
+            block, but its meaning depends on whoever defined it.
+          </p>
+        ) : (
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm]}
+            components={{
+              p: ({ children }) => <p className="m-0">{children}</p>,
+              a: ({ href, children }) => (
+                <a
+                  href={href}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (href) void openExternalUrl(resolveDocsUrl(href));
+                  }}
+                  className="text-accent underline decoration-dotted underline-offset-2 hover:decoration-solid"
+                >
+                  {children}
+                </a>
+              ),
+              code: ({ children }) => (
+                <code className="rounded-[2px] bg-bg-2 px-1 py-px font-mono text-[11.5px] text-fg-1">
+                  {children}
+                </code>
+              ),
+            }}
+          >
+            {row.purpose}
+          </ReactMarkdown>
+        )}
       </div>
 
       {row.default !== null && (

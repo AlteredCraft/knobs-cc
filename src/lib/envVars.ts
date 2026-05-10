@@ -27,7 +27,7 @@ export interface EnvVarContributor {
 
 export interface EnvVarRow {
   name: string;
-  /** Catalog `purpose` prose (markdown). */
+  /** Catalog `purpose` prose (markdown). Empty for non-catalog rows. */
   purpose: string;
   /** Catalog default; null when not documented. */
   default: string | null;
@@ -37,6 +37,14 @@ export interface EnvVarRow {
   effective: { value: string; source: EnvVarSource } | null;
   /** True when the name pattern-matches as secret-bearing. */
   isSensitive: boolean;
+  /**
+   * True when the user set this `env.<NAME>` in `settings.json` but
+   * the name isn't documented in the upstream env-vars catalog. These
+   * rows live at the top of the panel as a separate group — they're
+   * the highest-signal entries (explicit user intent that's invisible
+   * everywhere else) and lack the `purpose` prose other rows carry.
+   */
+  isNonCatalog: boolean;
 }
 
 /**
@@ -100,36 +108,79 @@ export function buildEnvVarRows(
     snapshot.layers.map((l) => [l.source, l] as const),
   );
 
-  return catalog.map((entry) => {
+  const buildContributors = (name: string): EnvVarContributor[] => {
     const contributors: EnvVarContributor[] = [];
-
-    const shellValue = shellEnv[entry.name];
+    const shellValue = shellEnv[name];
     if (shellValue !== undefined) {
       contributors.push({ source: "shell", value: shellValue, path: null });
     }
-
     for (const source of LAYERS_IN_PRECEDENCE_ORDER) {
       const layer = layersByName.get(source);
       if (!layer) continue;
-      const v = envValueFromLayer(layer, entry.name);
+      const v = envValueFromLayer(layer, name);
       if (v !== null) {
         contributors.push({ source, value: v, path: layer.path });
       }
     }
+    return contributors;
+  };
 
-    const effective = contributors[0]
-      ? { value: contributors[0].value, source: contributors[0].source }
-      : null;
+  const catalogNames = new Set(catalog.map((e) => e.name));
 
+  // Catalog rows — one per documented env var, set or unset.
+  const catalogRows: EnvVarRow[] = catalog.map((entry) => {
+    const contributors = buildContributors(entry.name);
     return {
       name: entry.name,
       purpose: entry.purpose,
       default: entry.default,
       contributors,
-      effective,
+      effective: contributors[0]
+        ? { value: contributors[0].value, source: contributors[0].source }
+        : null,
       isSensitive: isSensitiveName(entry.name),
+      isNonCatalog: false,
     };
   });
+
+  // Non-catalog rows — names users set under `env.<NAME>` in settings.json
+  // that aren't in the upstream catalog. We deliberately ignore non-
+  // catalog names from the *shell* (a user's shell carries hundreds of
+  // unrelated vars: PATH, HOME, etc.) and surface only what was explicit
+  // user-intent in settings.json.
+  const nonCatalogNames = new Set<string>();
+  for (const layer of snapshot.layers) {
+    if (layer.status !== "ok") continue;
+    if (typeof layer.raw !== "object" || layer.raw === null) continue;
+    const env = (layer.raw as Record<string, unknown>).env;
+    if (typeof env !== "object" || env === null) continue;
+    for (const [name, value] of Object.entries(env)) {
+      if (catalogNames.has(name)) continue;
+      if (typeof value !== "string") continue;
+      nonCatalogNames.add(name);
+    }
+  }
+
+  const nonCatalogRows: EnvVarRow[] = [...nonCatalogNames]
+    .sort()
+    .map((name) => {
+      const contributors = buildContributors(name);
+      return {
+        name,
+        purpose: "",
+        default: null,
+        contributors,
+        effective: contributors[0]
+          ? { value: contributors[0].value, source: contributors[0].source }
+          : null,
+        isSensitive: isSensitiveName(name),
+        isNonCatalog: true,
+      };
+    });
+
+  // Non-catalog first — they're the highest-signal entries: explicit
+  // user intent that wouldn't show up anywhere else in the app.
+  return [...nonCatalogRows, ...catalogRows];
 }
 
 // ---- Filter / search --------------------------------------------------------

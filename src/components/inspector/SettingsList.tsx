@@ -43,10 +43,15 @@ interface SettingsListProps {
   snapshot: SettingsSnapshot;
   activeKeyPath: string | null;
   onSelect: (keyPath: string) => void;
+  /** Click target for the env-vars banner above the column header. */
+  onShowEnvVars?: () => void;
 }
 
 export const SettingsList = forwardRef<SettingsListHandle, SettingsListProps>(
-  function SettingsList({ snapshot, activeKeyPath, onSelect }, ref) {
+  function SettingsList(
+    { snapshot, activeKeyPath, onSelect, onShowEnvVars },
+    ref,
+  ) {
     const [query, setQuery] = useState("");
     const [chip, setChip] = useState<ChipFilter>("all");
     const [sort, setSort] = useState<SortMode>("precedence");
@@ -206,6 +211,26 @@ export const SettingsList = forwardRef<SettingsListHandle, SettingsListProps>(
             sort · {sort}
           </button>
         </div>
+
+        {/* Static banner: env vars have their own SSOT panel. Without
+            this cue, a user who filters for "env" and gets zero rows
+            would assume the inspector forgot env entirely. */}
+        {onShowEnvVars && (
+          <div className="flex items-center gap-2 border-b border-line bg-bg-1 px-4 py-1.5 font-mono text-[10.5px] leading-snug text-fg-3">
+            <span className="uppercase tracking-wider text-fg-4">note</span>
+            <span>env vars are inspected in the</span>
+            <button
+              type="button"
+              onClick={onShowEnvVars}
+              className="rounded-[2px] border border-line-strong px-1.5 py-px text-fg-2 hover:border-accent hover:text-fg-1"
+            >
+              env vars panel
+            </button>
+            <span className="text-fg-4">
+              · settings.json env block + your shell + non-catalog names
+            </span>
+          </div>
+        )}
 
         {/* Header + body share a single horizontal scroll container so the
             column header stays aligned with rows when the pane is narrower

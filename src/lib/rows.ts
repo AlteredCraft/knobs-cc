@@ -47,8 +47,23 @@ function splitKey(keyPath: string): { namespace: string | null; leaf: string } {
   };
 }
 
+/**
+ * Inspector rows skip the `env` settings subtree — env vars have their
+ * own SSOT surface (the EnvVarsPanel), which joins shell-set values
+ * with `settings.json`'s `env` block AND surfaces non-catalog user-set
+ * names. Showing `env.<NAME>` rows here too leads to the question
+ * users kept asking: "is this my shell or my settings?" The panel
+ * answers that directly; the inspector stays focused on settings
+ * precedence for the rest of the tree.
+ */
+function isEnvRow(keyPath: string): boolean {
+  return keyPath === "env" || keyPath.startsWith("env.");
+}
+
 export function buildRows(snapshot: SettingsSnapshot): Row[] {
-  const leaves = flattenEffective(snapshot.effective);
+  const leaves = flattenEffective(snapshot.effective).filter(
+    (l) => !isEnvRow(l.keyPath),
+  );
   const setPaths = new Set(leaves.map((l) => l.keyPath));
 
   const setRows: Row[] = leaves.map((leaf) => {
@@ -89,6 +104,7 @@ export function buildRows(snapshot: SettingsSnapshot): Row[] {
 
   const unsetRows: Row[] = getCatalog()
     .filter((entry) => !setPathsAndAncestors.has(entry.key))
+    .filter((entry) => !isEnvRow(entry.key))
     .map((entry) => {
       const { namespace, leaf: leafName } = splitKey(entry.key);
       return {

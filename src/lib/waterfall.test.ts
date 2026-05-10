@@ -162,44 +162,4 @@ describe("buildWaterfall", () => {
     expect(dflt.state).toBe("absent");
   });
 
-  it("suppresses the ENV layer slot for env.* keypaths", () => {
-    // The ENV settings-precedence layer projects 8 mapped OS env vars
-    // onto settings keys; it can't contribute to env.<NAME> rows by
-    // design. Showing "ENV — not set —" on every env.* row implied
-    // otherwise. Suppress it; the EnvVarsPanel is the home for OS env.
-    const snap = snapshot([
-      ok("user", { env: { ANTHROPIC_BASE_URL: "https://proxy" } }),
-    ]);
-    const r = row({
-      keyPath: "env.ANTHROPIC_BASE_URL",
-      winner: "user",
-      value: "https://proxy",
-      state: "set",
-      contributors: ["user"],
-    });
-    const sources = buildWaterfall(snap, r).map((e) => e.source);
-    expect(sources).not.toContain("env");
-    // The other 6 layers still render in order.
-    expect(sources).toEqual([
-      "managed",
-      "cli",
-      "project_local",
-      "project",
-      "user",
-      "default",
-    ]);
-  });
-
-  it("keeps the ENV layer slot for non-env keypaths", () => {
-    const snap = snapshot([ok("user", { model: "opus" })]);
-    const r = row({
-      keyPath: "model",
-      winner: "user",
-      value: "opus",
-      state: "set",
-      contributors: ["user"],
-    });
-    const sources = buildWaterfall(snap, r).map((e) => e.source);
-    expect(sources).toContain("env");
-  });
 });

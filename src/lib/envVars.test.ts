@@ -218,6 +218,115 @@ describe("buildEnvVarRows", () => {
   });
 });
 
+describe("buildEnvVarRows — non-catalog entries", () => {
+  it("surfaces names set in settings.json's env block that aren't in the catalog", () => {
+    const snap = makeSnapshot([
+      {
+        source: "user",
+        path: "/u/.claude/settings.json",
+        status: "ok",
+        raw: { env: { MY_PROJECT_TOKEN: "tok_abc", FOO_BAR: "1" } },
+        error: null,
+      },
+    ]);
+    const rows = buildEnvVarRows(catalog, snap, {});
+    const nonCatalog = rows.filter((r) => r.isNonCatalog);
+    expect(nonCatalog.map((r) => r.name).sort()).toEqual([
+      "FOO_BAR",
+      "MY_PROJECT_TOKEN",
+    ]);
+  });
+
+  it("places non-catalog rows at the head of the list", () => {
+    const snap = makeSnapshot([
+      {
+        source: "user",
+        path: "/u",
+        status: "ok",
+        raw: { env: { CUSTOM_VAR: "v" } },
+        error: null,
+      },
+    ]);
+    const rows = buildEnvVarRows(catalog, snap, {});
+    expect(rows[0]).toMatchObject({ name: "CUSTOM_VAR", isNonCatalog: true });
+    expect(rows.slice(1).every((r) => !r.isNonCatalog)).toBe(true);
+  });
+
+  it("dedupes non-catalog names contributed by multiple layers", () => {
+    const snap = makeSnapshot([
+      {
+        source: "project",
+        path: "/p",
+        status: "ok",
+        raw: { env: { CUSTOM_VAR: "from-project" } },
+        error: null,
+      },
+      {
+        source: "user",
+        path: "/u",
+        status: "ok",
+        raw: { env: { CUSTOM_VAR: "from-user" } },
+        error: null,
+      },
+    ]);
+    const rows = buildEnvVarRows(catalog, snap, {});
+    const nonCatalog = rows.filter((r) => r.isNonCatalog);
+    expect(nonCatalog).toHaveLength(1);
+    // Both layers contribute to the same row, in precedence order.
+    expect(nonCatalog[0].contributors.map((c) => c.source)).toEqual([
+      "project",
+      "user",
+    ]);
+  });
+
+  it("flags non-catalog names as sensitive when the name pattern matches", () => {
+    const snap = makeSnapshot([
+      {
+        source: "user",
+        path: "/u",
+        status: "ok",
+        raw: { env: { MY_API_KEY: "secret-value" } },
+        error: null,
+      },
+    ]);
+    const row = buildEnvVarRows(catalog, snap, {}).find(
+      (r) => r.name === "MY_API_KEY",
+    )!;
+    expect(row.isSensitive).toBe(true);
+    expect(row.isNonCatalog).toBe(true);
+  });
+
+  it("does not surface non-catalog names from the shell (only settings.json is explicit user intent)", () => {
+    // The user's shell has hundreds of unrelated vars (PATH, HOME, …);
+    // surfacing all of them would be noise. settings.json `env` entries
+    // are explicit Claude-Code-related intent, so those are fair game.
+    const snap = makeSnapshot([]);
+    const rows = buildEnvVarRows(catalog, snap, {
+      PATH: "/usr/bin",
+      HOME: "/home/u",
+    });
+    expect(rows.filter((r) => r.isNonCatalog)).toHaveLength(0);
+  });
+
+  it("counts non-catalog rows in the `set` and `settings` chip totals", () => {
+    const snap = makeSnapshot([
+      {
+        source: "user",
+        path: "/u",
+        status: "ok",
+        raw: { env: { CUSTOM_VAR: "v" } },
+        error: null,
+      },
+    ]);
+    const rows = buildEnvVarRows(catalog, snap, {});
+    const c = envVarChipCounts(rows);
+    expect(c.all).toBe(catalog.length + 1);
+    expect(c.set).toBe(1);
+    expect(c.settings).toBe(1);
+    expect(c.shell).toBe(0);
+  });
+});
+
 describe("filtering", () => {
   const rows = buildEnvVarRows(
     catalog,
