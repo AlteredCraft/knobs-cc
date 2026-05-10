@@ -201,19 +201,56 @@ describe("buildEnvVarRows", () => {
     expect(rows.every((r) => r.contributors.length === 0)).toBe(true);
   });
 
-  it("ignores non-string env values (settings.json bug, not a contributor)", () => {
+  it("coerces numeric and boolean env values to strings (visible-but-typo signal)", () => {
+    // Users sometimes write `"FOO": 42` instead of `"FOO": "42"` and
+    // wonder why nothing shows up. The inspector's job is to surface
+    // what's there, even when the type isn't strictly correct.
     const snap = makeSnapshot([
       {
         source: "user",
         path: "/u",
         status: "ok",
-        raw: { env: { ANTHROPIC_API_KEY: 123 } },
+        raw: {
+          env: {
+            ANTHROPIC_BASE_URL: 42,
+            CLAUDE_CODE_DEBUG_LOG_LEVEL: true,
+          },
+        },
+        error: null,
+      },
+    ]);
+    const rows = buildEnvVarRows(catalog, snap, {});
+    expect(rows.find((r) => r.name === "ANTHROPIC_BASE_URL")?.effective)
+      .toEqual({ value: "42", source: "user" });
+    expect(rows.find((r) => r.name === "CLAUDE_CODE_DEBUG_LOG_LEVEL")?.effective)
+      .toEqual({ value: "true", source: "user" });
+  });
+
+  it("ignores object/array/null env values (no useful string form)", () => {
+    const snap = makeSnapshot([
+      {
+        source: "user",
+        path: "/u",
+        status: "ok",
+        raw: {
+          env: {
+            ANTHROPIC_API_KEY: { nested: "x" },
+            ANTHROPIC_BASE_URL: ["a", "b"],
+            CLAUDE_CODE_DEBUG_LOG_LEVEL: null,
+          },
+        },
         error: null,
       },
     ]);
     const rows = buildEnvVarRows(catalog, snap, {});
     expect(
       rows.find((r) => r.name === "ANTHROPIC_API_KEY")?.contributors,
+    ).toHaveLength(0);
+    expect(
+      rows.find((r) => r.name === "ANTHROPIC_BASE_URL")?.contributors,
+    ).toHaveLength(0);
+    expect(
+      rows.find((r) => r.name === "CLAUDE_CODE_DEBUG_LOG_LEVEL")?.contributors,
     ).toHaveLength(0);
   });
 });
@@ -294,6 +331,26 @@ describe("buildEnvVarRows — non-catalog entries", () => {
     )!;
     expect(row.isSensitive).toBe(true);
     expect(row.isNonCatalog).toBe(true);
+  });
+
+  it("surfaces a non-catalog name with a numeric value (regression: `\"FOO\": 42`)", () => {
+    // User reported adding `"env": {"FOO": 42}` to settings.json and
+    // not seeing FOO in the panel. The number type was silently
+    // skipped — now coerced to a string so the row appears.
+    const snap = makeSnapshot([
+      {
+        source: "user",
+        path: "/u",
+        status: "ok",
+        raw: { env: { FOO: 42 } },
+        error: null,
+      },
+    ]);
+    const rows = buildEnvVarRows(catalog, snap, {});
+    const row = rows.find((r) => r.name === "FOO");
+    expect(row).toBeDefined();
+    expect(row?.isNonCatalog).toBe(true);
+    expect(row?.effective).toEqual({ value: "42", source: "user" });
   });
 
   it("does not surface non-catalog names from the shell (only settings.json is explicit user intent)", () => {

@@ -73,18 +73,33 @@ export function maskValue(value: string): string {
 }
 
 /**
- * Pull the `env.<NAME>` value out of a layer's raw settings tree. Returns
- * null when the layer didn't set this var, when raw isn't an object, or
- * when the value isn't a string (env values are always strings — a
- * non-string under `env.<NAME>` is a settings.json bug).
+ * Coerce a JSON env-value into a displayable string. Strings pass
+ * through; numbers and booleans stringify (these are user-typed values
+ * we want to surface so the inspector shows "what's there", even when
+ * the type isn't strictly correct — `"FOO": 42` is a settings.json bug
+ * worth seeing, not silently hiding). Non-primitive shapes (objects,
+ * arrays, null) return null — those have no useful string form and
+ * showing `[object Object]` is worse than dropping the row.
+ */
+function coerceEnvValue(v: unknown): string | null {
+  if (typeof v === "string") return v;
+  if (typeof v === "number" && Number.isFinite(v)) return String(v);
+  if (typeof v === "boolean") return String(v);
+  return null;
+}
+
+/**
+ * Pull the `env.<NAME>` value out of a layer's raw settings tree.
+ * Returns null when the layer didn't set this var, when raw isn't an
+ * object, or when the value can't be coerced to a string. See
+ * `coerceEnvValue` for the type-coercion policy.
  */
 function envValueFromLayer(layer: LayerRead, name: string): string | null {
   if (layer.status !== "ok") return null;
   if (typeof layer.raw !== "object" || layer.raw === null) return null;
   const env = (layer.raw as Record<string, unknown>).env;
   if (typeof env !== "object" || env === null) return null;
-  const v = (env as Record<string, unknown>)[name];
-  return typeof v === "string" ? v : null;
+  return coerceEnvValue((env as Record<string, unknown>)[name]);
 }
 
 /**
@@ -156,7 +171,10 @@ export function buildEnvVarRows(
     if (typeof env !== "object" || env === null) continue;
     for (const [name, value] of Object.entries(env)) {
       if (catalogNames.has(name)) continue;
-      if (typeof value !== "string") continue;
+      // Use the same coercion policy as catalog rows so a number /
+      // boolean under `env.<NAME>` (a common settings.json typo) still
+      // surfaces in the panel.
+      if (coerceEnvValue(value) === null) continue;
       nonCatalogNames.add(name);
     }
   }
