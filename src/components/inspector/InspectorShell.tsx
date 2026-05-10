@@ -186,15 +186,13 @@ export function InspectorShell({
           onSelect={handleSelect}
           onShowEnvVars={() => setEnvVarsOpen(true)}
         />
-        {activeRow ? (
+        {activeRow && (
           <KeyDrawer
             row={activeRow}
             snapshot={snapshot}
             onClose={closeDrawer}
             onSelect={handleNavigate}
           />
-        ) : (
-          <DrawerPlaceholder />
         )}
       </div>
 
@@ -210,19 +208,3 @@ export function InspectorShell({
   );
 }
 
-function DrawerPlaceholder() {
-  return (
-    <aside className="flex w-[440px] shrink-0 flex-col items-center justify-center border-l border-line bg-bg-1 px-6">
-      <div className="max-w-xs text-center">
-        <div className="mb-3 font-mono text-[11px] uppercase tracking-[0.18em] text-fg-3">
-          select a key
-        </div>
-        <p className="font-mono text-[12px] leading-relaxed text-fg-2">
-          Click a row in the settings list to open its detail here — every
-          layer&apos;s contribution, winner highlighted, shadowed values
-          struck through. Esc closes.
-        </p>
-      </div>
-    </aside>
-  );
-}
