@@ -872,6 +872,13 @@ mod tests {
 
     #[test]
     fn cli_layer_ok_when_attached_to_live_process() {
+        // sysinfo can't read another process's environ on Windows; attach
+        // mode reports `Unsupported` and `process_for_pid` returns None,
+        // so an "attached" snapshot has no argv to parse and the cli
+        // layer stays Missing. The test's premise only holds on Unix.
+        if cfg!(target_os = "windows") {
+            return;
+        }
         // The test runner's argv doesn't contain claude flags, so the cli
         // layer will be Ok with an empty `raw` — but the slot must be Ok,
         // not Missing, and the rail row must un-grey.
@@ -887,11 +894,15 @@ mod tests {
 
     #[test]
     fn attached_pid_for_live_process_resolves_project_root() {
-        // The runtime layer's cwd_for_pid filter is "same UID + cwd
-        // readable" — it doesn't require the target to be named claude
-        // (that filter runs at discovery time in read_runtime_layer).
-        // Using our own pid is the cheapest way to exercise the live
-        // resolution path end-to-end.
+        // Same Windows caveat as above — `process_for_pid` is Unix-only
+        // in v1, so this end-to-end attach test only runs on macOS / Linux.
+        if cfg!(target_os = "windows") {
+            return;
+        }
+        // process_for_pid is gated on same-UID + a readable cwd; it does
+        // not require the target to be named claude (that filter runs at
+        // discovery time in read_runtime_layer). Using our own pid is the
+        // cheapest way to exercise the live resolution path end-to-end.
         let our_pid = std::process::id();
         let snap = read_snapshot(ProjectSource::Attached(our_pid));
         // The test runner's cwd is the project_root we should have read.
