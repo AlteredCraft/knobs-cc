@@ -285,19 +285,75 @@ fn home_dir() -> Option<PathBuf> {
         .map(PathBuf::from)
 }
 
-fn project_dir() -> Option<PathBuf> {
-    std::env::current_dir().ok()
-}
-
 fn settings_path(dir: &Path, file: &str) -> PathBuf {
     dir.join(".claude").join(file)
 }
 
-pub fn read_snapshot() -> SettingsSnapshot {
+/// How the project root was supplied to a snapshot read. Mirrors the
+/// attach-mode spec: an attached pid wins over a path override; both win
+/// over the legacy "knobs.cc's own CWD" fallback.
+pub enum ProjectSource {
+    /// Pre-pivot fallback: read project/project_local relative to whatever
+    /// directory knobs.cc itself was launched from. Useful only in tests
+    /// and the no-attach-no-picker default; production frontends after the
+    /// pivot will always supply Attached or Picked.
+    CurrentDir,
+    /// User attached to a running claude; the snapshot grounds itself in
+    /// that process's cwd. Carries the pid so we can emit an honest
+    /// diagnostic if the process is gone.
+    Attached(u32),
+    /// User picked a project directory via the path-picker fallback (no
+    /// claude running, or explicit override).
+    Picked(PathBuf),
+}
+
+/// One-shot resolution of grounding from a `ProjectSource`. When attached,
+/// fetches the full ClaudeProcess (cwd + argv + environ) so the cli + env
+/// + project layers can each draw from the same sysinfo snapshot rather
+/// than re-querying.
+fn resolve_grounding(
+    source: &ProjectSource,
+    diagnostics: &mut Vec<Diagnostic>,
+) -> (Option<PathBuf>, Option<crate::runtime::ClaudeProcess>) {
+    match source {
+        ProjectSource::CurrentDir => (std::env::current_dir().ok(), None),
+        ProjectSource::Attached(pid) => match crate::runtime::process_for_pid(*pid) {
+            Some(p) => {
+                let cwd = PathBuf::from(&p.cwd);
+                (Some(cwd), Some(p))
+            }
+            None => {
+                diagnostics.push(Diagnostic {
+                    level: DiagnosticLevel::Warn,
+                    message: format!(
+                        "attached claude process (pid {pid}) is no longer visible — project / cli / env layers will be empty"
+                    ),
+                });
+                (None, None)
+            }
+        },
+        ProjectSource::Picked(path) => {
+            if path.is_dir() {
+                (Some(path.clone()), None)
+            } else {
+                diagnostics.push(Diagnostic {
+                    level: DiagnosticLevel::Warn,
+                    message: format!(
+                        "picked project directory does not exist: {}",
+                        path.display()
+                    ),
+                });
+                (None, None)
+            }
+        }
+    }
+}
+
+pub fn read_snapshot(source: ProjectSource) -> SettingsSnapshot {
     let mut diagnostics = Vec::new();
 
-    let project = project_dir();
-    if project.is_none() {
+    let (project, attached) = resolve_grounding(&source, &mut diagnostics);
+    if project.is_none() && matches!(source, ProjectSource::CurrentDir) {
         diagnostics.push(Diagnostic {
             level: DiagnosticLevel::Warn,
             message: "could not resolve current working directory".into(),
@@ -312,11 +368,30 @@ pub fn read_snapshot() -> SettingsSnapshot {
         });
     }
 
+    // `cli` and `env` layers ground in the attached process's argv / environ
+    // when available; otherwise they fall back to the legacy behaviors
+    // (cli: Missing — no argv to read; env: knobs.cc's own process env).
+    let cli_layer = match attached.as_ref() {
+        Some(p) => crate::cli_layer::read_cli_layer(&p.argv),
+        None => LayerRead {
+            source: LayerSource::Cli,
+            path: None,
+            status: LayerStatus::Missing,
+            raw: None,
+            error: None,
+        },
+    };
+    let env_layer = match attached.as_ref() {
+        Some(p) => crate::env_layer::read_env_layer_attached(&p.environ),
+        None => crate::env_layer::read_env_layer(),
+    };
+
     // Highest precedence first — matches the public API order. The merge below
     // walks them in reverse so higher-precedence values win.
     let layers = vec![
         crate::managed_layer::read_managed_layer(),
-        crate::env_layer::read_env_layer(),
+        cli_layer,
+        env_layer,
         read_layer(
             LayerSource::ProjectLocal,
             project
@@ -358,9 +433,31 @@ pub fn read_snapshot() -> SettingsSnapshot {
     }
 }
 
-#[tauri::command]
-pub fn read_settings_layers() -> SettingsSnapshot {
-    read_snapshot()
+/// The Tauri command. Frontend supplies one of:
+/// - `attached_pid` — preferred, grounds the snapshot in a running claude.
+/// - `project_root_override` — fallback for the no-claude / path-picker flow.
+/// - neither — legacy "knobs.cc's own CWD" behavior, kept so existing
+///   integration smoke tests don't break during migration.
+///
+/// If both are supplied, `attached_pid` wins per the attach-mode spec.
+///
+/// `rename_all = "snake_case"` is load-bearing: Tauri 2 defaults to
+/// camelCase for JS-side command args, but the rest of this project's
+/// wire format is snake_case (matching the SettingsSnapshot return shape
+/// via `#[serde(rename_all = "snake_case")]`). Without this attribute,
+/// `attached_pid: 75618` from JS silently deserialized to `None` and the
+/// snapshot fell back to `ProjectSource::CurrentDir`.
+#[tauri::command(rename_all = "snake_case")]
+pub fn read_settings_layers(
+    attached_pid: Option<u32>,
+    project_root_override: Option<String>,
+) -> SettingsSnapshot {
+    let source = match (attached_pid, project_root_override) {
+        (Some(pid), _) => ProjectSource::Attached(pid),
+        (None, Some(path)) => ProjectSource::Picked(PathBuf::from(path)),
+        (None, None) => ProjectSource::CurrentDir,
+    };
+    read_snapshot(source)
 }
 
 #[cfg(test)]
@@ -662,5 +759,167 @@ mod tests {
         assert!(matches!(layer.status, LayerStatus::Ok));
         assert_eq!(layer.raw.unwrap(), json!({ "model": "opus" }));
         std::fs::remove_dir_all(&dir).ok();
+    }
+
+    // ---- Grounding (ProjectSource) -----------------------------------
+
+    fn temp_project_with_settings(model: &str) -> PathBuf {
+        let dir = std::env::temp_dir().join(format!(
+            "knobs-cc-grounding-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos(),
+        ));
+        let claude_dir = dir.join(".claude");
+        std::fs::create_dir_all(&claude_dir).unwrap();
+        std::fs::write(
+            claude_dir.join("settings.json"),
+            format!(r#"{{ "model": "{model}" }}"#),
+        )
+        .unwrap();
+        dir
+    }
+
+    fn find_layer<'a>(
+        snap: &'a SettingsSnapshot,
+        source: LayerSource,
+    ) -> &'a LayerRead {
+        snap.layers
+            .iter()
+            .find(|l| matches!((l.source, source), (a, b) if std::mem::discriminant(&a) == std::mem::discriminant(&b)))
+            .expect("layer present")
+    }
+
+    #[test]
+    fn picked_project_dir_grounds_project_layer() {
+        let project = temp_project_with_settings("opus");
+        let snap = read_snapshot(ProjectSource::Picked(project.clone()));
+        let layer = find_layer(&snap, LayerSource::Project);
+        assert!(matches!(layer.status, LayerStatus::Ok));
+        assert_eq!(layer.raw.as_ref().unwrap()["model"], json!("opus"));
+        let p = layer.path.as_ref().unwrap();
+        assert!(
+            p.contains(&project.to_string_lossy().to_string()),
+            "expected project path to contain the picked dir; got {p}",
+        );
+        assert_eq!(snap.project_root.as_deref(), Some(&*project.to_string_lossy()));
+        std::fs::remove_dir_all(&project).ok();
+    }
+
+    #[test]
+    fn picked_nonexistent_dir_emits_diagnostic_and_skips_layer() {
+        let bogus = PathBuf::from("/nonexistent/path/that/will/never/exist");
+        let snap = read_snapshot(ProjectSource::Picked(bogus.clone()));
+        // Project layer falls back to "no path" — read_layer treats that as
+        // Missing without an error, but we expect a diagnostic naming the
+        // bogus dir so the user can correct.
+        assert!(
+            snap.diagnostics
+                .iter()
+                .any(|d| d.message.contains("picked project directory does not exist")),
+            "expected a diagnostic about the bogus directory; got {:?}",
+            snap.diagnostics
+                .iter()
+                .map(|d| &d.message)
+                .collect::<Vec<_>>(),
+        );
+        let layer = find_layer(&snap, LayerSource::Project);
+        assert!(matches!(layer.status, LayerStatus::Missing));
+    }
+
+    #[test]
+    fn attached_pid_for_unknown_process_emits_diagnostic() {
+        // u32::MAX is reliably an unused pid; resolve_project_dir routes
+        // that through runtime::cwd_for_pid which returns None.
+        let snap = read_snapshot(ProjectSource::Attached(u32::MAX));
+        assert!(
+            snap.diagnostics
+                .iter()
+                .any(|d| d.message.contains("no longer visible")),
+            "expected a diagnostic about the missing attached process; got {:?}",
+            snap.diagnostics
+                .iter()
+                .map(|d| &d.message)
+                .collect::<Vec<_>>(),
+        );
+        let layer = find_layer(&snap, LayerSource::Project);
+        assert!(matches!(layer.status, LayerStatus::Missing));
+    }
+
+    fn cli_layer<'a>(snap: &'a SettingsSnapshot) -> &'a LayerRead {
+        snap.layers
+            .iter()
+            .find(|l| matches!(l.source, LayerSource::Cli))
+            .expect("cli layer slot must be present in every snapshot")
+    }
+
+    #[test]
+    fn cli_layer_missing_when_grounding_isnt_attached() {
+        let snap = read_snapshot(ProjectSource::CurrentDir);
+        let l = cli_layer(&snap);
+        assert!(
+            matches!(l.status, LayerStatus::Missing),
+            "expected Missing for current-dir grounding; got {:?}",
+            l.status,
+        );
+        // Picked grounding likewise has no process to read argv from.
+        let snap = read_snapshot(ProjectSource::Picked(std::env::temp_dir()));
+        let l = cli_layer(&snap);
+        assert!(matches!(l.status, LayerStatus::Missing));
+    }
+
+    #[test]
+    fn cli_layer_ok_when_attached_to_live_process() {
+        // The test runner's argv doesn't contain claude flags, so the cli
+        // layer will be Ok with an empty `raw` — but the slot must be Ok,
+        // not Missing, and the rail row must un-grey.
+        let snap = read_snapshot(ProjectSource::Attached(std::process::id()));
+        let l = cli_layer(&snap);
+        assert!(
+            matches!(l.status, LayerStatus::Ok),
+            "expected Ok for attached grounding; got {:?}",
+            l.status,
+        );
+        assert!(l.raw.is_some(), "cli layer raw must be set when Ok");
+    }
+
+    #[test]
+    fn attached_pid_for_live_process_resolves_project_root() {
+        // The runtime layer's cwd_for_pid filter is "same UID + cwd
+        // readable" — it doesn't require the target to be named claude
+        // (that filter runs at discovery time in read_runtime_layer).
+        // Using our own pid is the cheapest way to exercise the live
+        // resolution path end-to-end.
+        let our_pid = std::process::id();
+        let snap = read_snapshot(ProjectSource::Attached(our_pid));
+        // The test runner's cwd is the project_root we should have read.
+        let cwd = std::env::current_dir().unwrap();
+        assert_eq!(
+            snap.project_root.as_deref(),
+            Some(&*cwd.to_string_lossy()),
+            "attached snapshot should ground in the live process's cwd",
+        );
+        // No "no longer visible" diagnostic — the process is us.
+        assert!(
+            !snap.diagnostics.iter().any(|d| d.message.contains("no longer visible")),
+            "live pid should not produce a missing-process diagnostic",
+        );
+    }
+
+    #[test]
+    fn current_dir_fallback_matches_legacy_behavior() {
+        // The pre-pivot behavior: project root resolves to whatever
+        // std::env::current_dir() returns. We don't assert specific paths
+        // (tests run in unpredictable cwd), only that the snapshot has a
+        // project_root set when env::current_dir is resolvable.
+        let snap = read_snapshot(ProjectSource::CurrentDir);
+        let cwd = std::env::current_dir().unwrap();
+        assert_eq!(
+            snap.project_root.as_deref(),
+            Some(&*cwd.to_string_lossy()),
+            "current-dir grounding should match std::env::current_dir() output",
+        );
     }
 }

@@ -25,18 +25,36 @@ import { isRegistryPath } from "./WaterfallRow";
 const CHIP_LABELS: Record<EnvVarChip, string> = {
   all: "all",
   set: "set",
+  attached: "attached",
   shell: "shell",
   settings: "settings.json",
+  diff: "Δ diff",
   unset: "unset",
 };
 
-const CHIPS: EnvVarChip[] = ["all", "set", "shell", "settings", "unset"];
+// Order matters: `attached` and `diff` sit between `set` and `shell` so the
+// attach-mode lens is prominent when active. Both stay hidden until a
+// claude is attached — there's no value in a "0 attached" chip cluttering
+// the toolbar when the user has no claude to compare against.
+const BASE_CHIPS: EnvVarChip[] = ["all", "set", "shell", "settings", "unset"];
+const ATTACH_CHIPS: EnvVarChip[] = [
+  "all",
+  "set",
+  "attached",
+  "diff",
+  "shell",
+  "settings",
+  "unset",
+];
 
 export function EnvVarsPanel({
   snapshot,
+  attachedEnv,
   onClose,
 }: {
   snapshot: SettingsSnapshot;
+  /** The attached claude's environ, or null when not attached. */
+  attachedEnv: Readonly<Record<string, string>> | null;
   onClose: () => void;
 }) {
   const [shellEnv, setShellEnv] = useState<Record<string, string> | null>(null);
@@ -97,11 +115,15 @@ export function EnvVarsPanel({
   }, []);
 
   const allRows = useMemo(
-    () => (shellEnv ? buildEnvVarRows(catalog, snapshot, shellEnv) : []),
-    [catalog, snapshot, shellEnv],
+    () =>
+      shellEnv
+        ? buildEnvVarRows(catalog, snapshot, shellEnv, attachedEnv)
+        : [],
+    [catalog, snapshot, shellEnv, attachedEnv],
   );
 
   const counts = useMemo(() => envVarChipCounts(allRows), [allRows]);
+  const chips = attachedEnv ? ATTACH_CHIPS : BASE_CHIPS;
   const visibleRows = useMemo(
     () => applyEnvVarFilter(applyEnvVarChip(allRows, chip), filter),
     [allRows, chip, filter],
@@ -146,6 +168,7 @@ export function EnvVarsPanel({
             chip={chip}
             onChipChange={setChip}
             counts={counts}
+            chips={chips}
             filterRef={filterRef}
           />
 
@@ -176,6 +199,7 @@ function Toolbar({
   chip,
   onChipChange,
   counts,
+  chips,
   filterRef,
 }: {
   filter: string;
@@ -183,6 +207,7 @@ function Toolbar({
   chip: EnvVarChip;
   onChipChange: (c: EnvVarChip) => void;
   counts: Record<EnvVarChip, number>;
+  chips: EnvVarChip[];
   filterRef: React.RefObject<HTMLInputElement | null>;
 }) {
   return (
@@ -196,7 +221,7 @@ function Toolbar({
         className="w-72 rounded-sm border border-line-strong bg-bg-1 px-2 py-1 font-mono text-[12px] text-fg-1 placeholder:text-fg-4 focus:border-accent focus:outline-none"
       />
       <div className="ml-2 flex items-center gap-1">
-        {CHIPS.map((c) => (
+        {chips.map((c) => (
           <button
             key={c}
             type="button"
@@ -319,6 +344,13 @@ function RowItem({
   isExpanded: boolean;
   onToggle: () => void;
 }) {
+  // Divergence: attached and shell both supplied a value, and the values
+  // differ. Surfaces the Finder-vs-terminal-env story attach mode tells.
+  const attached = row.contributors.find((c) => c.source === "attached");
+  const shell = row.contributors.find((c) => c.source === "shell");
+  const hasDivergence =
+    attached !== undefined && shell !== undefined && attached.value !== shell.value;
+
   return (
     <li
       className={cn(
@@ -339,6 +371,14 @@ function RowItem({
               title="Set in settings.json but not documented in the upstream env-vars catalog"
             >
               non-catalog
+            </span>
+          )}
+          {hasDivergence && (
+            <span
+              className="ml-2 rounded-[2px] border border-warn bg-[rgba(255,182,39,0.08)] px-1 py-px font-mono text-[9.5px] uppercase tracking-[0.05em] text-warn"
+              title={`Attached claude sees a different value than knobs.cc's shell.\nAttached: ${attached!.value}\nShell:    ${shell!.value}`}
+            >
+              Δ
             </span>
           )}
         </span>
@@ -406,11 +446,25 @@ function ValueChip({
 }
 
 function SourceTag({ source }: { source: EnvVarSource }) {
+  if (source === "attached") {
+    // Greenish accent: this is the ground-truth value (the running claude's
+    // actual environ). Distinct from `shell` so the diff is legible at a
+    // glance — if you see `attached` and `shell` side-by-side with
+    // different values, that's the divergence story attach mode tells.
+    return (
+      <span
+        className="rounded-[2px] border border-[#7fd182] bg-[rgba(127,209,130,0.08)] px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.05em] text-[#7fd182]"
+        title="The attached claude process's actual environ (ground truth)"
+      >
+        attached
+      </span>
+    );
+  }
   if (source === "shell") {
     return (
       <span
         className="rounded-[2px] border border-accent px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.05em] text-accent"
-        title="Set in this process's shell environment"
+        title="Set in this process's shell environment (knobs.cc's own)"
       >
         shell
       </span>
@@ -562,11 +616,12 @@ function shortenPath(path: string): string {
 function Footnote() {
   return (
     <p className="mt-8 max-w-prose font-mono text-[10.5px] leading-relaxed text-fg-4">
-      Shell values reflect the environment knobs.cc was launched with —
-      usually the same env Claude Code would inherit from your shell, but
-      Finder/Spotlight launches use LaunchServices' env, which can differ.
-      Dotenv files (<code>.env</code>) Claude Code reads at startup are not
-      shown here.
+      When attached to a claude session, the <code>attached</code> column is
+      the literal environ of that process — ground truth for what claude
+      sees. The <code>shell</code> column is knobs.cc's own process env;
+      it's a useful proxy when no claude is running and a diagnostic when
+      both are set (Finder/Spotlight launches use LaunchServices' env,
+      which can diverge from a terminal shell).
     </p>
   );
 }

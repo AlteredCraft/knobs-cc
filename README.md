@@ -9,15 +9,6 @@ A local desktop inspector for every knob Claude Code gives you — where it live
 **Pre-release.** The read-only inspector runs end-to-end via
 `npm run tauri dev`. No signed installer or auto-update yet.
 
-Two known gaps in the precedence rail are tracked openly: the `cli`
-slot stays empty because knobs.cc can't read another process's flags
-([#11](https://github.com/AlteredCraft/knobs-cc/issues/11)), and the
-`project` / `project_local` rows resolve relative to knobs.cc's own
-working directory rather than a chosen claude session, so they're
-greyed out in the rail
-([#12](https://github.com/AlteredCraft/knobs-cc/issues/12)). The
-managed / env / user / default layers are unaffected.
-
 ## Premise
 
 Claude Code has a sprawling configuration surface: settings files
@@ -32,9 +23,15 @@ hard.
 knobs.cc lays it all out in one place:
 
 - What Claude Code **can** be configured with
-- What **is** configured in the current environment
+- What **is** configured for a specific session
 - **Where** each value is coming from (user / project / local /
   managed / env var / CLI flag / default)
+
+The inspector grounds against a running `claude` process you pick
+from the topbar: it reads that session's cwd, argv, and environ to
+resolve the project, cli, and env layers honestly. If no claude is
+running, point the inspector at a project directory and the file
+layers resolve against it.
 
 Live updates are wired in: when a watched settings file changes on
 disk the snapshot refreshes automatically.
@@ -59,13 +56,16 @@ disk the snapshot refreshes automatically.
 Three coordinated surfaces:
 
 - **The Tauri 2 app.** `src/` (React/Vite/TypeScript Inspector UI) and
-  `src-tauri/` (Rust backend with the read-only `read_settings_layers`
-  and `read_catalog` Tauri commands). Five settings layers (managed /
-  env / project_local / project / user), per-leaf provenance, and
+  `src-tauri/` (Rust backend with the read-only `read_settings_layers`,
+  `read_catalog`, `read_shell_env_vars`, and `read_runtime_layer`
+  Tauri commands). Seven settings layers (managed / cli / env /
+  project_local / project / user / default), per-leaf provenance,
   per-element waterfall for array-merged fields like
-  `permissions.allow`. The managed tier reads the macOS
-  `com.anthropic.claudecode` MDM plist when present and falls back to
-  the file-based source otherwise.
+  `permissions.allow`, and a session picker that reads a running
+  claude process's cwd, argv, and environ so the cli + env + project
+  layers resolve against the same session. The managed tier reads the
+  macOS `com.anthropic.claudecode` MDM plist when present and falls
+  back to the file-based source otherwise.
 - **The specs.** [`spec/roadmap.md`](spec/roadmap.md) is the single
   source of truth for what's shipped vs pending. Other live specs:
   [`spec/inventory.md`](spec/inventory.md) (every Claude Code knob),

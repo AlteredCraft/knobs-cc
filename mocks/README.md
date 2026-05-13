@@ -11,10 +11,16 @@ open mocks/03-goals.html
 ```
 
 All three render the same realistic snapshot:
-- 5 of 7 layers active (managed and cli are absent / not inspectable)
+- 5 of 7 layers active (managed and cli are absent in this fixture —
+  no MDM policy, no attached claude with mapped flags)
 - 12 set keys, 2 env vars, 3 shadowed values, 4 array-merged fields
 - The same `model` shadowing example: project (`opus-4-7`) wins over user (`sonnet-4-6`)
 - The same `permissions.allow` array-merge across user + project + project_local
+
+These are concept-phase mocks; the shipped Inspector resolves the cli +
+env + project layers against a session picked via the topbar (see
+[`../spec/attach-mode.md`](../spec/attach-mode.md)). The mocks predate
+that surface and don't render it.
 
 No build step. No JS framework. Tailwind via CDN. Fonts from Google.
 

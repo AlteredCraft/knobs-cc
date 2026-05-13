@@ -1,0 +1,32 @@
+{
+  "source": "Hand-curated from catalog/cli-reference.json — each flag's documented 'Overrides … setting' wording. See spec/attach-mode.md PR 2 'cli row + EnvVarsPanel attached-env column'. Mirrors the env-settings-map.json pattern.",
+  "fetchedAt": "2026-05-13",
+  "count": 5,
+  "mappings": [
+    {
+      "flag": "--model",
+      "settings": "model",
+      "kind": "string"
+    },
+    {
+      "flag": "--permission-mode",
+      "settings": "permissions.defaultMode",
+      "kind": "string"
+    },
+    {
+      "flag": "--effort",
+      "settings": "effortLevel",
+      "kind": "string"
+    },
+    {
+      "flag": "--agent",
+      "settings": "agent",
+      "kind": "string"
+    },
+    {
+      "flag": "--add-dir",
+      "settings": "permissions.additionalDirectories",
+      "kind": "stringArrayMulti"
+    }
+  ]
+}

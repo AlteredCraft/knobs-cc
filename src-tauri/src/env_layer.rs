@@ -108,12 +108,31 @@ fn build_raw<F: Fn(&str) -> Option<String>>(
     raw
 }
 
-/// Build the env LayerRead from the current process environment. Always
-/// returns `Ok` — even when no mapped vars are set, an empty raw object is
-/// the right answer (the rail row will just show count 0).
+/// Build the env LayerRead from the current process environment. Used when
+/// no claude is attached — best-effort proxy for "what claude would inherit
+/// if it were launched from the same shell."
 pub fn read_env_layer() -> LayerRead {
+    read_env_layer_with(|key| std::env::var(key).ok())
+}
+
+/// Build the env LayerRead from the *attached* claude's environ. Ground
+/// truth (literally what claude has at runtime) rather than the proxy
+/// `read_env_layer` returns from knobs.cc's own env.
+///
+/// Used by `read_snapshot` when `ProjectSource::Attached(pid)` resolves to
+/// a live process. See attach-mode PR 2.
+pub fn read_env_layer_attached(
+    environ: &std::collections::BTreeMap<String, String>,
+) -> LayerRead {
+    read_env_layer_with(|key| environ.get(key).cloned())
+}
+
+/// Shared body of the two public entry points. Always returns `Ok` — even
+/// when no mapped vars are set, an empty raw object is the right answer
+/// (the rail row will just show count 0).
+fn read_env_layer_with<F: Fn(&str) -> Option<String>>(read_env: F) -> LayerRead {
     let mappings = load_mappings();
-    let raw = build_raw(&mappings, |key| std::env::var(key).ok());
+    let raw = build_raw(&mappings, read_env);
     LayerRead {
         source: LayerSource::Env,
         path: None,

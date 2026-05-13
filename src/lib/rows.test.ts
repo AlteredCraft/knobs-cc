@@ -90,7 +90,7 @@ describe("buildRows — unset rows", () => {
 });
 
 describe("buildRows — array-merged", () => {
-  it("emits state=array-merged with null winner and per-element list when the leaf has elements", () => {
+  it("emits state=array-merged with null winner and per-element list when 2+ layers contribute", () => {
     const snap = snapshot(
       [
         ok("project", { permissions: { allow: ["b"] } }),
@@ -118,6 +118,36 @@ describe("buildRows — array-merged", () => {
     ]);
     // Contributors still come from the raw layers, not elements.
     expect(r?.contributors).toEqual(["project", "user"]);
+  });
+
+  it("downgrades to state=set with a single winner when only one layer contributes elements", () => {
+    // permissions.allow is on the array-merged policy list, so the
+    // backend emits `elements` even when only one layer contributed.
+    // The UI should NOT show MERGED in that case — it would mislead the
+    // reader into thinking the row is multi-sourced.
+    const snap = snapshot(
+      [ok("project_local", { permissions: { allow: ["a", "b", "c"] } })],
+      {
+        permissions: {
+          allow: {
+            value: ["a", "b", "c"],
+            source: null,
+            elements: [
+              { value: "a", source: "project_local" },
+              { value: "b", source: "project_local" },
+              { value: "c", source: "project_local" },
+            ],
+          },
+        },
+      },
+    );
+    const r = buildRows(snap).find((x) => x.keyPath === "permissions.allow");
+    expect(r?.state).toBe("set");
+    expect(r?.winner).toBe("project_local");
+    expect(r?.contributors).toEqual(["project_local"]);
+    // Elements are preserved so the drawer's per-element list still
+    // renders — the per-element provenance is the whole point.
+    expect(r?.elements).toHaveLength(3);
   });
 });
 

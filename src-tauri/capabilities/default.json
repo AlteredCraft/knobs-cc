@@ -13,6 +13,7 @@
         { "path": "**/.claude/settings.json" },
         { "path": "**/.claude/settings.local.json" }
       ]
-    }
+    },
+    "dialog:allow-open"
   ]
 }

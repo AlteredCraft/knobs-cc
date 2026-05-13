@@ -14,8 +14,21 @@ import type { EnvVarEntry } from "./catalog";
 import type { LayerRead, LayerSource, SettingsSnapshot } from "@/types";
 import { LAYERS_IN_PRECEDENCE_ORDER } from "@/types";
 
-/** Source that contributed a value for a given env var. */
-export type EnvVarSource = "shell" | LayerSource;
+/** Source that contributed a value for a given env var.
+ *
+ * - "attached": from the running claude's actual environ, read via attach
+ *   mode (`runtime_layer.processes[*].environ`). The literal ground-truth
+ *   for what claude sees right now; only present when knobs.cc is attached.
+ * - "shell": from knobs.cc's own process env. The shell-launched proxy
+ *   for "what claude would inherit if started from the same shell" —
+ *   useful for diagnosing Finder/Spotlight vs terminal env divergence.
+ * - Settings layers: from `env.<NAME>` in a settings.json layer's blob.
+ *
+ * Precedence for the *effective* value: attached > shell > settings
+ * layers in their precedence order. Attached wins when present because
+ * it's literally claude's process env at this moment.
+ */
+export type EnvVarSource = "attached" | "shell" | LayerSource;
 
 export interface EnvVarContributor {
   /** "shell" = process env; otherwise a settings layer that has `env.<NAME>`. */
@@ -104,20 +117,23 @@ function envValueFromLayer(layer: LayerRead, name: string): string | null {
 
 /**
  * Build one EnvVarRow per catalog entry. Caller supplies the catalog
- * (so this stays pure / testable without hydrating the global) and the
- * snapshot of layers + the shell-env map from `read_shell_env_vars`.
+ * (so this stays pure / testable without hydrating the global), the
+ * snapshot of layers + the shell-env map from `read_shell_env_vars`,
+ * and optionally the attached claude's environ (from attach mode).
  *
- * Precedence for the effective value: shell wins over settings.json. This
- * matches Claude Code's documented behavior — vars set in the shell are
- * exported into the process before settings.json is read, and settings'
- * `env` is *injected into* the launched process, not vice versa. The two
- * routes converge on the same process-env, with shell taking priority
- * when both are set on the same name.
+ * Precedence for the effective value: attached > shell > settings.json.
+ * - Attached wins when present because it's literally claude's process
+ *   env right now — ground truth.
+ * - Shell wins over settings.json because vars set in the shell are
+ *   exported into the process before settings.json is read, and
+ *   settings' `env` is *injected into* the launched process, not vice
+ *   versa.
  */
 export function buildEnvVarRows(
   catalog: readonly EnvVarEntry[],
   snapshot: SettingsSnapshot,
   shellEnv: Readonly<Record<string, string>>,
+  attachedEnv: Readonly<Record<string, string>> | null = null,
 ): EnvVarRow[] {
   const layersByName = new Map(
     snapshot.layers.map((l) => [l.source, l] as const),
@@ -125,6 +141,19 @@ export function buildEnvVarRows(
 
   const buildContributors = (name: string): EnvVarContributor[] => {
     const contributors: EnvVarContributor[] = [];
+    // Attached env is the highest-fidelity source — what the running
+    // claude actually has — so it leads the contributor list when
+    // present.
+    if (attachedEnv) {
+      const attachedValue = attachedEnv[name];
+      if (attachedValue !== undefined) {
+        contributors.push({
+          source: "attached",
+          value: attachedValue,
+          path: null,
+        });
+      }
+    }
     const shellValue = shellEnv[name];
     if (shellValue !== undefined) {
       contributors.push({ source: "shell", value: shellValue, path: null });
@@ -203,7 +232,14 @@ export function buildEnvVarRows(
 
 // ---- Filter / search --------------------------------------------------------
 
-export type EnvVarChip = "all" | "set" | "shell" | "settings" | "unset";
+export type EnvVarChip =
+  | "all"
+  | "set"
+  | "attached"
+  | "shell"
+  | "settings"
+  | "diff"
+  | "unset";
 
 export function applyEnvVarChip(
   rows: EnvVarRow[],
@@ -214,14 +250,34 @@ export function applyEnvVarChip(
       return rows;
     case "set":
       return rows.filter((r) => r.contributors.length > 0);
+    case "attached":
+      return rows.filter((r) =>
+        r.contributors.some((c) => c.source === "attached"),
+      );
     case "shell":
       return rows.filter((r) =>
         r.contributors.some((c) => c.source === "shell"),
       );
     case "settings":
       return rows.filter((r) =>
-        r.contributors.some((c) => c.source !== "shell"),
+        r.contributors.some(
+          (c) => c.source !== "shell" && c.source !== "attached",
+        ),
       );
+    case "diff":
+      // Vars where the attached claude's value differs from knobs.cc's
+      // shell value — the headline use case for attach mode's env
+      // surface. Requires *both* to be set; one-sided presence is
+      // surfaced by the attached / shell chips already.
+      return rows.filter((r) => {
+        const attached = r.contributors.find((c) => c.source === "attached");
+        const shell = r.contributors.find((c) => c.source === "shell");
+        return (
+          attached !== undefined &&
+          shell !== undefined &&
+          attached.value !== shell.value
+        );
+      });
     case "unset":
       return rows.filter((r) => r.contributors.length === 0);
   }
@@ -245,8 +301,10 @@ export function envVarChipCounts(rows: EnvVarRow[]): Record<EnvVarChip, number> 
   const counts: Record<EnvVarChip, number> = {
     all: rows.length,
     set: 0,
+    attached: 0,
     shell: 0,
     settings: 0,
+    diff: 0,
     unset: 0,
   };
   for (const r of rows) {
@@ -255,8 +313,20 @@ export function envVarChipCounts(rows: EnvVarRow[]): Record<EnvVarChip, number> 
       continue;
     }
     counts.set += 1;
-    if (r.contributors.some((c) => c.source === "shell")) counts.shell += 1;
-    if (r.contributors.some((c) => c.source !== "shell")) counts.settings += 1;
+    const attached = r.contributors.find((c) => c.source === "attached");
+    const shell = r.contributors.find((c) => c.source === "shell");
+    if (attached) counts.attached += 1;
+    if (shell) counts.shell += 1;
+    if (
+      r.contributors.some(
+        (c) => c.source !== "shell" && c.source !== "attached",
+      )
+    ) {
+      counts.settings += 1;
+    }
+    if (attached && shell && attached.value !== shell.value) {
+      counts.diff += 1;
+    }
   }
   return counts;
 }

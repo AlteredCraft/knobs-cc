@@ -226,6 +226,71 @@ describe("buildEnvVarRows", () => {
       .toEqual({ value: "true", source: "user" });
   });
 
+  it("records an attached contributor when supplied", () => {
+    const rows = buildEnvVarRows(catalog, makeSnapshot([]), {}, {
+      ANTHROPIC_API_KEY: "from-attached",
+    });
+    const row = rows.find((r) => r.name === "ANTHROPIC_API_KEY")!;
+    expect(row.contributors).toEqual([
+      { source: "attached", value: "from-attached", path: null },
+    ]);
+    expect(row.effective).toEqual({
+      value: "from-attached",
+      source: "attached",
+    });
+  });
+
+  it("attached wins over shell when both supply a value", () => {
+    const rows = buildEnvVarRows(
+      catalog,
+      makeSnapshot([]),
+      { ANTHROPIC_API_KEY: "from-shell" },
+      { ANTHROPIC_API_KEY: "from-attached" },
+    );
+    const row = rows.find((r) => r.name === "ANTHROPIC_API_KEY")!;
+    expect(row.effective).toEqual({
+      value: "from-attached",
+      source: "attached",
+    });
+    expect(row.contributors.map((c) => c.source)).toEqual([
+      "attached",
+      "shell",
+    ]);
+  });
+
+  it("attached, shell, settings layers all surface as separate contributors", () => {
+    const snap = makeSnapshot([
+      {
+        source: "user",
+        path: "/u/.claude/settings.json",
+        status: "ok",
+        raw: { env: { ANTHROPIC_API_KEY: "from-settings" } },
+        error: null,
+      },
+    ]);
+    const rows = buildEnvVarRows(
+      catalog,
+      snap,
+      { ANTHROPIC_API_KEY: "from-shell" },
+      { ANTHROPIC_API_KEY: "from-attached" },
+    );
+    const row = rows.find((r) => r.name === "ANTHROPIC_API_KEY")!;
+    expect(row.contributors.map((c) => ({ s: c.source, v: c.value }))).toEqual([
+      { s: "attached", v: "from-attached" },
+      { s: "shell", v: "from-shell" },
+      { s: "user", v: "from-settings" },
+    ]);
+  });
+
+  it("null attachedEnv leaves the contributor list unchanged from the legacy path", () => {
+    // The pre-attach-mode signature took 3 args. Passing null for the
+    // 4th arg should produce identical rows.
+    const snap = makeSnapshot([]);
+    const a = buildEnvVarRows(catalog, snap, { ANTHROPIC_API_KEY: "x" });
+    const b = buildEnvVarRows(catalog, snap, { ANTHROPIC_API_KEY: "x" }, null);
+    expect(a).toEqual(b);
+  });
+
   it("ignores object/array/null env values (no useful string form)", () => {
     const snap = makeSnapshot([
       {
@@ -421,5 +486,58 @@ describe("filtering", () => {
     expect(applyEnvVarFilter(rows, "x-api-key")).toHaveLength(1);
     expect(applyEnvVarFilter(rows, "endpoint")).toHaveLength(1); // matches purpose of BASE_URL
     expect(applyEnvVarFilter(rows, "")).toHaveLength(catalog.length);
+  });
+});
+
+describe("attach-mode chips: attached / diff", () => {
+  // Three vars set in this fixture:
+  // - ANTHROPIC_API_KEY: same value in shell + attached (no diff)
+  // - ANTHROPIC_BASE_URL: different value in shell vs attached (diff)
+  // - CLAUDE_CODE_DEBUG_LOG_LEVEL: only in attached (no shell value)
+  const fixture = buildEnvVarRows(
+    catalog,
+    makeSnapshot([]),
+    {
+      ANTHROPIC_API_KEY: "sk-shared",
+      ANTHROPIC_BASE_URL: "https://shell-proxy",
+    },
+    {
+      ANTHROPIC_API_KEY: "sk-shared",
+      ANTHROPIC_BASE_URL: "https://attached-proxy",
+      CLAUDE_CODE_DEBUG_LOG_LEVEL: "debug",
+    },
+  );
+
+  it("counts attached separately from shell", () => {
+    const c = envVarChipCounts(fixture);
+    expect(c.attached).toBe(3);
+    expect(c.shell).toBe(2);
+    expect(c.set).toBe(3);
+  });
+
+  it("counts diff only when both sides are set and values differ", () => {
+    const c = envVarChipCounts(fixture);
+    // BASE_URL is the only one with diverging shell + attached values.
+    expect(c.diff).toBe(1);
+  });
+
+  it("attached chip filters to rows with an attached contributor", () => {
+    const filtered = applyEnvVarChip(fixture, "attached");
+    expect(filtered.map((r) => r.name).sort()).toEqual([
+      "ANTHROPIC_API_KEY",
+      "ANTHROPIC_BASE_URL",
+      "CLAUDE_CODE_DEBUG_LOG_LEVEL",
+    ]);
+  });
+
+  it("diff chip filters to rows where shell and attached differ", () => {
+    const filtered = applyEnvVarChip(fixture, "diff");
+    expect(filtered.map((r) => r.name)).toEqual(["ANTHROPIC_BASE_URL"]);
+  });
+
+  it("settings chip excludes attached and shell contributors", () => {
+    // None of the rows in this fixture come from settings.json layers.
+    const filtered = applyEnvVarChip(fixture, "settings");
+    expect(filtered).toHaveLength(0);
   });
 });
