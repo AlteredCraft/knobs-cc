@@ -3,6 +3,7 @@ import {
   type Diagnostic,
   type LayerRead,
   type LayerSource,
+  type SessionGrounding,
   type SettingsSnapshot,
 } from "@/types";
 import { buildRows } from "@/lib/rows";
@@ -20,7 +21,11 @@ function countTopLevelKeys(raw: unknown): number {
 // inspector-ui.md:131-135.
 const ABSENT_DETAIL: Partial<Record<LayerSource, string>> = {
   managed: "no MDM policy detected",
-  cli: "not inspectable from sibling proc",
+  // cli's missing-state copy depends on grounding: when not attached, the
+  // honest message is "no attached claude." When attached but argv had no
+  // mapped flags, the rail renders the layer as Ok with count 0 (see env's
+  // empty-raw branch for the precedent).
+  cli: "no attached claude (argv unavailable)",
   env: "no mapped env vars set",
   default: "catalog (compiled-in)",
 };
@@ -42,33 +47,41 @@ function unreachableLayerDetail(source: LayerSource): string {
   }
 }
 
-// Layers we can't faithfully attribute to the user's claude session yet.
-// `cli` has no live process to read argv from (tracked in #11); `project`
-// and `project_local` resolve relative to knobs.cc's own CWD rather than
-// the user's chosen claude project (tracked in #12). Greying these out in
-// the rail prevents users from trusting values that came from an
-// unrelated dir.
-const UNGROUNDED_LAYERS: ReadonlySet<LayerSource> = new Set([
-  "cli",
-  "project",
-  "project_local",
-]);
+/** Which layers should be greyed in the rail for the current grounding. */
+function ungroundedLayersFor(
+  grounding: SessionGrounding,
+): ReadonlySet<LayerSource> {
+  switch (grounding.kind) {
+    case "attached":
+      // Attached → cli, env, project, project_local all grounded against
+      // the live process. No row needs to be greyed for ungrounding.
+      return new Set();
+    case "no-claude":
+      if (grounding.pickedRoot) {
+        // Path picker → project files grounded against the picked dir;
+        // cli still has no process to read argv from.
+        return new Set<LayerSource>(["cli"]);
+      }
+      // No grounding source at all: cli + project files all ungrounded.
+      return new Set<LayerSource>(["cli", "project", "project_local"]);
+    case "unsupported":
+    case "loading":
+      return new Set<LayerSource>(["cli", "project", "project_local"]);
+  }
+}
 
 function buildRow(
   source: LayerSource,
   layer: LayerRead | undefined,
   defaultCount: number,
+  ungrounded: ReadonlySet<LayerSource>,
 ): RailRow {
-  // Tack `disabled: true` onto every row for an ungrounded layer so the
-  // greyout applies regardless of which status branch the layer hits
-  // (ok / missing / error / not-read). Wrapping here avoids drift if a
-  // future branch forgets the field — which is exactly how #12 slipped
-  // past first review. For project/project_local we also overwrite the
-  // detail line: the underlying path is knobs.cc's own CWD, so showing
-  // it suggests a real, authoritative project entry. Cli is unchanged —
-  // its ABSENT_DETAIL message already reads correctly.
+  // Tack `disabled: true` onto every ungrounded row so the greyout applies
+  // regardless of which status branch the layer hits (ok / missing / error
+  // / not-read). Wrapping here avoids drift if a future branch forgets the
+  // field — which is exactly how #12 slipped past first review.
   const row = buildRowCore(source, layer, defaultCount);
-  if (UNGROUNDED_LAYERS.has(source)) {
+  if (ungrounded.has(source)) {
     row.disabled = true;
     if (source === "project" || source === "project_local") {
       row.detail = "knobs.cc's launch dir, not your claude session";
@@ -137,6 +150,19 @@ function buildRowCore(
     };
   }
 
+  // cli is a real layer when attached. Mirror env's pattern — describe the
+  // source rather than show "—" for an empty raw. (When unattached the
+  // layer status is Missing, handled above.)
+  if (source === "cli") {
+    const setCount = countTopLevelKeys(layer.raw);
+    return {
+      source,
+      dot: setCount > 0 ? "ok" : "empty",
+      detail: setCount > 0 ? "process argv" : "no mapped flags in argv",
+      count: setCount,
+    };
+  }
+
   return {
     source,
     dot: "ok",
@@ -147,15 +173,18 @@ function buildRowCore(
 
 export function PrecedenceRail({
   snapshot,
+  grounding,
   activeWinner,
 }: {
   snapshot: SettingsSnapshot;
+  grounding: SessionGrounding;
   activeWinner?: LayerSource | null;
 }) {
   const byKey = new Map(snapshot.layers.map((l) => [l.source, l] as const));
   const defaultCount = buildRows(snapshot).filter((r) => r.state === "unset").length;
+  const ungrounded = ungroundedLayersFor(grounding);
   const rows = LAYERS_IN_PRECEDENCE_ORDER.map((src) =>
-    buildRow(src, byKey.get(src), defaultCount),
+    buildRow(src, byKey.get(src), defaultCount, ungrounded),
   );
 
   return (

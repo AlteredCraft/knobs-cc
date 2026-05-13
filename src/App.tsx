@@ -1,10 +1,20 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { InspectorShell } from "@/components/inspector/InspectorShell";
 import { loadCatalog } from "@/lib/catalog";
 import { installGlobalHandlers } from "@/lib/errorLog";
-import type { SettingsSnapshot } from "@/types";
+import { pickProjectDirectory } from "@/lib/openPath";
+import {
+  deriveSessionGrounding,
+  groundingToInvokeArgs,
+  readRuntimeLayer,
+} from "@/lib/runtime";
+import type {
+  RuntimeSnapshot,
+  SessionGrounding,
+  SettingsSnapshot,
+} from "@/types";
 
 // Coalesce window for `settings-changed` bursts. Editors typically write a
 // settings file as a tempfile rename — that's two events back-to-back, plus
@@ -14,17 +24,35 @@ const REFRESH_DEBOUNCE_MS = 250;
 
 function App() {
   const [snapshot, setSnapshot] = useState<SettingsSnapshot | null>(null);
+  const [runtimeSnapshot, setRuntimeSnapshot] = useState<RuntimeSnapshot | null>(
+    null,
+  );
+  // Persisted across runtime refreshes so the user's selection survives a
+  // rescan of the process list. Cleared if the underlying claude exits —
+  // deriveSessionGrounding handles that transition.
+  const [selectedPid, setSelectedPid] = useState<number | null>(null);
+  const [pickedRoot, setPickedRoot] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const grounding: SessionGrounding = useMemo(() => {
+    if (runtimeSnapshot === null) return { kind: "loading" };
+    return deriveSessionGrounding(runtimeSnapshot, selectedPid, pickedRoot);
+  }, [runtimeSnapshot, selectedPid, pickedRoot]);
 
   const refresh = useCallback(async () => {
     try {
       // Catalog is idempotent after first load — the await is a no-op on
-      // refresh. Pair it with the snapshot read so a cold start doesn't
-      // race the inspector against an unloaded catalog.
-      const [, next] = await Promise.all([
-        loadCatalog(),
-        invoke<SettingsSnapshot>("read_settings_layers"),
-      ]);
+      // refresh. Pair it with the runtime read so a cold start doesn't
+      // race the inspector against an unloaded catalog or unknown
+      // grounding state.
+      const [, runtime] = await Promise.all([loadCatalog(), readRuntimeLayer()]);
+      setRuntimeSnapshot(runtime);
+      // Derive grounding from the fresh runtime to pick the right
+      // invoke args. Reading prior state here rather than relying on the
+      // memoized `grounding` avoids one round-trip of stale state.
+      const g = deriveSessionGrounding(runtime, selectedPid, pickedRoot);
+      const args = groundingToInvokeArgs(g);
+      const next = await invoke<SettingsSnapshot>("read_settings_layers", args);
       setSnapshot(next);
       setError(null);
     } catch (e) {
@@ -36,7 +64,7 @@ function App() {
         return prev;
       });
     }
-  }, []);
+  }, [selectedPid, pickedRoot]);
 
   useEffect(() => {
     void refresh();
@@ -63,6 +91,35 @@ function App() {
       if (timer !== undefined) window.clearTimeout(timer);
     };
   }, [refresh]);
+
+  // Window-focus refresh per spec/attach-mode.md "Refresh cadence" — common
+  // UX expectation when the user alt-tabs back from a terminal where they
+  // just started or stopped claude. Browser-level focus event works in the
+  // WebView; no Rust-side bridge needed.
+  useEffect(() => {
+    const onFocus = () => void refresh();
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [refresh]);
+
+  const onAttach = useCallback((pid: number) => {
+    // Attaching supersedes any previously-picked root — the spec's
+    // precedence: attached_pid wins over project_root_override.
+    setSelectedPid(pid);
+    setPickedRoot(null);
+  }, []);
+
+  const onPickRoot = useCallback(async () => {
+    const selected = await pickProjectDirectory();
+    if (selected !== null) {
+      setPickedRoot(selected);
+      setSelectedPid(null);
+    }
+  }, []);
+
+  const onClearRoot = useCallback(() => {
+    setPickedRoot(null);
+  }, []);
 
   if (error) {
     return (
@@ -92,7 +149,17 @@ function App() {
     );
   }
 
-  return <InspectorShell snapshot={snapshot} onRefresh={() => void refresh()} />;
+  return (
+    <InspectorShell
+      snapshot={snapshot}
+      grounding={grounding}
+      runtimeSnapshot={runtimeSnapshot}
+      onAttach={onAttach}
+      onPickRoot={onPickRoot}
+      onClearRoot={onClearRoot}
+      onRefresh={() => void refresh()}
+    />
+  );
 }
 
 export default App;

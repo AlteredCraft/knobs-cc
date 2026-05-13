@@ -8,15 +8,9 @@ If you ship something, mark it ✅ here and (where relevant) update the
 corresponding spec section. If you discover new work, add it here, not
 inline in another spec.
 
-Last reviewed: 2026-05-10 (Phase 2 + read_catalog + Phase 5 + Phase 7 +
-path-notes click-through + Phase 6 fully shipped + three-OS CI +
-managed-mcp.json topbar pill + catalog-drift cron + sync-sub-agents +
-in-app error log + per-OS capability split + sync-mcp + sync-permissions
-+ drawer cross-references env-vars catalog + sync-keybindings +
-sync-cli-reference + hooks catalog pass #2 + drawer cross-references
-permissions.modes as a value-conditional annotation under EFFECTIVE +
-issue #7 filed for generalizing the annotation seam + EnvVarsPanel
-shipped, closing #6).
+Last reviewed: 2026-05-13 (attach mode shipped on `feat/attach-mode`,
+closing #11 and #12 — see "Attach mode" section below for the
+shipped surface).
 
 ## Next-up candidates
 
@@ -51,14 +45,12 @@ here, then jump to the relevant section for shape and rationale.
   staleness signal. (Cron-driven sync with PR-on-diff shipped
   2026-05-06.)
 
-Deferred / open-ended (kept warm, not slated): runtime introspection
-(CLI layer + cross-process env reading,
-[#11](https://github.com/AlteredCraft/knobs-cc/issues/11)), grounding
-`project` / `project_local` in a real claude session
-([#12](https://github.com/AlteredCraft/knobs-cc/issues/12); shares
-process-discovery plumbing with #11), goals view, cross-cutting
-surfaces, landing page, nomenclature. See "Deferred plan" and
-"Design surfaces" further down.
+**Recently shipped (2026-05-13):** Attach mode pivots the inspector
+to grounded inspection — see [`attach-mode.md`](./attach-mode.md)
+and the "Attach mode" section below for the shipped surface.
+Closes #11 + #12. Other deferred items unchanged: goals view,
+cross-cutting surfaces, landing page, nomenclature — see "Design
+surfaces" further down.
 
 ---
 
@@ -148,25 +140,44 @@ Phase numbering matches the spec.
   Existing empty states (managed / cli / env / default) continue
   verbatim from `inspector-ui.md:131-139`. (§ "Phase 7".)
 
-### Deferred plan (kept warm, not slated)
+### Attach mode (branch `feat/attach-mode` — ready for merge)
 
-- **Runtime introspection — CLI layer + cross-process env reading.**
-  Reach into a running `claude` process to read its argv (populating the
-  empty `cli` precedence slot, parsed against `catalog/cli-reference.json`)
-  and its environ (grounding the EnvVarsPanel in what claude actually
-  inherited rather than what knobs.cc inherited). Same OS APIs, same
-  process-discovery problem — treated as one feature. Unix-first via the
-  `sysinfo` crate; Windows deferred until Unix proves out. Tracked at
-  [#11](https://github.com/AlteredCraft/knobs-cc/issues/11) — that issue
-  is the SSOT for problem statement, limitations, and proposals.
-  Currently documented as out of v1 in `settings-display.md:253`.
-- **Ground `project` / `project_local` in a real claude session.**
-  Today both layers resolve relative to knobs.cc's own CWD, which is
-  rarely the user's claude project; the rail rows are greyed out for
-  now (shipped 2026-05-10). Long-term framings — attach to a running
-  claude (shares plumbing with #11), launch claude as a harness, or
-  ship a plain path picker independent of #11 — are scoped in
-  [#12](https://github.com/AlteredCraft/knobs-cc/issues/12).
+✅ shipped on branch 2026-05-13. Grounded inspection is now the
+product — [`attach-mode.md`](./attach-mode.md) is the
+implementation contract. Closes
+[#11](https://github.com/AlteredCraft/knobs-cc/issues/11) and
+[#12](https://github.com/AlteredCraft/knobs-cc/issues/12).
+
+- ✅ `sysinfo` crate dep + `runtime.rs` module + `read_runtime_layer`
+  Tauri command (cwd / argv / environ for same-UID claude processes).
+- ✅ `read_settings_layers` accepts `attached_pid` /
+  `project_root_override`; `ProjectSource` enum routes the three
+  grounding modes. `#[tauri::command(rename_all = "snake_case")]`
+  required so JS snake_case args deserialize to Rust snake_case
+  params (Tauri 2 defaults to camelCase).
+- ✅ Frontend: `SessionPill` topbar UI with 4-state picker
+  (loading / 0 / 1 / 2+ claudes, plus unsupported on Windows),
+  session-grounding derivation, window-focus refresh, path-picker
+  fallback via `tauri-plugin-dialog`.
+- ✅ Rail: project / project_local rows grounded against the
+  chosen session's cwd or picked root; cli row populated from
+  attached argv via `catalog/cli-settings-map.json` (5 starter
+  flags); env precedence layer reads attached environ when
+  available.
+- ✅ EnvVarsPanel: `attached` column alongside `shell`, with
+  `Δ` per-row badge when values diverge. New `attached` and
+  `Δ diff` filter chips appear when attached.
+- ✅ MERGED chip refined to only fire for genuine multi-source
+  array merges; single-contributor array paths render as
+  normal `set` rows with the contributor's badge.
+- ✅ Capability surface change: `dialog:allow-open` granted for
+  the path picker. No other new JS-side plugin permissions.
+
+**Known follow-up** (deferred to a maintenance issue): `watcher.rs`
+still watches knobs.cc's own `cwd/.claude` rather than the attached
+/ picked project dir. Manual refresh + window-focus cover it
+operationally; dynamic watch-target rebinding is a focused
+improvement, not a blocker.
 
 ---
 
@@ -404,8 +415,7 @@ Shipped:
   Caveat surfaced in the panel footnote: knobs.cc reads its own
   process env, which usually matches the user's shell but can
   differ for Finder/Spotlight launches that use LaunchServices'
-  env. Dotenv files Claude Code reads at startup are out of scope
-  for this pass. Both gaps tracked at
+  env. Tracked at
   [#11](https://github.com/AlteredCraft/knobs-cc/issues/11) (runtime
   introspection — reads another `claude` process's environ to ground-
   truth the panel).

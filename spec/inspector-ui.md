@@ -122,7 +122,9 @@ across rail, list, drawer, and waterfall:
 - `PROJ` — amber tint (team-shared)
 - `USER` — neutral grey
 - `DEFAULT` — muted, no tint
-- `CLI` — never appears in v1 (not inspectable, [#11](https://github.com/AlteredCraft/knobs-cc/issues/11))
+- `CLI` — neutral grey tint; sourced from the attached process's argv,
+  parsed against `catalog/cli-settings-map.json` per
+  [`attach-mode.md`](./attach-mode.md). Empty when no claude is attached.
 
 ### Waterfall
 
@@ -139,17 +141,20 @@ Some layers are absent or ungrounded for typical users. Copy matters
 because generic "—" or "missing" is misleading.
 
 - `managed` (no MDM): **"no MDM policy detected"**
-- `cli` (sibling process can't read): **"not inspectable from sibling proc"**
-  ([#11](https://github.com/AlteredCraft/knobs-cc/issues/11))
+- `cli` (no attached claude): **"no attached claude (argv unavailable)"**
+  — rail row greyed when ungrounded; renders normally when attached and
+  argv contains a mapped flag. See [`attach-mode.md`](./attach-mode.md).
+- `cli` (attached but no mapped flags in argv): **"no mapped flags in
+  argv"** — Ok status, count 0.
 - `env` (no relevant vars): **"$ANTHROPIC_MODEL not set for this key"**
   (per-key, not per-layer; applies to the 8 settings keys ENV projects
   via `catalog/env-settings-map.json` — the rest of the env-vars
   surface lives in the EnvVarsPanel)
-- `project` / `project_local` (scoped to knobs.cc's launch dir, not the
-  user's claude session): **"knobs.cc's launch dir, not your claude
-  session"** — rail row is greyed out regardless of whether the file
-  was read. Tracked at
-  [#12](https://github.com/AlteredCraft/knobs-cc/issues/12).
+- `project` / `project_local` (no claude attached and no project
+  directory picked): rail row is greyed; detail reads
+  **"knobs.cc's launch dir, not your claude session"** until the user
+  picks a session or directory. When grounded (attached or picked), the
+  rows render normally with the resolved path.
 - `default` (always present): **"catalog (compiled-in)"**
 
 Per `settings-display.md`, a malformed user file does not block reading
@@ -195,23 +200,28 @@ Topbar-pill-driven takeover panel; full-pane modal modeled on
   invisible everywhere else. Shell-set names that aren't in the
   catalog are deliberately *not* surfaced (a user's shell carries
   hundreds of unrelated vars: `PATH`, `HOME`, …).
-- Each row joins shell-set values (read via `read_shell_env_vars`)
-  with `settings.json` `env.<NAME>` contributors per layer, in
-  precedence order. Shell wins when both routes set the same name.
+- Each row joins three sources, in precedence order: the **attached**
+  claude's environ (when attached — ground truth for what claude
+  sees), the **shell** values knobs.cc itself was launched with (via
+  `read_shell_env_vars` — a proxy + diagnostic), and `settings.json`
+  `env.<NAME>` contributors per layer. Attached wins over shell; shell
+  wins over settings.json.
 - Names matching `/key|token|secret|password/i` mask their value to
   `•••••••• abcd` until clicked — demo-safe by default.
-- Filter chips: `all` / `set` / `shell` / `settings.json` / `unset`;
-  substring search across name and purpose.
+- Filter chips when no claude attached: `all` / `set` / `shell` /
+  `settings.json` / `unset`. When attached, two more chips appear:
+  `attached` (vars set in claude's environ) and `Δ diff` (vars where
+  attached and shell values disagree — the headline diagnostic). Per-
+  row `Δ` badge highlights the divergence inline.
+- Substring search across name and purpose.
 - Click a row to expand inline — full markdown `purpose` prose,
   default, contributor list (winner first; shadowed values
   struck-through with their layer + path).
-- Caveat in the panel footnote: knobs.cc reads its own process env,
-  which usually matches the user's shell but can differ for
-  Finder/Spotlight launches via LaunchServices. Dotenv files Claude
-  Code reads at startup are out of scope. Closing this gap (reading
-  another `claude` process's actual environ) is tracked at
-  [#11](https://github.com/AlteredCraft/knobs-cc/issues/11) alongside
-  the related `cli` precedence-slot gap.
+- Caveat in the panel footnote: the `shell` column reflects knobs.cc's
+  own process env, which usually matches the user's terminal shell but
+  can differ for Finder/Spotlight launches that use LaunchServices'
+  env. When attached, the `attached` column is ground truth — diff
+  against `shell` to spot the divergence.
 
 The inspector's column-header banner points users at this panel so a
 filter for `env` in the inspector (which now returns zero rows)

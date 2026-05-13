@@ -39,7 +39,7 @@ export interface WaterfallEntry {
 
 const ABSENT_PER_LAYER_TEXT: Partial<Record<LayerSource, string>> = {
   managed: "— no policy —",
-  cli: "— not inspectable —",
+  cli: "— no attached claude —",
   env: "— not set —",
   default: "— no catalog default —",
 };

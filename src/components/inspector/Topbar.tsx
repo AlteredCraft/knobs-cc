@@ -1,18 +1,34 @@
 import { useSyncExternalStore } from "react";
-import { LAYERS_IN_PRECEDENCE_ORDER, type SettingsSnapshot } from "@/types";
+import {
+  LAYERS_IN_PRECEDENCE_ORDER,
+  type RuntimeSnapshot,
+  type SessionGrounding,
+  type SettingsSnapshot,
+} from "@/types";
 import { describeMcpPolicy } from "@/lib/managedMcp";
 import { openInEditor } from "@/lib/openPath";
 import { getEntries, getUnseenCount, subscribe } from "@/lib/errorLog";
+import { SessionPill } from "./SessionPill";
 import { StatusDot } from "./StatusDot";
 
 export function Topbar({
   snapshot,
+  grounding,
+  runtimeSnapshot,
+  onAttach,
+  onPickRoot,
+  onClearRoot,
   onRefresh,
   onHelp,
   onShowErrors,
   onShowEnvVars,
 }: {
   snapshot: SettingsSnapshot;
+  grounding: SessionGrounding;
+  runtimeSnapshot: RuntimeSnapshot | null;
+  onAttach: (pid: number) => void;
+  onPickRoot: () => void;
+  onClearRoot: () => void;
   onRefresh?: () => void;
   onHelp?: () => void;
   onShowErrors?: () => void;
@@ -52,6 +68,13 @@ export function Topbar({
       </div>
 
       <div className="ml-auto flex items-center gap-3 font-mono text-[11px] text-fg-2">
+        <SessionPill
+          grounding={grounding}
+          runtimeSnapshot={runtimeSnapshot}
+          onAttach={onAttach}
+          onPickRoot={onPickRoot}
+          onClearRoot={onClearRoot}
+        />
         <span className="flex items-center gap-1.5">
           <StatusDot variant={okLayers > 0 ? "ok" : "empty"} />
           {okLayers}/{totalLayers} layers

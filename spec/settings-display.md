@@ -33,18 +33,18 @@ Per `spec/inventory.md:55`, plus env vars folded in:
 
 | # | Layer                  | Source                                                            | Phase |
 |---|------------------------|-------------------------------------------------------------------|-------|
-| 1 | `managed`              | Server-managed > MDM (plist/registry) > file-based > HKCU         | 2 / 6 |
-| 2 | `cli`                  | Flags passed to `claude` (out of v1 scope — not inspectable, see [#11](https://github.com/AlteredCraft/knobs-cc/issues/11)) | — |
-| 3 | `env`                  | Process env + dotenv files Claude Code reads                      | 3     |
-| 4 | `project_local`        | `<project>/.claude/settings.local.json` *(see [#12](https://github.com/AlteredCraft/knobs-cc/issues/12) — `<project>` is knobs.cc's launch dir today)* | 1 |
-| 5 | `project`              | `<project>/.claude/settings.json` *(see [#12](https://github.com/AlteredCraft/knobs-cc/issues/12) — `<project>` is knobs.cc's launch dir today)* | 1 |
-| 6 | `user`                 | `~/.claude/settings.json`                                         | 1     |
-| 7 | `default`              | Claude Code's compiled-in defaults (catalog-derived)              | 5     |
+| 1 | `managed`              | Server-managed > MDM (plist/registry) > file-based > HKCU         |
+| 2 | `cli`                  | Attached claude's argv, parsed against `catalog/cli-settings-map.json` ([`attach-mode.md`](./attach-mode.md))               |
+| 3 | `env`                  | Process env. Reads the attached claude's environ when attached; falls back to knobs.cc's own process env otherwise. The EnvVarsPanel surfaces both side-by-side. |
+| 4 | `project_local`        | `<project>/.claude/settings.local.json` — `<project>` resolves to the attached claude's cwd or a user-picked directory ([`attach-mode.md`](./attach-mode.md))               |
+| 5 | `project`              | `<project>/.claude/settings.json` — same grounding as project_local |
+| 6 | `user`                 | `~/.claude/settings.json`                                         |
+| 7 | `default`              | Claude Code's compiled-in defaults (catalog-derived)              |
 
-CLI flags are listed for completeness but cannot be inspected from a separate
-process. The UI displays that slot with an explanatory empty state, and rows
-4–5 are greyed out in the rail until project resolution is grounded in a
-real claude session (see [#12](https://github.com/AlteredCraft/knobs-cc/issues/12)).
+When no claude is attached, the `cli` row is empty and the rail greys
+it; when no claude is attached *and* no project directory has been
+picked, `project` / `project_local` also grey out (falling back to
+reading from knobs.cc's own CWD only to satisfy tests).
 
 ## Merge semantics
 
@@ -122,12 +122,13 @@ interface SettingsSnapshot {
   1. `<cwd>/.claude/settings.local.json` (`project_local`)
   2. `<cwd>/.claude/settings.json` (`project`)
   3. `~/.claude/settings.json` (`user`)
-- Project root for Phase 1 = the Tauri app's current working directory. Walking
-  up to find the nearest `.claude/` was originally slated as Phase 4 but
-  never shipped, and the broader limitation (that knobs.cc's CWD isn't
-  the user's claude session in the first place) is now tracked at
-  [#12](https://github.com/AlteredCraft/knobs-cc/issues/12). Rows 4–5 of
-  the precedence rail are greyed out until that lands.
+- Project root: post-pivot, resolved per [`attach-mode.md`](./attach-mode.md)
+  — the attached claude process's cwd, a user-picked directory, or (legacy
+  fallback only) `std::env::current_dir()`. The `read_settings_layers`
+  command grows two optional args (`attached_pid`,
+  `project_root_override`); calling with neither preserves the
+  pre-pivot CWD behavior for tests and the no-attach-no-picker default.
+  Closed [#12](https://github.com/AlteredCraft/knobs-cc/issues/12).
 - Each layer reports `ok` / `missing` / `error` independently — a malformed
   user file does not block reading the project file.
 - `effective` is computed last-wins. Array-merge semantics are deferred to

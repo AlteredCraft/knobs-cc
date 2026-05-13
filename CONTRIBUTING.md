@@ -1,16 +1,17 @@
 # Contributing
 
-knobs.cc is in early development. The Tauri 2 app shell has been scaffolded (React + TypeScript + Vite frontend, Rust backend), but no custom Tauri commands or UI have been implemented yet. The project is still in concept phase — see `spec/` for the working inventory of Claude Code's configuration surface and the catalog-sync harness design.
+knobs.cc is in pre-release. The Tauri 2 desktop inspector runs end-to-end via `npm run tauri dev` — settings-precedence rendering, a session picker that grounds the inspector against a running `claude` process (or a picked project directory), per-leaf provenance, per-element waterfall for array-merged paths, and a sibling EnvVarsPanel with attached/shell diff. No signed installer yet.
 
 ## What's useful right now
 
 - **Corrections to the inventory.** Entries tagged `> [!verify]` are places we're least confident. If you've tested a knob and can confirm the behaviour, file an issue or PR against `spec/inventory.md`.
 - **Missing knobs.** If you know of a Claude Code configuration surface — env var, setting, hook event, IDE quirk — that's absent from the inventory, file an issue.
-- **Design input.** Opinions on app stack, hero flow, how to represent hook graphs, etc. belong in issues tagged `design`.
+- **Inspector bugs / UX feedback.** Run `npm run tauri dev`, attach to a session, file what feels off.
+- **Design input.** Opinions on hero flow, how to represent hook graphs, goals view, landing page, etc. belong in issues tagged `design`.
 
 ## What's not useful yet
 
-Code PRs. The prototype milestone hasn't been reached — the Tauri 2 scaffold is in place but no app-specific functionality has been built. If you're excited to contribute, watch the repo for the prototype milestone.
+Substantial code PRs without an issue first — let's discuss the shape before you write it. The roadmap in `spec/roadmap.md` is the source of truth for what's slated and what's deferred.
 
 ## Ground rules
 

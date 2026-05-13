@@ -18,7 +18,7 @@ const SHORTCUTS: ReadonlyArray<{ keys: string[]; action: string; note?: string }
 const LAYER_DESCRIPTIONS: Record<LayerSource, string> = {
   managed:
     "Enterprise / MDM-deployed policy. Highest precedence — designed for admins to pin settings users can't override.",
-  cli: "Flags on the running `claude` process (e.g. --model, --mcp-config). Not inspectable from a sibling app in v1.",
+  cli: "Flags on the attached `claude` process's argv (e.g. --model, --permission-mode). Documented mappings live in `catalog/cli-settings-map.json`.",
   env: "Process environment variables that override settings keys (e.g. ANTHROPIC_MODEL → `model`). Mapping table at `catalog/env-settings-map.json` — env-only vars without a settings equivalent aren't surfaced here.",
   project_local:
     "`<project>/.claude/settings.local.json` — your machine's overrides for this project, gitignored by convention.",
@@ -235,6 +235,13 @@ function AboutSection() {
           key. Every column tells you where its value came from.
         </p>
         <p className="font-mono text-[11.5px] leading-relaxed text-fg-2">
+          Pick a session from the topbar pill to ground the inspector against
+          a running <code className="text-fg-1">claude</code> process —
+          that resolves the cli, env, and project layers against the session.
+          If no claude is running, pick a project directory instead and the
+          file-based layers resolve against that.
+        </p>
+        <p className="font-mono text-[11.5px] leading-relaxed text-fg-2">
           v1 is read-only — there is no write path and no way to edit settings
           through the app. The full catalog of config surfaces lives in{" "}
           <code className="text-fg-1">spec/inventory.md</code>.
@@ -263,7 +270,7 @@ function Kbd({ children }: { children: React.ReactNode }) {
 
 const SHORT_BADGE_NOTE: Record<LayerSource, string> = {
   managed: "Enterprise / MDM policy",
-  cli: "CLI flags · not inspectable in v1",
+  cli: "CLI flags · from attached process argv",
   env: "Process env (mapped vars)",
   project_local: ".claude/settings.local.json",
   project: ".claude/settings.json",

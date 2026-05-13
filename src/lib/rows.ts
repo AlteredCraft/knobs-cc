@@ -69,19 +69,31 @@ export function buildRows(snapshot: SettingsSnapshot): Row[] {
   const setRows: Row[] = leaves.map((leaf) => {
     const contributors = contributorsForKey(snapshot.layers, leaf.keyPath);
     const { namespace, leaf: leafName } = splitKey(leaf.keyPath);
-    const isArrayMerged = leaf.elements !== undefined;
+    const hasElements = leaf.elements !== undefined;
+    // The "array-merged" badge only reads as meaningful when multiple
+    // layers actually contributed. When the backend emitted elements but
+    // only one layer is in the contributor list, surface it as a normal
+    // `set` row with that layer's badge — the per-element list still
+    // renders in the drawer (`elements` is preserved), but the centre
+    // list and EFFECTIVE block don't pretend a single-source field is
+    // multi-sourced.
+    const isMultiSourceMerge = hasElements && contributors.length > 1;
+    const winner: LayerSource | null = isMultiSourceMerge
+      ? null
+      : (leaf.winner ?? contributors[0] ?? null);
+    const state: RowState = isMultiSourceMerge
+      ? "array-merged"
+      : contributors.length > 1
+        ? "shadowed"
+        : "set";
     return {
       keyPath: leaf.keyPath,
       namespace,
       leaf: leafName,
       value: leaf.value,
-      winner: leaf.winner,
+      winner,
       contributors,
-      state: isArrayMerged
-        ? "array-merged"
-        : contributors.length > 1
-          ? "shadowed"
-          : "set",
+      state,
       elements: leaf.elements,
       catalog: findCatalogEntry(leaf.keyPath),
     };

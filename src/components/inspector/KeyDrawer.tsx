@@ -33,7 +33,12 @@ export function KeyDrawer({
 }) {
   const formatted = formatValue(row.value);
   const description = resolveDescription(row);
-  const isArrayMerged = row.state === "array-merged";
+  // Drive the drawer body decision on element presence, not row state:
+  // single-contributor array-typed rows are state="set" (so the centre
+  // list shows a normal source badge instead of MERGED) but still need
+  // the per-element list rather than a layer waterfall, since each rule
+  // in the array carries its own provenance.
+  const hasElements = row.elements !== undefined;
 
   // Look up siblings via the catalog and join with current row state so the
   // section can show set-vs-unset hints. Memoized on snapshot/row so we
@@ -54,7 +59,7 @@ export function KeyDrawer({
       <EffectiveBlock row={row} formatted={formatted} />
 
       <div className="scrollbar flex-1 overflow-auto">
-        {isArrayMerged ? (
+        {hasElements ? (
           <ElementList elements={row.elements ?? []} />
         ) : (
           <Waterfall row={row} snapshot={snapshot} />
@@ -255,34 +260,45 @@ function EffectiveBlock({
   return (
     <div className="border-b border-line px-5 py-4">
       <span className="corner-tag mb-2 block">Effective</span>
-      <div className="flex items-center gap-3 rounded-sm border border-line-strong bg-bg-0 p-3">
-        <StatusDot
-          variant={row.state === "unset" ? "empty" : "ok"}
-          className={
-            row.state !== "unset"
-              ? "shadow-[0_0_6px_var(--color-accent-ring)]"
-              : undefined
-          }
-        />
-        <span
-          className={cn(
-            "truncate font-mono text-[14px] font-semibold",
-            row.state === "unset" ? "text-fg-3" : "text-accent",
-          )}
-          title={formatted.text}
-        >
-          {formatted.text}
-        </span>
-        <span className="ml-auto flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.05em] text-fg-3">
+      <div className="rounded-sm border border-line-strong bg-bg-0 p-3">
+        <div className="flex items-center gap-3">
+          <StatusDot
+            variant={row.state === "unset" ? "empty" : "ok"}
+            className={
+              row.state !== "unset"
+                ? "shadow-[0_0_6px_var(--color-accent-ring)]"
+                : undefined
+            }
+          />
+          <span
+            className={cn(
+              "min-w-0 flex-1 truncate font-mono text-[14px] font-semibold",
+              row.state === "unset" ? "text-fg-3" : "text-accent",
+            )}
+            title={formatted.text}
+          >
+            {formatted.text}
+          </span>
           {row.winner ? (
-            <>
+            <span className="ml-auto flex shrink-0 items-center gap-1 font-mono text-[10px] uppercase tracking-[0.05em] text-fg-3">
               <SourceBadge source={row.winner} />
               <span>wins</span>
-            </>
+            </span>
           ) : (
-            <span>merged across {row.contributors.length} layers</span>
+            <span className="ml-auto shrink-0 font-mono text-[10px] uppercase tracking-[0.05em] text-fg-3">
+              merged · {row.contributors.length}{" "}
+              {row.contributors.length === 1 ? "layer" : "layers"}
+            </span>
           )}
-        </span>
+        </div>
+        {!row.winner && row.contributors.length > 0 && (
+          <div className="mt-2 flex flex-wrap items-center gap-1.5 pl-7 font-mono text-[10px] uppercase tracking-[0.05em] text-fg-4">
+            <span>from</span>
+            {row.contributors.map((source) => (
+              <SourceBadge key={source} source={source} />
+            ))}
+          </div>
+        )}
       </div>
       {annotation ? (
         <div
@@ -445,6 +461,10 @@ export function resolveValueAnnotation(row: Row): string | null {
 
 function describeShape(row: Row): string {
   if (row.state === "array-merged") return "array (merged)";
+  // Single-contributor array-merge paths render as state="set" but still
+  // have per-element provenance (`elements`). Call them out as arrays so
+  // the "scalar (last-wins)" label doesn't mislead.
+  if (row.elements !== undefined) return "array (1 layer)";
   if (Array.isArray(row.value)) return "array (last-wins)";
   if (row.value !== null && typeof row.value === "object") return "object (last-wins)";
   return "scalar (last-wins)";

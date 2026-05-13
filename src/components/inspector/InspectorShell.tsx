@@ -1,5 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { SettingsSnapshot } from "@/types";
+import type {
+  RuntimeSnapshot,
+  SessionGrounding,
+  SettingsSnapshot,
+} from "@/types";
 import { buildRows } from "@/lib/rows";
 import { EnvVarsPanel } from "./EnvVarsPanel";
 import { ErrorPanel } from "./ErrorPanel";
@@ -18,11 +22,27 @@ function isTextInput(el: Element | null): boolean {
 
 export function InspectorShell({
   snapshot,
+  grounding,
+  runtimeSnapshot,
+  onAttach,
+  onPickRoot,
+  onClearRoot,
   onRefresh,
 }: {
   snapshot: SettingsSnapshot;
+  grounding: SessionGrounding;
+  runtimeSnapshot: RuntimeSnapshot | null;
+  onAttach: (pid: number) => void;
+  onPickRoot: () => void;
+  onClearRoot: () => void;
   onRefresh?: () => void;
 }) {
+  // Pulled here (rather than at each consumer) so the EnvVarsPanel and any
+  // future "running claude env" UI see the same snapshot.
+  const attachedEnv = useMemo(
+    () => (grounding.kind === "attached" ? grounding.process.environ : null),
+    [grounding],
+  );
   const [activeKeyPath, setActiveKeyPath] = useState<string | null>(null);
   const [helpOpen, setHelpOpen] = useState(false);
   const [errorsOpen, setErrorsOpen] = useState(false);
@@ -168,6 +188,11 @@ export function InspectorShell({
     <div className="flex h-screen flex-col overflow-hidden bg-bg-0 text-fg-1">
       <Topbar
         snapshot={snapshot}
+        grounding={grounding}
+        runtimeSnapshot={runtimeSnapshot}
+        onAttach={onAttach}
+        onPickRoot={onPickRoot}
+        onClearRoot={onClearRoot}
         onRefresh={onRefresh}
         onHelp={() => setHelpOpen(true)}
         onShowErrors={() => setErrorsOpen(true)}
@@ -177,6 +202,7 @@ export function InspectorShell({
       <div className="flex flex-1 overflow-hidden">
         <PrecedenceRail
           snapshot={snapshot}
+          grounding={grounding}
           activeWinner={activeRow?.winner ?? null}
         />
         <SettingsList
@@ -201,6 +227,7 @@ export function InspectorShell({
       {envVarsOpen && (
         <EnvVarsPanel
           snapshot={snapshot}
+          attachedEnv={attachedEnv}
           onClose={() => setEnvVarsOpen(false)}
         />
       )}

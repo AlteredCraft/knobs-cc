@@ -37,16 +37,17 @@ v1 should keep the desktop security model tight:
 - No write commands — v1 is read-only by design.
 - No `fs` plugin — file reads are done via explicit Rust commands, not by granting the frontend filesystem plugin permissions.
 - No `shell` plugin — no shell execution permitted.
+- No `process` plugin — process introspection is done by the `sysinfo` crate inside an explicit `read_runtime_layer` Rust command, not by granting the frontend process-spawning capabilities. See [`attach-mode.md`](./attach-mode.md).
 - No `updater` plugin until signing and release flow are stable.
-- Expose explicit commands (`read_settings_layers`, `read_catalog`, `read_shell_env_vars`) registered via `generate_handler![]` instead of granting generic file access.
-- Capability files in `src-tauri/capabilities/` (`default.json` for cross-platform plus per-OS files `default-macos.json` / `default-linux.json` / `default-windows.json` gated via `platforms`) grant only `core:default` + `opener:default` + a tightly-scoped `opener:allow-open-path` — no `fs`, `shell`, or `updater`. The per-OS split is load-bearing: Tauri compiles every glob on every target, and a Windows backslash pattern (`C:\Program Files\…\**`) fails to compile on macOS/Linux unless gated.
+- Expose explicit commands (`read_settings_layers`, `read_catalog`, `read_shell_env_vars`, `read_runtime_layer`) registered via `generate_handler![]` instead of granting generic file access.
+- Capability files in `src-tauri/capabilities/` (`default.json` for cross-platform plus per-OS files `default-macos.json` / `default-linux.json` / `default-windows.json` gated via `platforms`) grant only `core:default` + `opener:default` + a tightly-scoped `opener:allow-open-path` + `dialog:allow-open` — no `fs`, `shell`, `process`, or `updater`. The `dialog:allow-open` grant powers the path-picker fallback when no claude is attached; it returns a path string but doesn't read files. The per-OS split is load-bearing: Tauri compiles every glob on every target, and a Windows backslash pattern (`C:\Program Files\…\**`) fails to compile on macOS/Linux unless gated.
 
 ## Security model (Tauri 2 capabilities)
 
 Tauri 2 permissions are managed through capability files (`src-tauri/capabilities/<id>.json`). For v1:
 
-- The default capability file grants `core:default` + `opener:default` plus a scoped `opener:allow-open-path` whitelist for the path-notes click-through. Platform-specific managed-tier paths live in sibling capability files gated by `platforms` (split because Tauri compiles every scope glob on every target — a Windows backslash pattern in a shared file fails to compile on macOS/Linux).
-- No `fs`, `shell`, `process`, `dialog`, or `updater` plugin permissions.
+- The default capability file grants `core:default` + `opener:default` + a scoped `opener:allow-open-path` whitelist for the path-notes click-through + `dialog:allow-open` for the project-directory picker. Platform-specific managed-tier paths live in sibling capability files gated by `platforms` (split because Tauri compiles every scope glob on every target — a Windows backslash pattern in a shared file fails to compile on macOS/Linux).
+- No `fs`, `shell`, `process`, or `updater` plugin permissions.
 - Our Rust commands (`#[tauri::command]`) are registered in the builder via `invoke_handler(tauri::generate_handler![...])`.
 - The frontend calls commands through `@tauri-apps/api/core` (`invoke`), not through open-ended plugin APIs.
 
