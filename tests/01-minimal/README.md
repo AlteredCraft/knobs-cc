@@ -25,7 +25,7 @@ this claude and the `includeGitInstructions` row source flips from
 `PROJ` to `ENV`, with the project value shown shadowed in the layer
 waterfall.
 
-![includeGitInstructions row showing source ENV with PROJ shadowed in the waterfall](../img/shadowing.png)
+![includeGitInstructions row showing source ENV with PROJ shadowed in the waterfall](../img/01.png)
 
 ## What's set
 

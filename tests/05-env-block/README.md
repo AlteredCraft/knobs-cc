@@ -26,6 +26,8 @@ inspect this scenario purely from the file (no need to attach).
 The inspector's settings list **skips** the `env` subtree by design —
 this surface is owned end-to-end by the EnvVarsPanel.
 
+![](../img/05.png)
+
 ## How to demo
 
 1. SessionPill → path-picker → pick `tests/05-env-block/`. (No running

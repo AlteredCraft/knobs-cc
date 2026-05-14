@@ -19,14 +19,16 @@ No env vars, no CLI flags — precedence comes entirely from the two
 
 - `model: "sonnet"`
 - `effortLevel: "medium"`
-- `defaultShell: "/bin/zsh"`
+- `defaultShell: "powershell"`
 
 `.claude/settings.local.json` (project_local layer, gitignored in real
 projects):
 
 - `model: "opus"` — *overrides* project
-- `defaultShell: "/bin/bash"` — *overrides* project
+- `defaultShell: "bash"` — *overrides* project
 - (does not set `effortLevel` — that one falls through to project)
+
+![](../img/02.png)
 
 ## How to demo
 
@@ -35,7 +37,7 @@ projects):
    (count 3). Both dotted.
 3. Settings list:
    - `model` row: value `"opus"`, provenance chip `project_local`.
-   - `defaultShell` row: value `"/bin/bash"`, provenance chip `project_local`.
+   - `defaultShell` row: value `"bash"`, provenance chip `project_local`.
    - `effortLevel` row: value `"medium"`, provenance chip `project`.
 4. Click `model` → drawer shows the **waterfall** — both layers
    contributed values, with `project_local` winning and `project`

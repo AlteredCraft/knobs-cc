@@ -1,12 +1,7 @@
 {
   "permissions": {
-    "allow": [
-      "Bash(git status:*)",
-      "Bash(npm test:*)"
-    ],
-    "deny": [
-      "Bash(rm -rf:*)"
-    ],
-    "defaultMode": "ask"
+    "allow": ["Bash(git status:*)", "Bash(npm test:*)"],
+    "deny": ["Bash(rm -rf:*)"],
+    "defaultMode": "plan"
   }
 }

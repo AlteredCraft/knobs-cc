@@ -21,6 +21,8 @@ The cli layer should win.
 - `model: "sonnet"`
 - `effortLevel: "low"`
 
+![](../img/06.png)
+
 ## How to demo
 
 1. `cd tests/06-cli-attach` and run the command above. Leave claude

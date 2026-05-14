@@ -1,5 +1,5 @@
 {
   "model": "sonnet",
   "effortLevel": "medium",
-  "defaultShell": "/bin/zsh"
+  "defaultShell": "powershell"
 }

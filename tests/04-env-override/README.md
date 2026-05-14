@@ -29,6 +29,8 @@ attach to its environ.
 
 We'll override all four from the shell environment.
 
+![](../img/04.png)
+
 ## How to demo
 
 1. `cd tests/04-env-override` and run the command above. Claude doesn't

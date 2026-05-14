@@ -21,7 +21,7 @@ No env vars, no CLI flags — the merge is purely a file-layer behaviour.
 "permissions": {
   "allow": ["Bash(git status:*)", "Bash(npm test:*)"],
   "deny":  ["Bash(rm -rf:*)"],
-  "defaultMode": "ask"
+  "defaultMode": "plan"
 }
 ```
 
@@ -36,6 +36,8 @@ No env vars, no CLI flags — the merge is purely a file-layer behaviour.
 The two `allow` arrays don't replace each other — they concatenate
 (with dedup). `defaultMode` doesn't get touched by local, so it stays
 at the project value.
+
+![](../img/03.png)
 
 ## How to demo
 
