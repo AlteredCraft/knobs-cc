@@ -1,7 +1,7 @@
 {
-  "source": "spec/inventory.md §3 (env vars) cross-referenced with §2 (settings fields). Hand-maintained: the upstream JSON Schema doesn't expose env-var equivalents as structured metadata, only inline in description prose, and inversion can't be inferred. See spec/settings-display.md Phase 3.",
-  "fetchedAt": "2026-05-05",
-  "count": 8,
+  "source": "Hand-curated from upstream Claude Code docs: https://code.claude.com/docs/en/env-vars.md and https://code.claude.com/docs/en/settings.md. Only env vars whose purpose prose documents a flat 1:1 projection onto a settings.json key are included. Excluded by design: pairs with shape-mismatch (e.g. bool env vs rate setting), nested-key projections (`tui.*`), or property-of relationships (e.g. helper TTL vs helper command). See spec/settings-display.md Phase 3 for the projection contract; upstream JSON Schema doesn't expose these pairings as structured metadata, and inversion can't be inferred from names alone.",
+  "fetchedAt": "2026-05-13",
+  "count": 9,
   "mappings": [
     {
       "env": "ANTHROPIC_MODEL",
@@ -14,19 +14,8 @@
       "type": "string"
     },
     {
-      "env": "CLAUDE_CODE_SHELL",
-      "settings": "defaultShell",
-      "type": "string"
-    },
-    {
       "env": "CLAUDE_CODE_DISABLE_GIT_INSTRUCTIONS",
       "settings": "includeGitInstructions",
-      "type": "bool",
-      "invert": true
-    },
-    {
-      "env": "CLAUDE_CODE_GLOB_NO_IGNORE",
-      "settings": "respectGitignore",
       "type": "bool",
       "invert": true
     },
@@ -46,6 +35,22 @@
       "env": "CLAUDE_CODE_ENABLE_AWAY_SUMMARY",
       "settings": "awaySummaryEnabled",
       "type": "bool"
+    },
+    {
+      "env": "CLAUDE_CODE_DISABLE_AGENT_VIEW",
+      "settings": "disableAgentView",
+      "type": "bool"
+    },
+    {
+      "env": "CLAUDE_CODE_AUTO_CONNECT_IDE",
+      "settings": "autoConnectIde",
+      "type": "bool"
+    },
+    {
+      "env": "CLAUDE_CODE_IDE_SKIP_AUTO_INSTALL",
+      "settings": "autoInstallIdeExtension",
+      "type": "bool",
+      "invert": true
     }
   ]
 }
