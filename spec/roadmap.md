@@ -218,7 +218,9 @@ improvement, not a blocker.
   schema, async-hook config — all prose-rich. Wired through
   `read_catalog` as `hooks` on the wire (no UI consumer yet — Rust
   loads it as `serde_json::Value`, so the new keys flow through
-  transparently). Cron sync covers the new shape.
+  transparently). Cron sync covers the new shape. UI consumer tracked
+  at [#17](https://github.com/AlteredCraft/knobs-cc/issues/17) (umbrella
+  [#10](https://github.com/AlteredCraft/knobs-cc/issues/10)).
 - **New sync scripts.** Each gets one script + one catalog file + one
   test, per the recipe. No remaining candidates from the
   documentation index — every page that exposes a canonical tabular
@@ -239,9 +241,11 @@ improvement, not a blocker.
   code formatting, and unescaped-pipe-aware splitting so the
   `cat file \| claude -p "query"` row parses cleanly. Wired through
   `read_catalog` as `cli_reference` (snake-case on the wire to match
-  `env_vars` / `sub_agents`); no UI consumer yet. Cron sync covers
-  the new script. Future use: this catalog is load-bearing for the
-  deferred runtime introspection feature
+  `env_vars` / `sub_agents`); no UI consumer yet — tracked at
+  [#21](https://github.com/AlteredCraft/knobs-cc/issues/21) (umbrella
+  [#10](https://github.com/AlteredCraft/knobs-cc/issues/10)). Cron sync
+  covers the new script. Future use: this catalog is load-bearing for
+  the deferred runtime introspection feature
   ([#11](https://github.com/AlteredCraft/knobs-cc/issues/11)) — each documented flag
   is a candidate input the eventual flag-name → settings-key mapping
   (parallel to `catalog/env-settings-map.json`) will draw on.
@@ -259,9 +263,11 @@ improvement, not a blocker.
   artifact most directly consumable: it enumerates every value the
   `context` field accepts inside a `bindings` block of
   `~/.claude/keybindings.json`. Wired through `read_catalog` as
-  `keybindings` on the wire (no UI consumer yet, parallel to
-  env-vars / hooks / sub-agents / mcp / permissions). Cron sync
-  covers the new script. Future passes: per-context `Action |
+  `keybindings` on the wire (no UI consumer yet — tracked at
+  [#20](https://github.com/AlteredCraft/knobs-cc/issues/20), umbrella
+  [#10](https://github.com/AlteredCraft/knobs-cc/issues/10); blocked on a new
+  read path for `~/.claude/keybindings.json`). Cron sync covers the
+  new script. Future passes: per-context `Action |
   Default | Description` action tables (would need to be associated
   with their owning `### foo actions` heading), reserved shortcuts
   and terminal conflicts tables, keystroke-syntax modifier rules.
@@ -276,9 +282,10 @@ improvement, not a blocker.
   single canonical artifact most directly consumable: it enumerates
   every value `permissions.defaultMode` accepts with prose richer
   than the short blurbs in the settings JSON Schema. Wired through
-  `read_catalog` as `permissions` on the wire (no UI consumer yet,
-  parallel to env-vars / hooks / sub-agents / mcp). Cron sync covers
-  the new script. Future passes: the path-pattern table
+  `read_catalog` as `permissions` on the wire; UI consumer landed as
+  the drawer's value-conditional annotation for
+  `permissions.defaultMode`. Cron sync covers the new script. Future
+  passes: the path-pattern table
   (`### Read and Edit`'s `//path` / `~/path` / `/path` / `path`
   prefixes), the managed-only-settings annotation table (which would
   let the app flag managed-only settings catalog entries), and the
@@ -293,11 +300,13 @@ improvement, not a blocker.
   `name`, `loadsIn`, `shared` (preserved verbatim — "No" /
   "Yes, via version control" / "No"), and `storedIn` (preserved
   verbatim, code-spans intact). Wired through `read_catalog` as `mcp`
-  on the wire (no UI consumer yet, parallel to env-vars / hooks /
-  sub-agents). Cron sync covers the new script. Future passes:
-  transport types (HTTP / SSE / stdio), managed-mcp.json exclusive-
-  control + allowlist/denylist semantics, OAuth credential handling,
-  tool-search deferral thresholds.
+  on the wire (no UI consumer yet — tracked at
+  [#18](https://github.com/AlteredCraft/knobs-cc/issues/18), umbrella
+  [#10](https://github.com/AlteredCraft/knobs-cc/issues/10)). Cron sync
+  covers the new script. Future passes: transport types (HTTP / SSE /
+  stdio), managed-mcp.json exclusive-control + allowlist/denylist
+  semantics, OAuth credential handling, tool-search deferral
+  thresholds.
 - **Sub-agents catalog (frontmatter pass).** ✅ shipped 2026-05-07.
   `scripts/sync-sub-agents.js` reads
   `https://code.claude.com/docs/en/sub-agents.md`'s
@@ -307,10 +316,13 @@ improvement, not a blocker.
   `skills`, `mcpServers`, `hooks`, `memory`, `background`, `effort`,
   `isolation`, `color`, `initialPrompt`). The catalog is wired through
   `read_catalog` as `sub_agents` (snake-case on the wire to match
-  `env_vars`); no UI consumer yet, parallel to the env-vars/hooks
-  catalogs. Cron sync covers the new script. Future pass: built-in
-  subagent identities (Explore / Plan / general-purpose / etc.) and
-  the operational rules around tool restrictions and hooks.
+  `env_vars`); no UI consumer yet — tracked at
+  [#19](https://github.com/AlteredCraft/knobs-cc/issues/19), umbrella
+  [#10](https://github.com/AlteredCraft/knobs-cc/issues/10); blocked
+  on a new read path for `~/.claude/agents/*.md`. Cron sync covers
+  the new script. Future pass: built-in subagent identities (Explore /
+  Plan / general-purpose / etc.) and the operational rules around tool
+  restrictions and hooks.
 - **`read_catalog` Tauri command.** ✅ shipped 2026-05-05. Rust now
   owns `catalog/{settings,env-vars,hooks}.json` via `include_str!` and
   serves them through `read_catalog`. The frontend's `src/lib/catalog.ts`

@@ -6,6 +6,7 @@ import { LaunchScreen } from "@/components/LaunchScreen";
 import { loadCatalog } from "@/lib/catalog";
 import { installGlobalHandlers } from "@/lib/errorLog";
 import { pickProjectDirectory } from "@/lib/openPath";
+import { installZoomShortcuts } from "@/lib/zoom";
 import {
   deriveSessionGrounding,
   groundingToInvokeArgs,
@@ -93,6 +94,7 @@ function App() {
   }, [launchComplete, refreshAll]);
 
   useEffect(() => installGlobalHandlers(), []);
+  useEffect(() => installZoomShortcuts(), []);
 
   // Live updates from the Rust file watcher. Only relevant once we're in
   // the Inspector — the launch screen doesn't render settings.

@@ -15,7 +15,7 @@
  * processes are detected — so users discover the affordance for next time.
  * Disabled with educational copy.
  */
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type {
   ClaudeProcess,
   LayerSource,
@@ -23,6 +23,7 @@ import type {
 } from "@/types";
 import { shortLabel, tildify } from "@/lib/runtime";
 import { openExternalUrl } from "@/lib/openPath";
+import { HelpView } from "./inspector/HelpView";
 import { StatusDot } from "./inspector/StatusDot";
 
 export interface LaunchScreenProps {
@@ -48,10 +49,30 @@ export function LaunchScreen({
     [runtimeSnapshot],
   );
   const home = processes[0]?.environ.HOME ?? null;
+  const [helpOpen, setHelpOpen] = useState(false);
 
-  // R rescans from anywhere on the screen.
+  // Keyboard: R rescans, ⌘/ opens help, Esc closes help if open.
+  // (Bare `?` conflicts with macOS's Help menu accelerator, so we use a
+  // modifier-bearing combo instead.)
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (helpOpen) {
+        if (e.key === "Escape") {
+          e.preventDefault();
+          setHelpOpen(false);
+          return;
+        }
+        if ((e.metaKey || e.ctrlKey) && e.key === "/") {
+          e.preventDefault();
+          setHelpOpen(false);
+        }
+        return;
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key === "/") {
+        e.preventDefault();
+        setHelpOpen(true);
+        return;
+      }
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       const tag = (document.activeElement?.tagName ?? "").toLowerCase();
       if (tag === "input" || tag === "textarea") return;
@@ -62,7 +83,7 @@ export function LaunchScreen({
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onRescan]);
+  }, [onRescan, helpOpen]);
 
   // Single attached session is the obviously-right primary action; otherwise
   // the directory picker is the most useful starting button.
@@ -70,7 +91,7 @@ export function LaunchScreen({
 
   return (
     <main className="grid-bg flex h-screen flex-col overflow-auto bg-bg-0 text-fg-1">
-      <Header />
+      <Header onHelp={() => setHelpOpen(true)} />
       <div className="mx-auto flex w-full max-w-[1080px] flex-1 flex-col px-10 py-10">
         <Primer />
         <div className="mt-10 grid flex-1 grid-cols-1 gap-6 md:grid-cols-2">
@@ -90,11 +111,12 @@ export function LaunchScreen({
         </div>
         <Footer onRescan={onRescan} loading={loading} />
       </div>
+      {helpOpen && <HelpView onClose={() => setHelpOpen(false)} />}
     </main>
   );
 }
 
-function Header() {
+function Header({ onHelp }: { onHelp: () => void }) {
   return (
     <header
       className="flex h-[38px] shrink-0 items-center border-b border-line-strong px-4"
@@ -113,6 +135,14 @@ function Header() {
           inspector · choose session
         </span>
       </div>
+      <button
+        type="button"
+        onClick={onHelp}
+        className="ml-auto rounded-sm border border-line-strong px-2 py-1 font-mono text-[10.5px] uppercase tracking-wider text-fg-2 hover:border-accent hover:text-fg-1"
+        title="Help — keyboard shortcuts, layer legend (⌘/)"
+      >
+        ?
+      </button>
     </header>
   );
 }

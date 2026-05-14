@@ -137,7 +137,7 @@ export function Topbar({
             type="button"
             onClick={onHelp}
             className="rounded-sm border border-line-strong px-2 py-1 uppercase tracking-wider text-fg-2 hover:border-accent hover:text-fg-1"
-            title="Help — keyboard shortcuts, layer legend (?)"
+            title="Help — keyboard shortcuts, layer legend (⌘/)"
           >
             ?
           </button>

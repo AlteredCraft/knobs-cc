@@ -82,12 +82,17 @@ export function InspectorShell({
 
       const inInput = isTextInput(document.activeElement);
 
-      // Help is a modal layer — only ?, Esc handle. Everything else falls
+      // Help is a modal layer — only ⌘/, Esc handle. Everything else falls
       // through to the browser default. We don't want J/K to "navigate"
       // the inspector behind the help, or ⌘K to focus a filter the user
       // can't see.
       if (helpOpen) {
-        if (e.key === "Escape" || e.key === "?") {
+        if (e.key === "Escape") {
+          e.preventDefault();
+          setHelpOpen(false);
+          return;
+        }
+        if ((e.metaKey || e.ctrlKey) && e.key === "/") {
           e.preventDefault();
           setHelpOpen(false);
         }
@@ -120,9 +125,16 @@ export function InspectorShell({
         return;
       }
 
-      // Modifier-bearing keys beyond ⌘K aren't part of our model — let
-      // the platform/browser handle them (copy/paste, devtools, etc.).
-      // Shift is allowed through because `?` is Shift+/.
+      // ⌘/ / Ctrl+/ — open help. (Bare `?` conflicts with macOS's Help
+      // menu accelerator, so we use a modifier-bearing combo instead.)
+      if ((e.metaKey || e.ctrlKey) && e.key === "/") {
+        e.preventDefault();
+        setHelpOpen(true);
+        return;
+      }
+
+      // Modifier-bearing keys beyond ⌘K / ⌘/ aren't part of our model —
+      // let the platform/browser handle them (copy/paste, devtools, etc.).
       if (e.metaKey || e.ctrlKey || e.altKey) return;
 
       // Esc closes the drawer if it's open. If no drawer and we're inside
@@ -152,10 +164,6 @@ export function InspectorShell({
       if (inInput) return;
 
       switch (e.key) {
-        case "?":
-          e.preventDefault();
-          setHelpOpen(true);
-          return;
         case "/":
           e.preventDefault();
           listRef.current?.focusFilter();
