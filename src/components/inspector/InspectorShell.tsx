@@ -27,6 +27,7 @@ export function InspectorShell({
   onAttach,
   onPickRoot,
   onClearRoot,
+  onBackToLaunch,
   onRefresh,
 }: {
   snapshot: SettingsSnapshot;
@@ -35,6 +36,7 @@ export function InspectorShell({
   onAttach: (pid: number) => void;
   onPickRoot: () => void;
   onClearRoot: () => void;
+  onBackToLaunch?: () => void;
   onRefresh?: () => void;
 }) {
   // Pulled here (rather than at each consumer) so the EnvVarsPanel and any
@@ -193,6 +195,7 @@ export function InspectorShell({
         onAttach={onAttach}
         onPickRoot={onPickRoot}
         onClearRoot={onClearRoot}
+        onBackToLaunch={onBackToLaunch}
         onRefresh={onRefresh}
         onHelp={() => setHelpOpen(true)}
         onShowErrors={() => setErrorsOpen(true)}

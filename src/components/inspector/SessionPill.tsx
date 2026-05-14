@@ -22,6 +22,7 @@ export function SessionPill({
   onAttach,
   onPickRoot,
   onClearRoot,
+  onBackToLaunch,
 }: {
   grounding: SessionGrounding;
   runtimeSnapshot: RuntimeSnapshot | null;
@@ -30,6 +31,8 @@ export function SessionPill({
   onPickRoot: () => void;
   /** Clear a previously-picked root and return to "no claude" state. */
   onClearRoot: () => void;
+  /** Return to the launch screen to pick a different grounding. */
+  onBackToLaunch?: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -117,6 +120,18 @@ export function SessionPill({
                 className="block w-full rounded-sm px-2 py-1.5 text-left font-mono text-[11px] text-fg-3 hover:bg-bg-2 hover:text-fg-1"
               >
                 Clear picked directory ({tildify(grounding.pickedRoot, home)})
+              </button>
+            )}
+            {onBackToLaunch && (
+              <button
+                type="button"
+                onClick={() => {
+                  setOpen(false);
+                  onBackToLaunch();
+                }}
+                className="mt-1 block w-full rounded-sm border-t border-line px-2 pt-2 pb-1.5 text-left font-mono text-[11px] text-fg-3 hover:bg-bg-2 hover:text-fg-1"
+              >
+                ← Back to launch screen
               </button>
             )}
           </div>

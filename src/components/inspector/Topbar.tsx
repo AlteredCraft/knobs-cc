@@ -18,6 +18,7 @@ export function Topbar({
   onAttach,
   onPickRoot,
   onClearRoot,
+  onBackToLaunch,
   onRefresh,
   onHelp,
   onShowErrors,
@@ -29,6 +30,7 @@ export function Topbar({
   onAttach: (pid: number) => void;
   onPickRoot: () => void;
   onClearRoot: () => void;
+  onBackToLaunch?: () => void;
   onRefresh?: () => void;
   onHelp?: () => void;
   onShowErrors?: () => void;
@@ -74,6 +76,7 @@ export function Topbar({
           onAttach={onAttach}
           onPickRoot={onPickRoot}
           onClearRoot={onClearRoot}
+          onBackToLaunch={onBackToLaunch}
         />
         <span className="flex items-center gap-1.5">
           <StatusDot variant={okLayers > 0 ? "ok" : "empty"} />
