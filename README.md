@@ -2,7 +2,7 @@
 
 A local desktop inspector for every knob Claude Code gives you — where it lives, what it's set to, and which layer wins.
 
-![knobs.cc inspector showing the precedence rail, settings list, and key drawer](spec/screenshot.png)
+![knobs.cc inspector showing the precedence rail, settings list, and key drawer](docs/img/inspector-screen.png)
 
 ## Status
 
@@ -74,9 +74,12 @@ Three coordinated surfaces:
   visual reference at [`mocks/01-inspector.html`](mocks/01-inspector.html)),
   [`spec/catalog-sync.md`](spec/catalog-sync.md), and
   [`spec/design-notes.md`](spec/design-notes.md).
-- **The catalog harness.** `scripts/sync-{settings,env-vars,hooks}.js`
-  pull upstream JSON Schema and docs into `catalog/*.json`, which the
-  app consumes through `read_catalog`.
+- **The catalog harness.** Eight `scripts/sync-*.js` scripts (settings,
+  env-vars, hooks, sub-agents, mcp, permissions, keybindings,
+  cli-reference) pull upstream JSON Schema and docs into
+  `catalog/*.json`, which the app consumes through `read_catalog`.
+  [`.github/workflows/catalog-drift.yml`](.github/workflows/catalog-drift.yml)
+  re-runs them weekly and opens a rolling PR when content drifts.
 
 ## Running knobs.cc
 
@@ -94,7 +97,25 @@ npm run build          # type-check + build the frontend
 npm run tauri build    # build a native installer (DMG / .msi / AppImage)
 ```
 
-## Tests
+## Demo scenarios
+
+Six self-contained project directories under [`tests/`](tests/) exercise
+specific inspector features — precedence cascades, array merging across
+layers, env-layer projection, the EnvVarsPanel, and the CLI/attach
+flow. Each has its own `README.md` with the exact launch command (some
+plain `claude`, some prepending env vars, one with `--model`) and what
+to look for in the app. Start with
+[`tests/01-minimal/`](tests/01-minimal/) and walk up.
+
+![launch screen — pick a running claude session or a project directory](docs/img/launch-screen.png)
+
+## Deep dives
+
+Mid-level technical explanations of non-obvious mechanics live in
+[`docs/deep_dives.md`](docs/deep_dives.md) — currently covers how
+env vars shadow settings keys through the synthesized env layer.
+
+## Test suites
 
 Three suites live in this repo:
 
