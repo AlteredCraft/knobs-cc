@@ -1,0 +1,8 @@
+{
+  "model": "sonnet",
+  "env": {
+    "ANTHROPIC_BASE_URL": "https://example.com/proxy",
+    "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
+    "MY_CUSTOM_DEMO_VAR": "hello-from-settings"
+  }
+}

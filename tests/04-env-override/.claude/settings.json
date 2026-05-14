@@ -1,0 +1,6 @@
+{
+  "model": "sonnet",
+  "effortLevel": "low",
+  "autoMemoryEnabled": true,
+  "includeGitInstructions": true
+}
