@@ -8,20 +8,15 @@ If you ship something, mark it ✅ here and (where relevant) update the
 corresponding spec section. If you discover new work, add it here, not
 inline in another spec.
 
-Last reviewed: 2026-05-13 (attach mode shipped on `feat/attach-mode`,
-closing #11 and #12 — see "Attach mode" section below for the
-shipped surface).
+Last reviewed: 2026-05-16 (hooks.events drawer cross-reference
+shipped, then expanded into a structured matcher-groups view +
+hook details modal; see Inspector polish § Shipped for both).
 
 ## Next-up candidates
 
 A digest of what's open across the four tracks below — pick from
 here, then jump to the relevant section for shape and rationale.
 
-- **Drawer cross-reference for `hooks.events`** (inspector polish) —
-  concrete follow-up to the env-vars + permissions.modes drawer
-  wire-ups. Catalog already loads through `read_catalog`; main
-  open question is whether the array-typed `hooks.<EventName>` rows
-  fit the existing drawer shape. See Inspector polish § "Open work".
 - **Generalize value-conditional drawer annotation** (inspector
   polish) — the annotation that ships today only fires for
   `permissions.defaultMode`. Other multi-value enums (`effortLevel`,
@@ -359,19 +354,6 @@ improvement, not a blocker.
 
 Open work (what to pick up next within this track):
 
-- **Drawer cross-references — `hooks.events` for `hooks.<EventName>`.**
-  Hooks pass #2 (2026-05-08) lifted handler types and per-event
-  schemas into `catalog/hooks.json`. The natural drawer consumers are
-  rows whose keyPath is `hooks.<EventName>` (e.g. `hooks.PreToolUse`,
-  `hooks.Stop`): surface the event's `when` cadence in the header.
-  Stretch — collapsible detail with `inputFields` / `outputFields` /
-  `inputExample` and a "common input fields" reference; if any of
-  that doesn't fit cleanly into the existing drawer affordances,
-  scope back to header-only and track the detail panel as a third
-  pass. `hooks.<EventName>` rows hold matcher-group arrays rather
-  than scalars, so the drawer's value rendering may need to handle
-  the array case before the cross-reference is useful — verify
-  with a live row before designing the detail panel.
 - **Rail navigability — undecided.** Spec is silent. Either keep the
   rail informational (current behavior) or wire layer-click → centre
   list filtered to keys won by that layer. Needs an explicit decision
@@ -398,6 +380,60 @@ Open work (what to pick up next within this track):
 
 Shipped:
 
+- **Hooks structured drawer view + details modal.**
+  ✅ shipped 2026-05-16 (same day as the header cross-reference
+  below — the two passes are one commit's worth of work in
+  practice). The drawer's EFFECTIVE block now renders
+  `1 matcher group · command` (or `2 matcher groups · command, http`)
+  for hooks rows instead of the useless generic `[N] {…}` that
+  `formatValue` produced. A new **Matcher Groups** section in the
+  drawer body lists each group as a clickable button
+  (`01 · matcher: "Bash" → 1 command`); clicking opens a new
+  `HookDetailsModal` modeled on `HelpView` that carries the full
+  impl — preformatted `command` / `url` / `prompt` bodies, timeout,
+  full handler shape — plus the event schema lifted from the hooks
+  catalog (`inputFields`, `outputFields`, `inputExample`). First UI
+  consumer of the per-event schemas from hooks-sync pass #2
+  (2026-05-08). Parsing helpers in `src/lib/hooks.ts` are defensive
+  against malformed settings.json — partial groups, missing fields,
+  non-array roots all degrade gracefully rather than throw. Handler-
+  type-aware impl picker: `command` → `command` field, `http` →
+  `url`, `mcp_tool` → `server::tool`, `prompt`/`agent` → `prompt`.
+  Modal state lives in `InspectorShell` (keyed by keyPath so the file
+  watcher's snapshot rebuilds flow through); Esc closes alongside the
+  other modal panels (help / errors / env-vars). Demo scenario
+  `tests/07-hooks/` updated to walk through the new surfaces.
+  Closes the bulk of [#17](https://github.com/AlteredCraft/knobs-cc/issues/17).
+- **Drawer cross-references `hooks.events` for `hooks.<EventName>`.**
+  ✅ shipped 2026-05-16. When a row's keyPath matches
+  `hooks.<EventName>` and the event is documented in `catalog/hooks.json`
+  (29 events at time of writing), the drawer header surfaces the
+  event's `when` cadence instead of the thinner settings-catalog
+  description. The hooks-catalog prose is consistently event-semantic
+  ("Before a tool call executes. Can block it") rather than knob-
+  framing ("Hooks that run before tool calls"); a handful of events
+  (`PreToolUse`, `Stop`, `StopFailure`, `Setup`, ...) carry semantics
+  upstream that the settings catalog doesn't capture, and the
+  first-line truncation makes them roughly equivalent for the few
+  events where the settings catalog is richer (`ConfigChange`,
+  `FileChanged`). Joins through `findHookEvent(name)` in
+  `src/lib/catalog.ts` (name-indexed Map built at hydration time) and
+  `hookEventNameFromKeyPath` in `KeyDrawer.tsx`, parallel to the
+  env-vars pattern. Case-sensitive lookup — event names are PascalCase
+  ASCII and case-folding would feed false matches for user typos. Type
+  shape for the hooks catalog tightened from `unknown` to a typed
+  `HooksCatalogFile` with optional `inputFields` / `inputExample` /
+  `outputFields` per event, so a future detail-panel pass can pull
+  those without re-typing. Third drawer-side consumer of a non-
+  settings catalog after env-vars and permissions.modes; further
+  validates the seam. `hooks.<EventName>` rows hold matcher-group
+  arrays — `formatValue` already renders these as `[N] {…}` (same
+  shape as `permissions.allow`), so no value-rendering changes were
+  needed. Detail panel with `inputFields` / `outputFields` /
+  `inputExample` deferred per the roadmap's "scope back to header-
+  only" guidance; tracked at
+  [#17](https://github.com/AlteredCraft/knobs-cc/issues/17) (umbrella
+  [#10](https://github.com/AlteredCraft/knobs-cc/issues/10)).
 - **EnvVarsPanel — SSOT for env vars.** ✅ shipped 2026-05-10. The
   inspector-side `env` settings-precedence layer only projects 8
   mapped OS env vars (`catalog/env-settings-map.json`) onto settings

@@ -79,7 +79,17 @@ Non-modal. The list and rail remain navigable while the drawer is open.
   plugin, with site-relative URLs resolved against the docs root.
   Env vars are not surfaced here — `env.*` rows are filtered out of
   the inspector entirely; see "Sibling surfaces" below.
-- Effective-value block — value + winning layer badge, accent-coloured
+- Effective-value block — value + winning layer badge, accent-coloured.
+  Hooks rows (`hooks.<EventName>`) get a hooks-aware summary
+  (`1 matcher group · command` etc.) routed through
+  `formatValueForKey` — the same helper feeds the centre list and
+  waterfall so the preview stays consistent across all three surfaces.
+- **Matcher Groups list** (hooks rows only) — one button per matcher
+  group with `matcher → N {handler types}`, plus a `hook details`
+  pill on the right edge. Click opens the **HookDetailsModal**
+  (see "Sibling surfaces") with the full handler impl + per-event
+  schema. Surfaces because the drawer's 440px column can't fit a
+  multi-line `command` body or a `url`.
 - **Layer waterfall** (see Design primitives)
 - Path notes for set layers (`./.claude/settings.json`) — clickable to
   open the file in the user's default editor (shipped). Line targeting
@@ -227,10 +237,39 @@ The inspector's column-header banner points users at this panel so a
 filter for `env` in the inspector (which now returns zero rows)
 isn't a dead end.
 
+### HookDetailsModal (row-scoped drill-down)
+
+Full-pane modal modeled on `ErrorPanel` / `HelpView`, but opened from
+the drawer's Matcher Groups list rather than a topbar pill — it's
+scoped to a single `hooks.<EventName>` row's settings.json contribution
+and the catalog entry for that event. Three sections:
+
+- **Triggers** — the `when` cadence from `catalog/hooks.json`
+  (e.g. "Before a tool call executes. Can block it.").
+- **Matcher groups** — one panel per group. Each handler renders its
+  `[type]` chip (`command` / `http` / `mcp_tool` / `prompt` / `agent`)
+  and the full field set: long string fields (`command`, `prompt`,
+  `url`) as preformatted blocks so newlines and quoting survive;
+  numbers/booleans/short strings inline. Type-aware impl picker in
+  `src/lib/hooks.ts` knows which field carries the impl per handler
+  type (`command` → `command`, `http` → `url`, `mcp_tool` →
+  `server::tool`, `prompt`/`agent` → `prompt`).
+- **Event schema** — `inputFields`, `outputFields`, and
+  `inputExample` from `catalog/hooks.json` (lifted upstream by hooks
+  sync pass #2). First UI consumer of the per-event schemas.
+
+Modal state lives in `InspectorShell` keyed by keyPath, so the file
+watcher's snapshot rebuilds flow through. Esc closes; the drawer
+stays open underneath so users return to context. Defensive parsing
+in `parseMatcherGroups` keeps a typo in user settings.json from
+crashing the modal — partial groups, missing fields, and non-array
+roots all degrade to safe empty states.
+
 ### ErrorPanel and HelpView
 
-Existing modal takeovers, unchanged by the EnvVarsPanel work. Same
-pattern: topbar-button-driven, full-pane, Esc to close.
+Existing modal takeovers, unchanged by the EnvVarsPanel or hooks
+drill-down work. Same pattern: topbar-button-driven, full-pane,
+Esc to close.
 
 ## Implementation notes
 

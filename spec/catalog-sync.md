@@ -1,6 +1,6 @@
 # Catalog sync — spec
 
-Status: **partial implementation.** `sync-settings.js` shipped 2026-04-28; `sync-env-vars.js` shipped 2026-04-29; `sync-hooks.js` shipped 2026-04-29 (lifecycle table only — handler types and per-event input/output schemas are not yet captured); `sync-sub-agents.js` shipped 2026-05-07 (supported-frontmatter-fields table only); `sync-mcp.js` shipped 2026-05-07 (installation-scopes table only — transport types, managed-mcp.json semantics, and tool-search threshold values are not yet captured); `sync-permissions.js` shipped 2026-05-07 (permission-modes table only — rule-syntax, path-pattern, and managed-only-settings tables are not yet captured).
+Status: **partial implementation.** `sync-settings.js` shipped 2026-04-28; `sync-env-vars.js` shipped 2026-04-29; `sync-hooks.js` shipped 2026-04-29 (pass #1 — lifecycle table) and 2026-05-08 (pass #2 — handler-field tables, common-input fields, per-event input/output schemas); `sync-sub-agents.js` shipped 2026-05-07 (supported-frontmatter-fields table only); `sync-mcp.js` shipped 2026-05-07 (installation-scopes table only — transport types, managed-mcp.json semantics, and tool-search threshold values are not yet captured); `sync-permissions.js` shipped 2026-05-07 (permission-modes table only — rule-syntax, path-pattern, and managed-only-settings tables are not yet captured); `sync-keybindings.js` and `sync-cli-reference.js` shipped 2026-05-08.
 
 > Open work — new scripts, the hooks pass #2, the `read_catalog` wire-up, and the open questions at the bottom of this doc — is tracked in [`roadmap.md`](./roadmap.md).
 
@@ -105,36 +105,46 @@ Pragmatic acceptance criteria: every row in the upstream table appears in the ou
 
 **Test plan:** mirror `sync-settings.test.js`. Pure functions (table parser, default extractor) get unit tests with small fixture strings; `main()` stays uncovered.
 
-### Hooks — implemented (lifecycle table only)
+### Hooks — implemented (passes #1 + #2; full UI consumer)
 
 | | |
 | --- | --- |
 | Source | `https://code.claude.com/docs/en/hooks.md` |
-| Output | `catalog/hooks.json` (~29 entries) |
+| Output | `catalog/hooks.json` (~29 events + handler-field tables + commonInput) |
 | Script | `scripts/sync-hooks.js` |
 | Run | `npm run sync:hooks` |
+| UI | drawer cross-reference (header `when`), Matcher Groups list (centre list + drawer + waterfall summary), HookDetailsModal (per-handler impl + per-event schema) |
 
-The page documents far more than just the event list — handler types (`command`, `http`, `mcp_tool`, `prompt`, `agent`), per-event input schemas, decision-control fields, exit-code semantics, and matcher rules — but those live under prose-heavy `###`/`####` sections, not in a single canonical table. The first cut captures only the lifecycle summary table (`| Event | When it fires |`) at the top of the page, which is the smallest useful artifact and the natural parallel to env-vars.
+Pass #1 (2026-04-29) captured only the lifecycle summary table at the top of the page (`| Event | When it fires |`). Pass #2 (2026-05-08) extended the parser to walk the document heading-aware (h2..h5) and pull three additional artifacts: handler-fields tables (`common`, `command`, `http`, `mcp_tool`, `prompt_and_agent`), `### Common input fields` (8 shared fields), and per-event input/output schemas (each `{inputFields, inputExample, outputFields}`). The full envelope is `{source, fetchedAt, count, events, handlers, commonInput}`.
 
-**Approach:**
+UI consumers landed 2026-05-16:
+- Drawer header cross-reference for `hooks.<EventName>` rows uses the catalog `when` instead of the thinner settings-JSON-Schema description.
+- The drawer's **Matcher Groups** list is row-scoped and parses the value via `src/lib/hooks.ts` (defensive against malformed user settings).
+- The **HookDetailsModal** is the first consumer of `inputFields` / `outputFields` / `inputExample`.
+
+**Approach (pass #1, still the structural backbone):**
 
 1. `fetch()` the `.md` URL.
 2. Locate the lifecycle table by header signature `| Event | When it fires |` (case-insensitive). The page has other tables whose first column header is "Event" — the second column disambiguates.
 3. For each row, extract `name` (backtick-stripped) and `when` (cadence prose, preserved verbatim).
-4. Sort by `name`, wrap with the standard envelope, write to `catalog/hooks.json`.
+4. Pass #2 then walks the document looking for `### Hook handler fields`, `### Common input fields`, and the per-event `#### <Event> input` / `#### <Event> decision control` (or `#### <Event> output`) sections, enriching each event with its schema.
+5. Sort events by `name`, wrap with the standard envelope, write to `catalog/hooks.json`.
 
-**Output shape per record:**
+**Output shape per event:**
 
 ```json
 {
   "name": "PreToolUse",
-  "when": "Before a tool call executes. Can block it"
+  "when": "Before a tool call executes. Can block it",
+  "inputFields": [{ "field": "tool_name", "description": "…" }, ...],
+  "inputExample": "{ \"session_id\": \"abc123\", … }",
+  "outputFields": [{ "field": "decision", "description": "…" }, ...]
 }
 ```
 
-Pragmatic acceptance criteria: every row in the upstream lifecycle table appears in the output; cadence prose preserved verbatim. Handler types and per-event JSON schemas are out of scope for this cut and remain candidates for follow-up work.
+Pragmatic acceptance criteria: every row in the upstream lifecycle table appears in `events`; cadence prose preserved verbatim; per-event schemas captured when the upstream doc has them. Out of scope (deliberate): per-tool nested `tool_input` tables under `#### PreToolUse input` (4-col `Field | Type | Example | Description` shape; pass #2 only captures the shared 2-col shape), the `### Matcher patterns` cross-reference, the `### JSON output` universal-fields table, exit-code-2 behavior prose, HTTP response handling, and async-hook config.
 
-**Test plan:** mirror `sync-env-vars.test.js`. Pure functions (`parseRow`, `parseTable`, `buildRecords`) get unit tests with small fixture strings; `main()` stays uncovered.
+**Test plan:** mirror `sync-env-vars.test.js`. Pure functions (`parseRow`, `parseTable`, `buildRecords`, plus the heading-aware walker for pass #2 artifacts) get unit tests with small fixture strings; `main()` stays uncovered.
 
 ### Sub-agents — implemented (frontmatter fields only)
 

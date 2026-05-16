@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { formatValue } from "@/lib/format";
+import { formatValueForKey } from "@/lib/format";
 import { openInEditor } from "@/lib/openPath";
 import type { WaterfallEntry } from "@/lib/waterfall";
 import { StatusDot } from "./StatusDot";
@@ -14,8 +14,17 @@ const DOT_BY_STATE: Record<WaterfallEntry["state"], "ok" | "warn" | "err" | "emp
   "not-inspectable": "empty",
 };
 
-export function WaterfallRow({ entry }: { entry: WaterfallEntry }) {
-  const formatted = entry.value === undefined ? null : formatValue(entry.value);
+export function WaterfallRow({
+  entry,
+  keyPath,
+}: {
+  entry: WaterfallEntry;
+  /** Drawer's row keyPath — needed so hooks layers show "N matcher
+   * groups" instead of the generic `[N] {…}`. */
+  keyPath: string;
+}) {
+  const formatted =
+    entry.value === undefined ? null : formatValueForKey(keyPath, entry.value);
 
   const isWinner = entry.state === "winner";
   const isShadowed = entry.state === "shadowed";

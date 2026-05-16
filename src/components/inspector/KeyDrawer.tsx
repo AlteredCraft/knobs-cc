@@ -4,11 +4,17 @@ import remarkGfm from "remark-gfm";
 import { cn } from "@/lib/utils";
 import {
   findEnvVar,
+  findHookEvent,
   findPermissionMode,
   findRelatedKnobs,
   type CatalogEntry,
 } from "@/lib/catalog";
-import { formatValue } from "@/lib/format";
+import { formatValue, formatValueForKey } from "@/lib/format";
+import {
+  parseMatcherGroups,
+  summarizeMatcherGroup,
+  type ParsedMatcherGroup,
+} from "@/lib/hooks";
 import { resolveDocsUrl } from "@/lib/markdown";
 import { openExternalUrl } from "@/lib/openPath";
 import { buildRows, type Row } from "@/lib/rows";
@@ -24,14 +30,23 @@ export function KeyDrawer({
   snapshot,
   onClose,
   onSelect,
+  onInspectHook,
 }: {
   row: Row;
   snapshot: SettingsSnapshot;
   onClose: () => void;
   /** Click-through from the related-knobs section navigates the drawer. */
   onSelect: (keyPath: string) => void;
+  /** Open the hook details modal for the current row. */
+  onInspectHook?: (keyPath: string) => void;
 }) {
-  const formatted = formatValue(row.value);
+  // formatValueForKey routes hooks.<EventName> rows through the
+  // hooks-aware summary; everything else falls through to formatValue.
+  // Unset rows preserve the generic "— unset —" because formatValue
+  // owns the undefined case.
+  const formatted = formatValueForKey(row.keyPath, row.value);
+  const isHookEventRow =
+    hookEventNameFromKeyPath(row.keyPath) !== null && row.state !== "unset";
   const description = resolveDescription(row);
   // Drive the drawer body decision on element presence, not row state:
   // single-contributor array-typed rows are state="set" (so the centre
@@ -39,6 +54,10 @@ export function KeyDrawer({
   // the per-element list rather than a layer waterfall, since each rule
   // in the array carries its own provenance.
   const hasElements = row.elements !== undefined;
+  // For hooks rows specifically, parse the matcher groups so we can
+  // render the structured per-group list (replacing the useless
+  // `[1] {…}` previously surfaced by formatValue).
+  const matcherGroups = isHookEventRow ? parseMatcherGroups(row.value) : [];
 
   // Look up siblings via the catalog and join with current row state so the
   // section can show set-vs-unset hints. Memoized on snapshot/row so we
@@ -59,6 +78,13 @@ export function KeyDrawer({
       <EffectiveBlock row={row} formatted={formatted} />
 
       <div className="scrollbar flex-1 overflow-auto">
+        {isHookEventRow && matcherGroups.length > 0 && onInspectHook && (
+          <MatcherGroupsList
+            groups={matcherGroups}
+            onInspect={() => onInspectHook(row.keyPath)}
+          />
+        )}
+
         {hasElements ? (
           <ElementList elements={row.elements ?? []} />
         ) : (
@@ -72,6 +98,64 @@ export function KeyDrawer({
   );
 }
 
+function MatcherGroupsList({
+  groups,
+  onInspect,
+}: {
+  groups: ParsedMatcherGroup[];
+  onInspect: () => void;
+}) {
+  return (
+    <>
+      <div className="flex items-center justify-between px-5 pt-4 pb-2">
+        <span className="corner-tag">Matcher Groups ({groups.length})</span>
+      </div>
+      <div className="space-y-0.5 px-3 pb-2">
+        {groups.map((group, i) => (
+          <button
+            key={i}
+            type="button"
+            onClick={onInspect}
+            className={cn(
+              "group grid w-full items-center gap-2.5 rounded-sm px-2.5 py-1.5",
+              "grid-cols-[28px_1fr_auto] text-left",
+              "hover:bg-bg-2 focus:bg-bg-2 focus:outline-none",
+            )}
+          >
+            <span className="font-mono text-[10px] text-fg-4">
+              {String(i + 1).padStart(2, "0")}
+            </span>
+            <span className="min-w-0 truncate font-mono text-[12px] text-fg-1">
+              {group.matcher === null ? (
+                <span className="text-fg-3">(any)</span>
+              ) : (
+                <>
+                  <span className="text-fg-3">matcher: </span>
+                  <span>"{group.matcher}"</span>
+                </>
+              )}
+              <span className="mx-1.5 text-fg-4">→</span>
+              <span className="text-fg-2">{summarizeMatcherGroup(group)}</span>
+            </span>
+            <span
+              aria-hidden
+              className={cn(
+                "inline-flex items-center rounded-sm border bg-bg-2 px-1.5 py-0.5",
+                "font-mono text-[10px] uppercase tracking-[0.05em]",
+                "border-line-strong text-fg-3",
+                "group-hover:border-accent group-hover:text-fg-1",
+                "group-focus:border-accent group-focus:text-fg-1",
+              )}
+            >
+              hook details
+            </span>
+          </button>
+        ))}
+      </div>
+    </>
+  );
+}
+
 function Waterfall({ row, snapshot }: { row: Row; snapshot: SettingsSnapshot }) {
   const entries = buildWaterfall(snapshot, row);
   return (
@@ -81,7 +165,7 @@ function Waterfall({ row, snapshot }: { row: Row; snapshot: SettingsSnapshot }) 
         <span className="font-mono text-[9.5px] text-fg-4">↓ HIGH PRECEDENCE</span>
       </div>
       {entries.map((e) => (
-        <WaterfallRow key={e.source} entry={e} />
+        <WaterfallRow key={e.source} entry={e} keyPath={row.keyPath} />
       ))}
     </>
   );
@@ -424,18 +508,41 @@ export function envVarNameFromKeyPath(keyPath: string): string | null {
 }
 
 /**
+ * Extract the event name from a `hooks.<EventName>` row's keyPath.
+ * Returns null when the path isn't an immediate child of `hooks` or
+ * when the leaf doesn't look like a PascalCase identifier. Upstream
+ * event names are always PascalCase ASCII (`PreToolUse`, `Stop`,
+ * `CwdChanged`); case-sensitive on purpose to avoid false matches for
+ * user typos.
+ */
+export function hookEventNameFromKeyPath(keyPath: string): string | null {
+  const m = /^hooks\.([A-Z][A-Za-z0-9]*)$/.exec(keyPath);
+  return m ? m[1] : null;
+}
+
+/**
  * Resolve the description prose shown in the drawer header. For
  * `env.<VAR>` rows whose var is documented upstream, prefer the
  * env-vars catalog's purpose over the generic parent-`env` description
- * the settings catalog walk-up returns. Falls back to the settings
- * catalog description otherwise; truncates to the first line so the
- * header band stays a single paragraph.
+ * the settings catalog walk-up returns. For `hooks.<EventName>` rows
+ * whose event is documented in the hooks catalog, prefer the
+ * curated `when` cadence over the settings-catalog description —
+ * the hooks-catalog prose is event-semantic ("Before a tool call
+ * executes. Can block it") rather than knob-framing ("Hooks that
+ * run before tool calls"). Falls back to the settings catalog
+ * description otherwise; truncates to the first line so the header
+ * band stays a single paragraph.
  */
 export function resolveDescription(row: Row): string | null {
   const envVar = envVarNameFromKeyPath(row.keyPath);
   if (envVar) {
     const entry = findEnvVar(envVar);
     if (entry) return entry.purpose.split("\n")[0];
+  }
+  const hookEvent = hookEventNameFromKeyPath(row.keyPath);
+  if (hookEvent) {
+    const event = findHookEvent(hookEvent);
+    if (event) return event.when.split("\n")[0];
   }
   return row.catalog?.description?.split("\n")[0] ?? null;
 }

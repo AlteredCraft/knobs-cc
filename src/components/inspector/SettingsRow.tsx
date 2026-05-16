@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { formatValue } from "@/lib/format";
+import { formatValue, formatValueForKey } from "@/lib/format";
 import type { Row } from "@/lib/rows";
 import { PresenceIndicator } from "./PresenceIndicator";
 import { SourceBadge } from "./SourceBadge";
@@ -34,7 +34,7 @@ export function SettingsRow({
    * aligned with the resizable header. */
   gridTemplate: string;
 }) {
-  const formatted = formatValue(row.value);
+  const formatted = formatValueForKey(row.keyPath, row.value);
 
   return (
     <div

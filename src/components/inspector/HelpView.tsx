@@ -373,10 +373,7 @@ const CATALOG_SOURCES: ReadonlyArray<{
     docsUrl: "https://code.claude.com/docs/en/hooks",
     method:
       "Most complex parse: lifecycle table + handler-field tables + per-event input/output tables and JSON examples.",
-    status: {
-      kind: "unwired",
-      issueUrl: "https://github.com/AlteredCraft/knobs-cc/issues/17",
-    },
+    status: { kind: "wired", note: "drawer cross-ref + details modal" },
   },
   {
     out: "sub-agents.json",

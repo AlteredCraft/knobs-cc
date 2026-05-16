@@ -99,10 +99,10 @@ npm run tauri build    # build a native installer (DMG / .msi / AppImage)
 
 ## Demo scenarios
 
-Six self-contained project directories under [`tests/`](tests/) exercise
+Seven self-contained project directories under [`tests/`](tests/) exercise
 specific inspector features — precedence cascades, array merging across
-layers, env-layer projection, the EnvVarsPanel, and the CLI/attach
-flow. Each has its own `README.md` with the exact launch command (some
+layers, env-layer projection, the EnvVarsPanel, the CLI/attach flow, and
+the hooks drawer + details modal. Each has its own `README.md` with the exact launch command (some
 plain `claude`, some prepending env vars, one with `--model`) and what
 to look for in the app. Start with
 [`tests/01-minimal/`](tests/01-minimal/) and walk up.

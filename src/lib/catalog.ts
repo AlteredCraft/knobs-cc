@@ -57,13 +57,37 @@ export interface PermissionsCatalogFile {
   modes: PermissionMode[];
 }
 
+export interface HookEvent {
+  name: string;
+  /** Upstream prose describing when the event fires. */
+  when: string;
+  // Per-event schemas — exposed but not yet consumed by the UI. Kept
+  // optional + nullable so a future sync pass that drops them on a
+  // given event doesn't break the typed read. `inputExample` is `null`
+  // upstream for events with no example fence.
+  inputFields?: unknown[];
+  inputExample?: string | null;
+  outputFields?: unknown[];
+}
+
+export interface HooksCatalogFile {
+  source: string;
+  fetchedAt: string;
+  count: number;
+  events: HookEvent[];
+  // Handler types and shared-input fields ship in the catalog for future
+  // drawer detail panels; kept loosely typed because no consumer exists.
+  handlers?: unknown[];
+  commonInput?: unknown[];
+}
+
 export interface CatalogsWire {
   settings: SettingsCatalogFile;
   env_vars: EnvVarsCatalogFile;
   permissions: PermissionsCatalogFile;
+  hooks: HooksCatalogFile;
   // Other catalogs are exposed for future Phase 5+ consumers; their shapes
   // aren't modeled yet because nothing in the UI reads them.
-  hooks: unknown;
   sub_agents: unknown;
   mcp: unknown;
   keybindings: unknown;
@@ -84,6 +108,7 @@ interface InitializedCatalog {
   envVars: EnvVarEntry[];
   envVarsByName: Map<string, EnvVarEntry>;
   permissionModesByName: Map<string, PermissionMode>;
+  hookEventsByName: Map<string, HookEvent>;
   meta: CatalogMeta;
 }
 
@@ -114,6 +139,7 @@ function buildState(data: CatalogsWire): InitializedCatalog {
     permissionModesByName: new Map(
       data.permissions.modes.map((m) => [m.name, m]),
     ),
+    hookEventsByName: new Map(data.hooks.events.map((e) => [e.name, e])),
     meta: {
       source: data.settings.source,
       fetchedAt: data.settings.fetchedAt,
@@ -212,6 +238,18 @@ export function getEnvVarCatalog(): readonly EnvVarEntry[] {
  */
 export function findPermissionMode(name: string): PermissionMode | null {
   return requireState().permissionModesByName.get(name) ?? null;
+}
+
+/**
+ * Lookup by hook-event name (e.g. `PreToolUse`). Returns null when the
+ * catalog doesn't document the event — the settings JSON Schema may
+ * accept event names that aren't in the upstream hooks docs (e.g. the
+ * undocumented `Setup` event is in both; future schema additions may
+ * land before the docs sync). Case-sensitive: event names are PascalCase
+ * ASCII; case-folding would create false matches for user typos.
+ */
+export function findHookEvent(name: string): HookEvent | null {
+  return requireState().hookEventsByName.get(name) ?? null;
 }
 
 /** Lookup by exact dot-path. Walks up to find the closest parent on miss. */

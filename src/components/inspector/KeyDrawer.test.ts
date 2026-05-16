@@ -2,6 +2,7 @@ import { describe, expect, test } from "vitest";
 
 import {
   envVarNameFromKeyPath,
+  hookEventNameFromKeyPath,
   resolveDescription,
   resolveValueAnnotation,
 } from "./KeyDrawer";
@@ -53,6 +54,37 @@ describe("envVarNameFromKeyPath", () => {
     ["envoy.X"],
   ])("returns null for %s", (keyPath) => {
     expect(envVarNameFromKeyPath(keyPath)).toBeNull();
+  });
+});
+
+describe("hookEventNameFromKeyPath", () => {
+  test.each([
+    ["hooks.PreToolUse", "PreToolUse"],
+    ["hooks.Stop", "Stop"],
+    ["hooks.CwdChanged", "CwdChanged"],
+    ["hooks.SessionStart", "SessionStart"],
+    ["hooks.UserPromptSubmit", "UserPromptSubmit"],
+  ])("extracts the event name from %s", (keyPath, expected) => {
+    expect(hookEventNameFromKeyPath(keyPath)).toBe(expected);
+  });
+
+  test.each([
+    // Not under hooks.* at all.
+    ["model"],
+    ["permissions.defaultMode"],
+    // The bare parent — not an event row.
+    ["hooks"],
+    // Lower-case leaf — upstream convention is PascalCase; matching
+    // would feed false catalog hits.
+    ["hooks.preToolUse"],
+    // Three or more segments — hooks.<EventName> is a flat namespace.
+    ["hooks.PreToolUse.matcher"],
+    // Adjacent prefix that isn't `hooks`.
+    ["hooked.PreToolUse"],
+    // Empty leaf.
+    ["hooks."],
+  ])("returns null for %s", (keyPath) => {
+    expect(hookEventNameFromKeyPath(keyPath)).toBeNull();
   });
 });
 
@@ -115,6 +147,39 @@ describe("resolveDescription", () => {
       },
     });
     expect(resolveDescription(row)).toBe("First line.");
+  });
+
+  test("uses the hooks catalog `when` for a documented hooks.<EventName> row", () => {
+    // The test setup hydrates the real hooks catalog. PreToolUse is a
+    // stable anchor — its `when` ("Before a tool call executes. Can
+    // block it") is consistently richer than the settings catalog's
+    // ("Hooks that run before tool calls"). Assert structurally — the
+    // prose drifts.
+    const row = rowWithKey("hooks.PreToolUse", {
+      catalog: {
+        key: "hooks.PreToolUse",
+        type: "array",
+        description: "Hooks that run before tool calls",
+      },
+    });
+    const desc = resolveDescription(row);
+    expect(desc).not.toBe("Hooks that run before tool calls");
+    expect(desc).toMatch(/before a tool call/i);
+  });
+
+  test("falls back to the settings catalog description for hooks events not in the hooks catalog", () => {
+    // Schema may carry event names the upstream hooks docs haven't
+    // caught up to. The walk-up gives the settings catalog entry —
+    // we should use it rather than render nothing.
+    const row = rowWithKey("hooks.SomeNewUndocumentedEvent", {
+      catalog: {
+        key: "hooks.SomeNewUndocumentedEvent",
+        description: "Settings-catalog description for the new event",
+      },
+    });
+    expect(resolveDescription(row)).toBe(
+      "Settings-catalog description for the new event",
+    );
   });
 
   test("keeps the generic settings catalog description for permissions.defaultMode regardless of value", () => {

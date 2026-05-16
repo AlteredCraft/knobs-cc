@@ -8,6 +8,7 @@ import { buildRows } from "@/lib/rows";
 import { EnvVarsPanel } from "./EnvVarsPanel";
 import { ErrorPanel } from "./ErrorPanel";
 import { HelpView } from "./HelpView";
+import { HookDetailsModal } from "./HookDetailsModal";
 import { KeyDrawer } from "./KeyDrawer";
 import { PrecedenceRail } from "./PrecedenceRail";
 import { SettingsList, type SettingsListHandle } from "./SettingsList";
@@ -49,12 +50,25 @@ export function InspectorShell({
   const [helpOpen, setHelpOpen] = useState(false);
   const [errorsOpen, setErrorsOpen] = useState(false);
   const [envVarsOpen, setEnvVarsOpen] = useState(false);
+  // Hooks "details" modal — opened from the drawer's matcher-groups
+  // section. Keyed by keyPath so the modal can re-derive its row from
+  // the current snapshot (file watcher updates flow through).
+  const [hookDetailsKeyPath, setHookDetailsKeyPath] = useState<string | null>(
+    null,
+  );
   const listRef = useRef<SettingsListHandle>(null);
 
   const activeRow = useMemo(() => {
     if (!activeKeyPath) return null;
     return buildRows(snapshot).find((r) => r.keyPath === activeKeyPath) ?? null;
   }, [snapshot, activeKeyPath]);
+
+  const hookDetailsRow = useMemo(() => {
+    if (!hookDetailsKeyPath) return null;
+    return (
+      buildRows(snapshot).find((r) => r.keyPath === hookDetailsKeyPath) ?? null
+    );
+  }, [snapshot, hookDetailsKeyPath]);
 
   // Click and ↵ both toggle the drawer for a row — clicking an open row
   // closes it, mirroring ↵'s "toggle drawer for the focused row" semantics.
@@ -114,6 +128,16 @@ export function InspectorShell({
         if (e.key === "Escape") {
           e.preventDefault();
           setEnvVarsOpen(false);
+        }
+        return;
+      }
+
+      // Hook details modal — same modal-layer shape. Esc closes; the
+      // underlying drawer stays open so the user returns to context.
+      if (hookDetailsKeyPath) {
+        if (e.key === "Escape") {
+          e.preventDefault();
+          setHookDetailsKeyPath(null);
         }
         return;
       }
@@ -192,7 +216,15 @@ export function InspectorShell({
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [activeKeyPath, closeDrawer, envVarsOpen, errorsOpen, helpOpen, onRefresh]);
+  }, [
+    activeKeyPath,
+    closeDrawer,
+    envVarsOpen,
+    errorsOpen,
+    helpOpen,
+    hookDetailsKeyPath,
+    onRefresh,
+  ]);
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-bg-0 text-fg-1">
@@ -229,6 +261,7 @@ export function InspectorShell({
             snapshot={snapshot}
             onClose={closeDrawer}
             onSelect={handleNavigate}
+            onInspectHook={setHookDetailsKeyPath}
           />
         )}
       </div>
@@ -240,6 +273,12 @@ export function InspectorShell({
           snapshot={snapshot}
           attachedEnv={attachedEnv}
           onClose={() => setEnvVarsOpen(false)}
+        />
+      )}
+      {hookDetailsRow && (
+        <HookDetailsModal
+          row={hookDetailsRow}
+          onClose={() => setHookDetailsKeyPath(null)}
         />
       )}
     </div>

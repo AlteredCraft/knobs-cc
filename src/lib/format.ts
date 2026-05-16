@@ -2,11 +2,39 @@
 // is small and gets text-overflow:ellipsis from CSS, so we don't truncate
 // strings here — only summarise containers.
 
+import { formatHooksValue } from "./hooks";
+
 export interface FormattedValue {
   /** What to render. */
   text: string;
   /** Tags the row's value cell so it can pick up a colour treatment. */
   kind: "string" | "number" | "boolean" | "null" | "array" | "object" | "unset";
+}
+
+/**
+ * KeyPath-aware formatter. For rows whose path encodes structured
+ * data the generic `formatValue` can't summarise usefully (today: a
+ * `hooks.<EventName>` matcher-group array), substitute a domain-
+ * specific preview. Everything else falls through to the generic
+ * formatter unchanged. Used by every surface that renders a row's
+ * effective value (settings list, drawer header, waterfall) so the
+ * preview stays consistent.
+ */
+export function formatValueForKey(
+  keyPath: string,
+  value: unknown,
+): FormattedValue {
+  if (isHookEventKey(keyPath) && Array.isArray(value)) {
+    return { text: formatHooksValue(value), kind: "array" };
+  }
+  return formatValue(value);
+}
+
+function isHookEventKey(keyPath: string): boolean {
+  // PascalCase leaf under literal `hooks` — same shape as
+  // `hookEventNameFromKeyPath` in KeyDrawer, kept inline to avoid a
+  // back-edge from lib → components.
+  return /^hooks\.[A-Z][A-Za-z0-9]*$/.test(keyPath);
 }
 
 export function formatValue(value: unknown): FormattedValue {

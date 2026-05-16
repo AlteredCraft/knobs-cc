@@ -33,6 +33,7 @@ needs to be running. Ctrl+D out of it when done.
 | 04 | `04-env-override/` | Env layer (via `catalog/env-settings-map.json`) winning over project settings. |
 | 05 | `05-env-block/` | EnvVarsPanel sourcing values from `settings.json`'s `env` block; cataloged + user-defined vars. |
 | 06 | `06-cli-attach/` | CLI argv layer (e.g. `--model`) winning over env and settings via attach mode. |
+| 07 | `07-hooks/` | Drawer cross-reference for `hooks.<EventName>` — header reads the upstream `when` cadence from the hooks catalog. |
 
 ## Resetting
 
