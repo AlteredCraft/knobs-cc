@@ -24,21 +24,89 @@ import type {
 // enough to absorb the rename pair without a double-fetch.
 const REFRESH_DEBOUNCE_MS = 250;
 
+// Launch state is mirrored to sessionStorage so the user doesn't lose
+// their grounding when the WKWebView reloads — observed on macOS after
+// `openPath` opens an external app and the user cmd-tabs back. The
+// WebView re-initializes, React state resets to initial, and without
+// this the user would land on the LaunchScreen each time they opened a
+// settings file in their editor. sessionStorage is the right tier:
+// survives WebView reloads but clears on app quit, so a fresh launch
+// still shows the front door.
+const LAUNCH_STATE_KEY = "knobs:launch-state";
+interface PersistedLaunchState {
+  launchComplete: boolean;
+  selectedPid: number | null;
+  pickedRoot: string | null;
+}
+function readPersistedLaunchState(): PersistedLaunchState {
+  const fallback: PersistedLaunchState = {
+    launchComplete: false,
+    selectedPid: null,
+    pickedRoot: null,
+  };
+  try {
+    const raw = sessionStorage.getItem(LAUNCH_STATE_KEY);
+    if (!raw) return fallback;
+    const parsed = JSON.parse(raw) as Partial<PersistedLaunchState>;
+    return {
+      launchComplete: parsed.launchComplete === true,
+      selectedPid:
+        typeof parsed.selectedPid === "number" ? parsed.selectedPid : null,
+      pickedRoot:
+        typeof parsed.pickedRoot === "string" ? parsed.pickedRoot : null,
+    };
+  } catch {
+    // sessionStorage unavailable, JSON corrupt — non-fatal, start fresh.
+    return fallback;
+  }
+}
+function writePersistedLaunchState(state: PersistedLaunchState): void {
+  try {
+    sessionStorage.setItem(LAUNCH_STATE_KEY, JSON.stringify(state));
+  } catch {
+    // Quota exceeded / unavailable — non-fatal.
+  }
+}
+function clearPersistedLaunchState(): void {
+  try {
+    sessionStorage.removeItem(LAUNCH_STATE_KEY);
+  } catch {
+    // Non-fatal.
+  }
+}
+
 function App() {
   const [snapshot, setSnapshot] = useState<SettingsSnapshot | null>(null);
   const [runtimeSnapshot, setRuntimeSnapshot] = useState<RuntimeSnapshot | null>(
     null,
   );
+  // Lazy initializers read once from sessionStorage so a WebView reload
+  // doesn't bounce the user back to the launch screen. See the
+  // LAUNCH_STATE_KEY comment above for the durability story.
+  const initial = useMemo(readPersistedLaunchState, []);
   // Persisted across runtime refreshes so the user's selection survives a
   // rescan of the process list. Cleared if the underlying claude exits —
-  // deriveSessionGrounding handles that transition.
-  const [selectedPid, setSelectedPid] = useState<number | null>(null);
-  const [pickedRoot, setPickedRoot] = useState<string | null>(null);
+  // deriveSessionGrounding handles that transition. Also persisted to
+  // sessionStorage; a stale pid post-reload is handled gracefully by
+  // deriveSessionGrounding (falls through to no-claude state).
+  const [selectedPid, setSelectedPid] = useState<number | null>(
+    initial.selectedPid,
+  );
+  const [pickedRoot, setPickedRoot] = useState<string | null>(
+    initial.pickedRoot,
+  );
   // The launch screen is the front door on every cold start. Flips true
   // once the user explicitly picks a grounding (attach or directory) and
   // back to false if they return via the SessionPill.
-  const [launchComplete, setLaunchComplete] = useState(false);
+  const [launchComplete, setLaunchComplete] = useState(initial.launchComplete);
   const [error, setError] = useState<string | null>(null);
+
+  // Mirror the launch state to sessionStorage on every change. Keeping
+  // it in one effect (rather than per-setter) is simpler and ensures
+  // the three values stay in lockstep.
+  useEffect(() => {
+    writePersistedLaunchState({ launchComplete, selectedPid, pickedRoot });
+  }, [launchComplete, selectedPid, pickedRoot]);
 
   const grounding: SessionGrounding = useMemo(() => {
     if (runtimeSnapshot === null) return { kind: "loading" };
@@ -167,6 +235,10 @@ function App() {
     setPickedRoot(null);
     setSnapshot(null);
     setLaunchComplete(false);
+    // The mirror-effect would catch this on the next tick, but the
+    // explicit clear avoids any window where a WebView reload between
+    // setState and effect could re-hydrate the old state.
+    clearPersistedLaunchState();
   }, []);
 
   if (error && !runtimeSnapshot) {
