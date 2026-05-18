@@ -1,6 +1,6 @@
 {
   "source": "https://code.claude.com/docs/en/hooks.md",
-  "fetchedAt": "2026-05-08T21:33:43.607Z",
+  "fetchedAt": "2026-05-18T12:34:58.886Z",
   "count": 29,
   "events": [
     {
@@ -487,7 +487,7 @@
         {
           "field": "timeout",
           "required": "no",
-          "description": "Seconds before canceling. Defaults: 600 for command, 30 for prompt, 60 for agent"
+          "description": "Seconds before canceling. Defaults: 600 for `command`, `http`, and `mcp_tool`; 30 for `prompt`; 60 for `agent`. [`UserPromptSubmit`](#userpromptsubmit) lowers the `command`, `http`, and `mcp_tool` default to 30"
         },
         {
           "field": "statusMessage",
@@ -507,7 +507,12 @@
         {
           "field": "command",
           "required": "yes",
-          "description": "Shell command to execute"
+          "description": "Shell command to execute. With `args`, the executable to spawn directly. See [Exec form and shell form](#exec-form-and-shell-form)"
+        },
+        {
+          "field": "args",
+          "required": "no",
+          "description": "Argument list. When present, `command` is resolved as an executable and spawned directly with `args` as the argument vector, with no shell involved. See [Exec form and shell form](#exec-form-and-shell-form)"
         },
         {
           "field": "async",
@@ -522,7 +527,7 @@
         {
           "field": "shell",
           "required": "no",
-          "description": "Shell to use for this hook. Accepts `\"bash\"` (default) or `\"powershell\"`. Setting `\"powershell\"` runs the command via PowerShell on Windows. Does not require `CLAUDE_CODE_USE_POWERSHELL_TOOL` since hooks spawn PowerShell directly"
+          "description": "Shell to use for this hook. Accepts `\"bash\"` (default) or `\"powershell\"`. Setting `\"powershell\"` runs the command via PowerShell on Windows. Does not require `CLAUDE_CODE_USE_POWERSHELL_TOOL` since hooks spawn PowerShell directly. Ignored when `args` is set"
         }
       ]
     },
@@ -613,7 +618,7 @@
     },
     {
       "field": "agent_type",
-      "description": "Agent name (for example, `\"Explore\"` or `\"security-reviewer\"`). Present when the session uses `--agent` or the hook fires inside a subagent. For subagents, the subagent's type takes precedence over the session's `--agent` value."
+      "description": "Agent name (for example, `\"Explore\"` or `\"security-reviewer\"`). Present when the session uses `--agent` or the hook fires inside a subagent. For subagents, the subagent's type takes precedence over the session's `--agent` value. For [custom subagents](/en/sub-agents), this is the `name` field from the agent's frontmatter, not the filename."
     }
   ]
 }

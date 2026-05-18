@@ -1,8 +1,8 @@
 {
   "source": "https://code.claude.com/docs/en/cli-reference.md",
-  "fetchedAt": "2026-05-08T21:01:49.279Z",
-  "commandCount": 20,
-  "flagCount": 63,
+  "fetchedAt": "2026-05-18T12:35:00.301Z",
+  "commandCount": 25,
+  "flagCount": 64,
   "commands": [
     {
       "name": "cat file | claude -p \"query\"",
@@ -41,8 +41,13 @@
     },
     {
       "name": "claude agents",
-      "description": "List all configured [subagents](/en/sub-agents), grouped by source",
+      "description": "Open [agent view](/en/agent-view) to monitor and dispatch parallel background sessions. Use `--cwd <path>` to show only sessions started under that directory",
       "example": "`claude agents`"
+    },
+    {
+      "name": "claude attach <id>",
+      "description": "Attach to a [background session](/en/agent-view#manage-sessions-from-the-shell) in this terminal",
+      "example": "`claude attach 7c5dcf5d`"
     },
     {
       "name": "claude auth login",
@@ -70,6 +75,11 @@
       "example": "`claude install stable`"
     },
     {
+      "name": "claude logs <id>",
+      "description": "Print recent output from a [background session](/en/agent-view#manage-sessions-from-the-shell)",
+      "example": "`claude logs 7c5dcf5d`"
+    },
+    {
       "name": "claude mcp",
       "description": "Configure Model Context Protocol (MCP) servers",
       "example": "See the [Claude Code MCP documentation](/en/mcp)."
@@ -90,9 +100,24 @@
       "example": "`claude remote-control --name \"My Project\"`"
     },
     {
+      "name": "claude respawn <id>",
+      "description": "Restart a stopped [background session](/en/agent-view#manage-sessions-from-the-shell) with its conversation intact. Use `--all` to restart every stopped session",
+      "example": "`claude respawn 7c5dcf5d`"
+    },
+    {
+      "name": "claude rm <id>",
+      "description": "Remove a [background session](/en/agent-view#manage-sessions-from-the-shell) from the list",
+      "example": "`claude rm 7c5dcf5d`"
+    },
+    {
       "name": "claude setup-token",
       "description": "Generate a long-lived OAuth token for CI and scripts. Prints the token to the terminal without saving it. Requires a Claude subscription. See [Generate a long-lived token](/en/authentication#generate-a-long-lived-token)",
       "example": "`claude setup-token`"
+    },
+    {
+      "name": "claude stop <id>",
+      "description": "Stop a [background session](/en/agent-view#manage-sessions-from-the-shell). Also accepts `claude kill`",
+      "example": "`claude stop 7c5dcf5d`"
     },
     {
       "name": "claude ultrareview [target]",
@@ -152,6 +177,11 @@
       "example": "`claude --betas interleaved-thinking`"
     },
     {
+      "name": "--bg",
+      "description": "Start the session as a [background agent](/en/agent-view) and return immediately. Prints the session ID and management commands. Combine with `--agent` to run a specific subagent",
+      "example": "`claude --bg \"investigate the flaky test\"`"
+    },
+    {
       "name": "--channels",
       "description": "(Research preview) MCP servers whose [channel](/en/channels) notifications Claude should listen for in this session. Space-separated list of `plugin:<name>@<marketplace>` entries. Requires Claude.ai authentication",
       "example": "`claude --channels plugin:my-notifier@my-marketplace`"
@@ -203,7 +233,7 @@
     },
     {
       "name": "--exclude-dynamic-system-prompt-sections",
-      "description": "Move per-machine sections from the system prompt (working directory, environment info, memory paths, git status) into the first user message. Improves prompt-cache reuse across different users and machines running the same task. Only applies with the default system prompt; ignored when `--system-prompt` or `--system-prompt-file` is set. Use with `-p` for scripted, multi-user workloads",
+      "description": "Move per-machine sections from the system prompt (working directory, environment info, memory paths, git-repo flag) into the first user message. Improves prompt-cache reuse across different users and machines running the same task. Only applies with the default system prompt; ignored when `--system-prompt` or `--system-prompt-file` is set. Use with `-p` for scripted, multi-user workloads",
       "example": "`claude -p --exclude-dynamic-system-prompt-sections \"query\"`"
     },
     {
