@@ -1,7 +1,7 @@
 {
   "source": "https://code.claude.com/docs/en/env-vars.md",
-  "fetchedAt": "2026-05-07T02:18:51.711Z",
-  "count": 220,
+  "fetchedAt": "2026-05-18T12:34:58.586Z",
+  "count": 241,
   "envVars": [
     {
       "name": "ANTHROPIC_API_KEY",
@@ -11,6 +11,21 @@
     {
       "name": "ANTHROPIC_AUTH_TOKEN",
       "purpose": "Custom value for the `Authorization` header (the value you set here will be prefixed with `Bearer `)",
+      "default": null
+    },
+    {
+      "name": "ANTHROPIC_AWS_API_KEY",
+      "purpose": "Workspace API key for [Claude Platform on AWS](/en/claude-platform-on-aws), generated in the AWS Console. Sent as `x-api-key` and takes precedence over AWS SigV4",
+      "default": null
+    },
+    {
+      "name": "ANTHROPIC_AWS_BASE_URL",
+      "purpose": "Override the [Claude Platform on AWS](/en/claude-platform-on-aws) endpoint URL. Use for custom regions or when routing through an [LLM gateway](/en/llm-gateway). Defaults to `https://aws-external-anthropic.{AWS_REGION}.api.aws`",
+      "default": null
+    },
+    {
+      "name": "ANTHROPIC_AWS_WORKSPACE_ID",
+      "purpose": "Required for [Claude Platform on AWS](/en/claude-platform-on-aws). Sent on every request as the `anthropic-workspace-id` header",
       "default": null
     },
     {
@@ -150,7 +165,7 @@
     },
     {
       "name": "ANTHROPIC_SMALL_FAST_MODEL_AWS_REGION",
-      "purpose": "Override AWS region for the Haiku-class model when using Bedrock or Bedrock Mantle",
+      "purpose": "Override AWS region for the Haiku-class model when using Bedrock or Bedrock Mantle. On Bedrock, this only takes effect when `ANTHROPIC_DEFAULT_HAIKU_MODEL` or the deprecated `ANTHROPIC_SMALL_FAST_MODEL` is also set, since Bedrock otherwise uses the primary model for background tasks",
       "default": null
     },
     {
@@ -160,7 +175,12 @@
     },
     {
       "name": "ANTHROPIC_VERTEX_PROJECT_ID",
-      "purpose": "GCP project ID for Vertex AI. Required when using [Google Vertex AI](/en/google-vertex-ai)",
+      "purpose": "GCP project ID for Vertex AI requests. Overridden by `GCLOUD_PROJECT`, `GOOGLE_CLOUD_PROJECT`, or the project in your `GOOGLE_APPLICATION_CREDENTIALS` credential file. See [Google Vertex AI](/en/google-vertex-ai)",
+      "default": null
+    },
+    {
+      "name": "ANTHROPIC_WORKSPACE_ID",
+      "purpose": "Workspace ID for [workload identity federation](https://platform.claude.com/docs/en/manage-claude/workload-identity-federation). Set this when your federation rule is scoped to more than one workspace so the token exchange knows which workspace to target",
       "default": null
     },
     {
@@ -180,7 +200,7 @@
     },
     {
       "name": "BASH_MAX_OUTPUT_LENGTH",
-      "purpose": "Maximum number of characters in bash outputs before they are middle-truncated",
+      "purpose": "Maximum number of characters in bash outputs before the full output is saved to a file and Claude receives the path plus a short preview. See [Bash tool behavior](/en/tools-reference#bash-tool-behavior)",
       "default": null
     },
     {
@@ -201,6 +221,11 @@
     {
       "name": "CLAUDE_AGENT_SDK_MCP_NO_PREFIX",
       "purpose": "Set to `1` to skip the `mcp__<server>__` prefix on tool names from SDK-created MCP servers. Tools use their original names. SDK usage only",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_ASYNC_AGENT_STALL_TIMEOUT_MS",
+      "purpose": "Stall timeout in milliseconds for background subagents. Default `600000` (10 minutes). The timer resets on each streaming progress event; if no progress arrives within the window, the subagent is aborted and the task is marked failed, surfacing any partial result to the parent",
       "default": null
     },
     {
@@ -245,7 +270,7 @@
     },
     {
       "name": "CLAUDE_CODE_AUTO_CONNECT_IDE",
-      "purpose": "Override automatic [IDE connection](/en/vs-code). By default, Claude Code connects automatically when launched inside a supported IDE's integrated terminal. Set to `false` to prevent this. Set to `true` to force a connection attempt when auto-detection fails, such as when tmux obscures the parent terminal",
+      "purpose": "Override automatic [IDE connection](/en/vs-code). By default, Claude Code connects automatically when launched inside a supported IDE's integrated terminal. Set to `false` to prevent this. Set to `true` to force a connection attempt when auto-detection fails, such as when tmux obscures the parent terminal. Takes precedence over the [`autoConnectIde`](/en/settings#global-config-settings) global config setting",
       "default": null
     },
     {
@@ -275,7 +300,7 @@
     },
     {
       "name": "CLAUDE_CODE_DEBUG_LOGS_DIR",
-      "purpose": "Override the debug log file path. Despite the name, this is a file path, not a directory. Requires debug mode to be enabled separately via `--debug` or `/debug`: setting this variable alone does not enable logging. The [`--debug-file`](/en/cli-reference#cli-flags) flag does both at once. Defaults to `~/.claude/debug/<session-id>.txt`",
+      "purpose": "Override the debug log file path. Despite the name, this is a file path, not a directory. Requires debug mode to be enabled separately via `--debug`, `/debug`, or the `DEBUG` environment variable: setting this variable alone does not enable logging. The [`--debug-file`](/en/cli-reference#cli-flags) flag does both at once. Defaults to `~/.claude/debug/<session-id>.txt`",
       "default": null
     },
     {
@@ -289,13 +314,23 @@
       "default": null
     },
     {
+      "name": "CLAUDE_CODE_DISABLE_AGENT_VIEW",
+      "purpose": "Set to `1` to turn off [background agents and agent view](/en/agent-view): `claude agents`, `--bg`, `/background`, and the on-demand supervisor. Equivalent to the [`disableAgentView`](/en/settings#available-settings) setting",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_DISABLE_ALTERNATE_SCREEN",
+      "purpose": "Set to `1` to disable [fullscreen rendering](/en/fullscreen) and use the classic main-screen renderer. The conversation stays in your terminal's native scrollback so `Cmd+f` and tmux copy mode work as usual. Takes precedence over `CLAUDE_CODE_NO_FLICKER` and the [`tui`](/en/settings#available-settings) setting. You can also switch with `/tui default`",
+      "default": null
+    },
+    {
       "name": "CLAUDE_CODE_DISABLE_ATTACHMENTS",
       "purpose": "Set to `1` to disable attachment processing. File mentions with `@` syntax are sent as plain text instead of being expanded into file content",
       "default": null
     },
     {
       "name": "CLAUDE_CODE_DISABLE_AUTO_MEMORY",
-      "purpose": "Set to `1` to disable [auto memory](/en/memory#auto-memory). Set to `0` to force auto memory on during the gradual rollout. When disabled, Claude does not create or load auto memory files",
+      "purpose": "Set to `1` to disable [auto memory](/en/memory#auto-memory). Set to `0` to force auto memory on even when `--bare` mode or [`autoMemoryEnabled: false`](/en/settings#available-settings) would otherwise disable it. When disabled, Claude does not create or load auto memory files",
       "default": null
     },
     {
@@ -325,7 +360,7 @@
     },
     {
       "name": "CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY",
-      "purpose": "Set to `1` to disable the \"How is Claude doing?\" session quality surveys. Surveys are also disabled when `DISABLE_TELEMETRY` or `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` is set. See [Session quality surveys](/en/data-usage#session-quality-surveys)",
+      "purpose": "Set to `1` to disable the \"How is Claude doing?\" session quality surveys. Surveys are also disabled when `DISABLE_TELEMETRY`, `DO_NOT_TRACK`, or `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` is set, unless `CLAUDE_CODE_ENABLE_FEEDBACK_SURVEY_FOR_OTEL` opts back in. To set a sample rate instead of disabling outright, use the [`feedbackSurveyRate`](/en/settings#available-settings) setting. See [Session quality surveys](/en/data-usage#session-quality-surveys)",
       "default": null
     },
     {
@@ -399,13 +434,23 @@
       "default": null
     },
     {
+      "name": "CLAUDE_CODE_ENABLE_FEEDBACK_SURVEY_FOR_OTEL",
+      "purpose": "Set to `1` to route the \"How is Claude doing?\" session quality survey to your own [OpenTelemetry collector](/en/monitoring-usage) when Anthropic-bound nonessential traffic is blocked. Survey ratings are emitted only as OTEL events to your configured collector. No survey data is sent to Anthropic in this mode. Applies when `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC`, `DISABLE_TELEMETRY`, or `DO_NOT_TRACK` is set, and has no effect otherwise. `CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY` and the organization product feedback policy take precedence",
+      "default": null
+    },
+    {
       "name": "CLAUDE_CODE_ENABLE_FINE_GRAINED_TOOL_STREAMING",
-      "purpose": "Controls whether tool call inputs stream from the API as Claude generates them. With this off, a large tool input such as a long file write arrives only after Claude finishes generating it, which can look like it's hanging. Enabled by default for direct Anthropic API connections. Set to `0` to opt out. Set to `1` to force-enable even when the server-side default is off. Has no effect on Bedrock, Vertex, Foundry, or [gateway](/en/llm-gateway) connections",
+      "purpose": "Controls whether tool call inputs stream from the API as Claude generates them. With this off, a large tool input such as a long file write arrives only after Claude finishes generating it, which can look like it's hanging. Enabled by default on the Anthropic API. On Bedrock and Vertex, enabled per model where the deployed container supports it. Set to `0` to opt out. Set to `1` to force on when routing through a proxy via `ANTHROPIC_BASE_URL`, `ANTHROPIC_VERTEX_BASE_URL`, or `ANTHROPIC_BEDROCK_BASE_URL`. Off by default on Foundry and [gateway](/en/llm-gateway) connections",
       "default": null
     },
     {
       "name": "CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY",
       "purpose": "Set to `1` to populate the `/model` picker from your gateway's `/v1/models` endpoint when `ANTHROPIC_BASE_URL` points at an Anthropic-compatible gateway such as LiteLLM, Kong, or an internal proxy. Off by default because gateways backed by a shared API key would otherwise show every user every model the key can access. Discovered models are still filtered by the [`availableModels`](/en/settings#available-settings) allowlist",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_ENABLE_OPUS_4_7_FAST_MODE",
+      "purpose": "Set to `1` to run [fast mode](/en/fast-mode) on Claude Opus 4.7 instead of Opus 4.6. With the variable set, `/fast` switches to Opus 4.7; without it, `/fast` continues to use Opus 4.6",
       "default": null
     },
     {
@@ -460,12 +505,12 @@
     },
     {
       "name": "CLAUDE_CODE_GLOB_HIDDEN",
-      "purpose": "Set to `false` to exclude dotfiles from results when Claude invokes the [Glob tool](/en/tools-reference). Included by default. Does not affect `@` file autocomplete, `ls`, Grep, or Read",
+      "purpose": "Set to `false` to exclude dotfiles from results when Claude invokes the [Glob tool](/en/tools-reference#glob-tool-behavior). Included by default. Does not affect `@` file autocomplete, `ls`, Grep, or Read",
       "default": null
     },
     {
       "name": "CLAUDE_CODE_GLOB_NO_IGNORE",
-      "purpose": "Set to `false` to make the [Glob tool](/en/tools-reference) respect `.gitignore` patterns. By default, Glob returns all matching files including gitignored ones. Does not affect `@` file autocomplete, which has its own [`respectGitignore` setting](/en/settings#available-settings)",
+      "purpose": "Set to `false` to make the [Glob tool](/en/tools-reference#glob-tool-behavior) respect `.gitignore` patterns. By default, Glob returns all matching files including gitignored ones. Does not affect `@` file autocomplete, which has its own [`respectGitignore` setting](/en/settings#available-settings)",
       "default": null
     },
     {
@@ -514,8 +559,18 @@
       "default": "10"
     },
     {
+      "name": "CLAUDE_CODE_MAX_TURNS",
+      "purpose": "Cap the number of agentic turns when no explicit limit is passed. Equivalent to passing [`--max-turns`](/en/cli-reference#cli-flags), which takes precedence when both are set. A value that is not a positive integer is rejected at startup with an error rather than treated as no cap",
+      "default": null
+    },
+    {
       "name": "CLAUDE_CODE_MCP_ALLOWLIST_ENV",
       "purpose": "Set to `1` to spawn stdio MCP servers with only a safe baseline environment plus the server's configured `env`, instead of inheriting your shell environment",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_NATIVE_CURSOR",
+      "purpose": "Set to `1` to show the terminal's own cursor at the input caret instead of a drawn block. The cursor respects the terminal's blink, shape, and focus settings",
       "default": null
     },
     {
@@ -541,6 +596,11 @@
     {
       "name": "CLAUDE_CODE_OAUTH_TOKEN",
       "purpose": "OAuth access token for Claude.ai authentication. Alternative to `/login` for SDK and automated environments. Takes precedence over keychain-stored credentials. Generate one with [`claude setup-token`](/en/authentication#generate-a-long-lived-token)",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_OPUS_4_6_FAST_MODE_OVERRIDE",
+      "purpose": "Set to `1` to keep [fast mode](/en/fast-mode) on Claude Opus 4.6. Takes precedence over `CLAUDE_CODE_ENABLE_OPUS_4_7_FAST_MODE`, so set this if you need to pin Opus 4.6 regardless of how the default changes",
       "default": null
     },
     {
@@ -584,6 +644,11 @@
       "default": null
     },
     {
+      "name": "CLAUDE_CODE_PLUGIN_PREFER_HTTPS",
+      "purpose": "Set to `1` to clone GitHub `owner/repo` plugin sources over HTTPS instead of SSH. Useful in CI runners, containers, or any environment without a configured SSH key for `github.com`",
+      "default": null
+    },
+    {
       "name": "CLAUDE_CODE_PLUGIN_SEED_DIR",
       "purpose": "Path to one or more read-only plugin seed directories, separated by `:` on Unix or `;` on Windows. Use this to bundle a pre-populated plugins directory into a container image. Claude Code registers marketplaces from these directories at startup and uses pre-cached plugins without re-cloning. See [Pre-populate plugins for containers](/en/plugin-marketplaces#pre-populate-plugins-for-containers)",
       "default": null
@@ -614,13 +679,23 @@
       "default": null
     },
     {
+      "name": "CLAUDE_CODE_RESUME_PROMPT",
+      "purpose": "Override the continuation message injected when resuming a session that ended mid-turn. Defaults to `Continue from where you left off.`. Spawn scripts for long-running agents can set this to a more directive boot message. An empty string uses the default",
+      "default": null
+    },
+    {
       "name": "CLAUDE_CODE_SCRIPT_CAPS",
       "purpose": "JSON object limiting how many times specific scripts may be invoked per session when `CLAUDE_CODE_SUBPROCESS_ENV_SCRUB` is set. Keys are substrings matched against the command text; values are integer call limits. For example, `{\"deploy.sh\": 2}` allows `deploy.sh` to be called at most twice. Matching is substring-based so shell-expansion tricks like `./scripts/deploy.sh $(evil)` still count against the cap. Runtime fan-out via `xargs` or `find -exec` is not detected; this is a defense-in-depth control",
       "default": null
     },
     {
       "name": "CLAUDE_CODE_SCROLL_SPEED",
-      "purpose": "Set the mouse wheel scroll multiplier in [fullscreen rendering](/en/fullscreen#mouse-wheel-scrolling). Accepts values from 1 to 20. Set to `3` to match `vim` if your terminal sends one wheel event per notch without amplification",
+      "purpose": "Set the mouse wheel scroll multiplier in [fullscreen rendering](/en/fullscreen#mouse-wheel-scrolling). Accepts values from 1 to 20. Set to `3` to match `vim` if your terminal sends one wheel event per notch without amplification. Ignored in the JetBrains IDE terminal, where Claude Code uses its own scroll handling",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_SESSION_ID",
+      "purpose": "Set automatically in Bash and PowerShell tool subprocesses to the current session ID. Matches the `session_id` field passed to [hooks](/en/hooks). Updated on `/clear`. Use to correlate scripts and external tools with the Claude Code session that launched them",
       "default": null
     },
     {
@@ -645,7 +720,12 @@
     },
     {
       "name": "CLAUDE_CODE_SIMPLE_SYSTEM_PROMPT",
-      "purpose": "Set to `1` to use a shorter system prompt and abbreviated tool descriptions on Opus 4.7. Has no effect on other models. The full tool set, hooks, MCP servers, and CLAUDE.md discovery remain enabled",
+      "purpose": "Set to `1` to use a shorter system prompt and abbreviated tool descriptions on any model. Set to `0`, `false`, `no`, or `off` to opt out even on models where the experiment or server configuration would otherwise enable it. The full tool set, hooks, MCP servers, and CLAUDE.md discovery remain enabled",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_SKIP_ANTHROPIC_AWS_AUTH",
+      "purpose": "Skip client-side authentication for [Claude Platform on AWS](/en/claude-platform-on-aws), for gateways that sign requests themselves",
       "default": null
     },
     {
@@ -695,7 +775,7 @@
     },
     {
       "name": "CLAUDE_CODE_SYNTAX_HIGHLIGHT",
-      "purpose": "Set to `false` to disable syntax highlighting in diff output. Useful when colors interfere with your terminal setup",
+      "purpose": "Set to `false` to disable syntax highlighting in diff output. Useful when colors interfere with your terminal setup. To also disable highlighting in code blocks and file previews, use the [`syntaxHighlightingDisabled`](/en/settings) setting",
       "default": null
     },
     {
@@ -716,6 +796,11 @@
     {
       "name": "CLAUDE_CODE_TMUX_TRUECOLOR",
       "purpose": "Set to `1` to allow 24-bit truecolor output inside tmux. By default, Claude Code clamps to 256 colors when `$TMUX` is set because tmux does not pass through truecolor escape sequences unless configured to. Set this after adding `set -ga terminal-overrides ',*:Tc'` to your `~/.tmux.conf`. See [Terminal configuration](/en/terminal-config) for other tmux settings",
+      "default": null
+    },
+    {
+      "name": "CLAUDE_CODE_USE_ANTHROPIC_AWS",
+      "purpose": "Use [Claude Platform on AWS](/en/claude-platform-on-aws)",
       "default": null
     },
     {
@@ -754,6 +839,11 @@
       "default": "~/.claude"
     },
     {
+      "name": "CLAUDE_EFFORT",
+      "purpose": "Set automatically in Bash tool subprocesses and hook commands to the active [effort level](/en/model-config#adjust-effort-level) for the turn: `low`, `medium`, `high`, `xhigh`, or `max`. Matches the `effort.level` field passed to [hooks](/en/hooks). Only set when the current model supports the effort parameter",
+      "default": null
+    },
+    {
       "name": "CLAUDE_ENABLE_BYTE_WATCHDOG",
       "purpose": "Set to `1` to force-enable the byte-level streaming idle watchdog, or set to `0` to force-disable it. When unset, the watchdog is enabled by default for Anthropic API connections. The byte watchdog aborts a connection when no bytes arrive on the wire for the duration set by `CLAUDE_STREAM_IDLE_TIMEOUT_MS`, with a minimum of 5 minutes, independent of the event-level watchdog",
       "default": null
@@ -781,6 +871,11 @@
     {
       "name": "CLAUDECODE",
       "purpose": "Set to `1` in shell environments Claude Code spawns (Bash tool, tmux sessions). Not set in [hooks](/en/hooks) or [status line](/en/statusline) commands. Use to detect when a script is running inside a shell spawned by Claude Code",
+      "default": null
+    },
+    {
+      "name": "DEBUG",
+      "purpose": "Set to `1` to enable debug mode, equivalent to launching with [`--debug`](/en/cli-reference#cli-flags). Debug logs are written to `~/.claude/debug/<session-id>.txt`, or to the path set by `CLAUDE_CODE_DEBUG_LOGS_DIR`. Only the truthy values `1`, `true`, `yes`, and `on` enable debug mode, so namespace patterns like `DEBUG=express:*` set for other tools do not trigger it",
       "default": null
     },
     {
@@ -875,7 +970,7 @@
     },
     {
       "name": "DISABLE_TELEMETRY",
-      "purpose": "Set to `1` to opt out of telemetry. Telemetry events do not include user data like code, file paths, or bash commands",
+      "purpose": "Set to `1` to opt out of telemetry. Telemetry events do not include user data like code, file paths, or bash commands. Also disables feature flags, so some features that are still rolling out may not be available",
       "default": null
     },
     {
@@ -889,13 +984,18 @@
       "default": null
     },
     {
+      "name": "DO_NOT_TRACK",
+      "purpose": "Set to `1` to opt out of telemetry. Equivalent to setting `DISABLE_TELEMETRY`. Honored as the [standard cross-tool convention](https://consoledonottrack.com/)",
+      "default": null
+    },
+    {
       "name": "ENABLE_CLAUDEAI_MCP_SERVERS",
       "purpose": "Set to `false` to disable [claude.ai MCP servers](/en/mcp#use-mcp-servers-from-claude-ai) in Claude Code. Enabled by default for logged-in users",
       "default": null
     },
     {
       "name": "ENABLE_PROMPT_CACHING_1H",
-      "purpose": "Set to `1` to request a 1-hour prompt cache TTL instead of the default 5 minutes. Intended for API key, [Bedrock](/en/amazon-bedrock), [Vertex](/en/google-vertex-ai), and [Foundry](/en/microsoft-foundry) users. Subscription users receive 1-hour TTL automatically. 1-hour cache writes are billed at a higher rate",
+      "purpose": "Set to `1` to request a 1-hour prompt cache TTL instead of the default 5 minutes. Intended for API key, [Bedrock](/en/amazon-bedrock), [Vertex](/en/google-vertex-ai), [Foundry](/en/microsoft-foundry), and [Claude Platform on AWS](/en/claude-platform-on-aws) users. Subscription users receive 1-hour TTL automatically. 1-hour cache writes are billed at a higher rate",
       "default": null
     },
     {
@@ -905,7 +1005,7 @@
     },
     {
       "name": "ENABLE_TOOL_SEARCH",
-      "purpose": "Controls [MCP tool search](/en/mcp#scale-with-mcp-tool-search). Unset: all MCP tools deferred by default, but loaded upfront on Vertex AI or when `ANTHROPIC_BASE_URL` points to a non-first-party host. Values: `true` (always defer including proxies and Vertex AI), `auto` (threshold mode: load upfront if tools fit within 10% of context), `auto:N` (custom threshold, e.g., `auto:5` for 5%), `false` (load all upfront)",
+      "purpose": "Controls [MCP tool search](/en/mcp#scale-with-mcp-tool-search). Unset: all MCP tools deferred by default, but loaded upfront on Vertex AI or when `ANTHROPIC_BASE_URL` points to a non-first-party host. Values: `true` (always defer and send the beta header; supported on Vertex AI with Sonnet 4.5 and later or Opus 4.5 and later; requests fail on earlier Vertex AI models or on proxies that do not support `tool_reference`), `auto` (threshold mode: load upfront if tools fit within 10% of context), `auto:N` (custom threshold, e.g., `auto:5` for 5%), `false` (load all upfront)",
       "default": null
     },
     {
@@ -957,6 +1057,11 @@
       "name": "MCP_CLIENT_SECRET",
       "purpose": "OAuth client secret for MCP servers that require [pre-configured credentials](/en/mcp#use-pre-configured-oauth-credentials). Avoids the interactive prompt when adding a server with `--client-secret`",
       "default": null
+    },
+    {
+      "name": "MCP_CONNECT_TIMEOUT_MS",
+      "purpose": "How long the first query waits, in milliseconds, for the MCP connection batch before snapshotting the tool list (default: 5000). Servers still pending at the deadline keep connecting in the background but won't appear until the next query. Distinct from `MCP_TIMEOUT`, which bounds an individual server's connect attempt. Most relevant to non-interactive sessions that issue a single query and need slow-connecting servers to be visible",
+      "default": "5000"
     },
     {
       "name": "MCP_CONNECTION_NONBLOCKING",

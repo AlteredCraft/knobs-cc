@@ -1,6 +1,6 @@
 {
   "source": "https://code.claude.com/docs/en/sub-agents.md",
-  "fetchedAt": "2026-05-07T03:21:49.842Z",
+  "fetchedAt": "2026-05-18T12:34:59.151Z",
   "count": 16,
   "fields": [
     {
@@ -66,7 +66,7 @@
     {
       "name": "name",
       "required": true,
-      "description": "Unique identifier using lowercase letters and hyphens"
+      "description": "Unique identifier using lowercase letters and hyphens. [Hooks](/en/hooks#subagentstart) receive this value as `agent_type`. The filename does not have to match"
     },
     {
       "name": "permissionMode",
@@ -76,12 +76,12 @@
     {
       "name": "skills",
       "required": false,
-      "description": "[Skills](/en/skills) to load into the subagent's context at startup. The full skill content is injected, not just made available for invocation. Subagents don't inherit skills from the parent conversation"
+      "description": "[Skills](/en/skills) to preload into the subagent's context at startup. The full skill content is injected, not just the description. Subagents can still invoke unlisted project, user, and plugin skills through the Skill tool"
     },
     {
       "name": "tools",
       "required": false,
-      "description": "[Tools](#available-tools) the subagent can use. Inherits all tools if omitted"
+      "description": "[Tools](#available-tools) the subagent can use. Inherits all tools if omitted. To preload Skills into context, use the `skills` field rather than listing `Skill` here"
     }
   ]
 }
