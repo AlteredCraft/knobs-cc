@@ -16,6 +16,7 @@
     "sync:permissions": "node scripts/sync-permissions.js",
     "sync:keybindings": "node scripts/sync-keybindings.js",
     "sync:cli-reference": "node scripts/sync-cli-reference.js",
+    "sync:model-config": "node scripts/sync-model-config.js",
     "test": "node --test scripts/*.test.js",
     "test:coverage": "node --experimental-test-coverage --test-coverage-exclude='scripts/*.test.js' --test scripts/*.test.js",
     "test:unit": "vitest run",

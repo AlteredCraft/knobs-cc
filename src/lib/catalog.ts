@@ -57,6 +57,19 @@ export interface PermissionsCatalogFile {
   modes: PermissionMode[];
 }
 
+export interface EffortLevel {
+  name: string;
+  /** Upstream prose describing when to use this effort level. */
+  description: string;
+}
+
+export interface ModelConfigCatalogFile {
+  source: string;
+  fetchedAt: string;
+  count: number;
+  effortLevels: EffortLevel[];
+}
+
 export interface HookEvent {
   name: string;
   /** Upstream prose describing when the event fires. */
@@ -86,6 +99,7 @@ export interface CatalogsWire {
   env_vars: EnvVarsCatalogFile;
   permissions: PermissionsCatalogFile;
   hooks: HooksCatalogFile;
+  model_config: ModelConfigCatalogFile;
   // Other catalogs are exposed for future Phase 5+ consumers; their shapes
   // aren't modeled yet because nothing in the UI reads them.
   sub_agents: unknown;
@@ -109,6 +123,7 @@ interface InitializedCatalog {
   envVarsByName: Map<string, EnvVarEntry>;
   permissionModesByName: Map<string, PermissionMode>;
   hookEventsByName: Map<string, HookEvent>;
+  effortLevelsByName: Map<string, EffortLevel>;
   meta: CatalogMeta;
 }
 
@@ -140,6 +155,9 @@ function buildState(data: CatalogsWire): InitializedCatalog {
       data.permissions.modes.map((m) => [m.name, m]),
     ),
     hookEventsByName: new Map(data.hooks.events.map((e) => [e.name, e])),
+    effortLevelsByName: new Map(
+      data.model_config.effortLevels.map((e) => [e.name, e]),
+    ),
     meta: {
       source: data.settings.source,
       fetchedAt: data.settings.fetchedAt,
@@ -250,6 +268,17 @@ export function findPermissionMode(name: string): PermissionMode | null {
  */
 export function findHookEvent(name: string): HookEvent | null {
   return requireState().hookEventsByName.get(name) ?? null;
+}
+
+/**
+ * Lookup by effort-level name (e.g. `xhigh`). Returns null when the
+ * catalog doesn't document the level — the settings JSON Schema enum
+ * may add new values before the upstream docs catch up. Case-sensitive:
+ * effort-level names are lower-case ASCII; case-folding would create
+ * false matches for user typos.
+ */
+export function findEffortLevel(name: string): EffortLevel | null {
+  return requireState().effortLevelsByName.get(name) ?? null;
 }
 
 /** Lookup by exact dot-path. Walks up to find the closest parent on miss. */

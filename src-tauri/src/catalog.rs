@@ -20,6 +20,7 @@ const MCP_JSON: &str = include_str!("../../catalog/mcp.json");
 const PERMISSIONS_JSON: &str = include_str!("../../catalog/permissions.json");
 const KEYBINDINGS_JSON: &str = include_str!("../../catalog/keybindings.json");
 const CLI_REFERENCE_JSON: &str = include_str!("../../catalog/cli-reference.json");
+const MODEL_CONFIG_JSON: &str = include_str!("../../catalog/model-config.json");
 
 #[derive(Debug, Serialize)]
 pub struct Catalogs {
@@ -42,6 +43,9 @@ pub struct Catalogs {
     /// Parsed `catalog/cli-reference.json` — `{source, fetchedAt, commandCount, flagCount, commands: [...], flags: [...]}`.
     #[serde(rename = "cli_reference")]
     pub cli_reference: Value,
+    /// Parsed `catalog/model-config.json` — `{source, fetchedAt, count, effortLevels: [...]}`.
+    #[serde(rename = "model_config")]
+    pub model_config: Value,
 }
 
 fn read_catalog_inner() -> Result<Catalogs, String> {
@@ -62,6 +66,8 @@ fn read_catalog_inner() -> Result<Catalogs, String> {
             .map_err(|e| format!("catalog/keybindings.json parse: {e}"))?,
         cli_reference: serde_json::from_str(CLI_REFERENCE_JSON)
             .map_err(|e| format!("catalog/cli-reference.json parse: {e}"))?,
+        model_config: serde_json::from_str(MODEL_CONFIG_JSON)
+            .map_err(|e| format!("catalog/model-config.json parse: {e}"))?,
     })
 }
 
@@ -237,6 +243,33 @@ mod tests {
     }
 
     #[test]
+    fn model_config_catalog_parses_and_has_effort_levels_array() {
+        let c = read_catalog_inner().expect("catalogs parse");
+        let arr = c.model_config.get("effortLevels").and_then(Value::as_array);
+        assert!(arr.is_some(), "model_config.effortLevels should be an array");
+        assert!(!arr.unwrap().is_empty(), "effortLevels array should be non-empty");
+    }
+
+    #[test]
+    fn model_config_catalog_contains_canonical_effort_levels() {
+        // Guard against a sync regression that drops or renames the
+        // anchor effort levels. `low`, `medium`, `high`, `xhigh`, `max`
+        // are the five values upstream documents; `max` is session-only
+        // and not accepted in settings, but it still belongs in the
+        // catalog because users can hit it via `/effort max` and the
+        // CLAUDE_CODE_EFFORT_LEVEL env var.
+        let c = read_catalog_inner().unwrap();
+        let arr = c.model_config.get("effortLevels").unwrap().as_array().unwrap();
+        for expected in ["low", "medium", "high", "xhigh", "max"] {
+            assert!(
+                arr.iter()
+                    .any(|e| e.get("name").and_then(Value::as_str) == Some(expected)),
+                "model-config catalog missing effort level: {expected}",
+            );
+        }
+    }
+
+    #[test]
     fn settings_entries_have_a_key_field() {
         // Spot-check that the catalog entry shape we rely on is intact —
         // `key` is the field rows.ts joins on.
@@ -273,6 +306,10 @@ mod tests {
         assert!(
             json.get("cli_reference").is_some(),
             "expected snake_case cli_reference on the wire",
+        );
+        assert!(
+            json.get("model_config").is_some(),
+            "expected snake_case model_config on the wire",
         );
         assert!(json.get("settings").is_some());
         assert!(json.get("hooks").is_some());

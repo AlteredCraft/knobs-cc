@@ -8,9 +8,11 @@ If you ship something, mark it ✅ here and (where relevant) update the
 corresponding spec section. If you discover new work, add it here, not
 inline in another spec.
 
-Last reviewed: 2026-05-16 (hooks.events drawer cross-reference
-shipped, then expanded into a structured matcher-groups view +
-hook details modal; see Inspector polish § Shipped for both).
+Last reviewed: 2026-05-22 (`effortLevel` value-conditional drawer
+annotation shipped on top of a new `model-config` catalog; see
+Inspector polish § Shipped and Catalog sync § Shipped for both.
+First slice of #7 — other multi-value enums still lack a structured
+upstream source).
 
 ## Next-up candidates
 
@@ -18,13 +20,16 @@ A digest of what's open across the four tracks below — pick from
 here, then jump to the relevant section for shape and rationale.
 
 - **Generalize value-conditional drawer annotation** (inspector
-  polish) — the annotation that ships today only fires for
-  `permissions.defaultMode`. Other multi-value enums (`effortLevel`,
-  `teammateMode`, `viewMode`, ...) would benefit but lack a
-  structured per-value source upstream. Tracked at
-  [#7](https://github.com/AlteredCraft/knobs-cc/issues/7); solution
-  space and a recommended starting step (`model-config.md` for
-  `effortLevel`) live in the issue body.
+  polish) — `effortLevel` shipped 2026-05-22 via a new
+  `catalog/model-config.json` (parses the `#### Choose an effort
+  level` table). The annotation now covers two keys
+  (`permissions.defaultMode`, `effortLevel`). Other multi-value enums
+  (`teammateMode`, `viewMode`, `env.CLAUDE_CODE_DEBUG_LOG_LEVEL`,
+  `tui`, `defaultShell`, `forceLoginMethod`) still lack a structured
+  per-value source upstream. Tracked at
+  [#7](https://github.com/AlteredCraft/knobs-cc/issues/7); per-key
+  decisions (sync more upstream tables, hand-curated overlay, or
+  leave as-is) live in the issue body.
 - **Rail navigability decision** (inspector polish) — spec question,
   not coding work; needs a fork-vs-fork call before any UI lands.
 - **Inventory canonicalization** — `inventory.md:15` flags §3
@@ -34,7 +39,8 @@ here, then jump to the relevant section for shape and rationale.
   the convention.
 - **New sync scripts** (catalog sync) — slate complete for now.
   (`sub-agents.md`, `mcp.md`, and `permissions.md` shipped 2026-05-07;
-  `keybindings.md` and `cli-reference.md` shipped 2026-05-08; see
+  `keybindings.md` and `cli-reference.md` shipped 2026-05-08;
+  `model-config.md`'s effort-levels table shipped 2026-05-22; see
   catalog-sync section below.)
 - **CI / drift hardening** (catalog sync) — `$ref` resolution policy;
   staleness signal. (Cron-driven sync with PR-on-diff shipped
@@ -178,6 +184,26 @@ improvement, not a blocker.
 
 ## Catalog sync — `catalog-sync.md`
 
+- **Model-config catalog (effort levels only).** ✅ shipped 2026-05-22.
+  `scripts/sync-model-config.js` reads
+  `https://code.claude.com/docs/en/model-config.md`'s
+  `#### Choose an effort level` table and writes
+  `catalog/model-config.json` (5 records — `low`, `medium`, `high`,
+  `xhigh`, `max`). Same recipe as `sync-permissions.js`: GFM table
+  walker keyed on the `| Level | When to use it |` header signature
+  to disambiguate against the page's other 2-col tables (model
+  aliases, model-support matrix, env vars). Wired through
+  `read_catalog` as `model_config` (snake-case on the wire to match
+  `env_vars` / `sub_agents` / `cli_reference`); UI consumer landed
+  immediately as the drawer's value-conditional annotation for
+  `effortLevel` (see Inspector polish § Shipped). Cron sync covers
+  the new script. Future passes: model aliases table (would let the
+  drawer annotate `model: "opus"`-style aliases), the model-support
+  matrix (per-level model gating), extended thinking + context
+  control tables. First sync target whose UI consumer landed in the
+  same commit; previous sync slate (`sub_agents`, `mcp`,
+  `keybindings`, `cli_reference`) is still in the
+  "exposed-but-unconsumed" pool.
 - **Hooks pass #2.** ✅ shipped 2026-05-08. `scripts/sync-hooks.js` now
   walks the page heading-aware (h2..h5) and extracts three additional
   artifacts on top of the lifecycle table: (1) handler-fields tables
@@ -358,17 +384,16 @@ Open work (what to pick up next within this track):
   rail informational (current behavior) or wire layer-click → centre
   list filtered to keys won by that layer. Needs an explicit decision
   before any work — surface as a question, not a ticket.
-- **Generalize value-conditional drawer annotation.** Today's
-  annotation only fires for `permissions.defaultMode` because
-  permissions.md upstream has a structured per-mode table. Other
-  multi-value enums (`effortLevel`, `teammateMode`, `viewMode`,
-  `env.CLAUDE_CODE_DEBUG_LOG_LEVEL`, ...) would benefit but lack a
-  structured per-value source upstream. Tracked at
-  [#7](https://github.com/AlteredCraft/knobs-cc/issues/7) — solution
-  space (sync more upstream tables vs. hand-curated overlay vs.
-  description-prose parser vs. ship as-is) and a recommended starting
-  step (`model-config.md` for `effortLevel`) live in the issue body.
-  Surfaced by live smoke of the permissions.modes drawer wire-up.
+- **Generalize value-conditional drawer annotation — remaining
+  keys.** `permissions.defaultMode` (6 modes) and `effortLevel` (5
+  levels) now have the annotation. The remaining multi-value enums
+  (`teammateMode`, `viewMode`, `env.CLAUDE_CODE_DEBUG_LOG_LEVEL`,
+  `tui`, `defaultShell`, `forceLoginMethod`) still lack a structured
+  per-value source upstream and would each need either: (a) a new
+  sync target with a clean per-value table, (b) a hand-curated
+  overlay catalog, or (c) ship-as-is if the existing description is
+  adequate. Tracked at
+  [#7](https://github.com/AlteredCraft/knobs-cc/issues/7).
 - **`mcp.scopes` enrichment for the managed-mcp pill.** Lower-bar
   follow-up: the pill currently shows server count and links to
   `openInEditor` on the JSON file. The MCP catalog's 3-record `scopes`
@@ -380,6 +405,24 @@ Open work (what to pick up next within this track):
 
 Shipped:
 
+- **Drawer cross-references `effortLevel` (model-config catalog).**
+  ✅ shipped 2026-05-22. First slice of #7. New
+  `catalog/model-config.json` (5 records — `low`, `medium`, `high`,
+  `xhigh`, `max`) sourced from `model-config.md`'s
+  `#### Choose an effort level` table. `resolveValueAnnotation`
+  picks up an `effortLevel` branch parallel to the existing
+  `permissions.defaultMode` branch, joining through a new
+  `findEffortLevel(name)` in `src/lib/catalog.ts`. Same defensive
+  shape as the permissions branch — non-string values render no
+  annotation, undocumented values render no annotation. `max` is
+  documented even though it's session-only and not accepted in the
+  settings field (per upstream); the annotation still fires when a
+  user lands at `max` via `/effort max` or
+  `CLAUDE_CODE_EFFORT_LEVEL`. Out of scope for this slice: the
+  `### Adjust effort level` model-support matrix (would warrant a
+  separate consumer when there's a UX use for it) and the rest of
+  `model-config.md`'s prose (model aliases, extended thinking,
+  extended context, env vars, custom-model-option setup).
 - **Hooks structured drawer view + details modal.**
   ✅ shipped 2026-05-16 (same day as the header cross-reference
   below — the two passes are one commit's worth of work in

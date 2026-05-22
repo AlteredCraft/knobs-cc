@@ -11,6 +11,7 @@ import mcp from "../catalog/mcp.json";
 import permissions from "../catalog/permissions.json";
 import keybindings from "../catalog/keybindings.json";
 import cliReference from "../catalog/cli-reference.json";
+import modelConfig from "../catalog/model-config.json";
 import { hydrateCatalogForTesting, type CatalogsWire } from "@/lib/catalog";
 
 const catalogs: CatalogsWire = {
@@ -22,6 +23,7 @@ const catalogs: CatalogsWire = {
   permissions,
   keybindings,
   cli_reference: cliReference,
+  model_config: modelConfig,
 };
 
 hydrateCatalogForTesting(catalogs);

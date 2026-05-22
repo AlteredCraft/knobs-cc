@@ -54,6 +54,7 @@ jobs:
           npm run sync:permissions
           npm run sync:keybindings
           npm run sync:cli-reference
+          npm run sync:model-config
 
       # `fetchedAt` is rewritten on every sync run — strip it before
       # comparing so we don't open noise PRs that only bump a timestamp.
@@ -67,7 +68,7 @@ jobs:
           set -euo pipefail
           real_drift=false
           drifted_files=()
-          for f in settings env-vars hooks sub-agents mcp permissions keybindings cli-reference; do
+          for f in settings env-vars hooks sub-agents mcp permissions keybindings cli-reference model-config; do
             head_norm=$(git show HEAD:catalog/$f.json | jq 'del(.fetchedAt)')
             new_norm=$(jq 'del(.fetchedAt)' catalog/$f.json)
             if [ "$head_norm" != "$new_norm" ]; then
@@ -117,6 +118,7 @@ jobs:
             - `npm run sync:permissions`
             - `npm run sync:keybindings`
             - `npm run sync:cli-reference`
+            - `npm run sync:model-config`
 
             Drifted catalogs:
             ```

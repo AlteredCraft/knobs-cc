@@ -3,6 +3,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { cn } from "@/lib/utils";
 import {
+  findEffortLevel,
   findEnvVar,
   findHookEvent,
   findPermissionMode,
@@ -552,16 +553,22 @@ export function resolveDescription(row: Row): string | null {
  * block — explains what the current value *does* without conflating it
  * with the description of the knob itself.
  *
- * Currently fires only for `permissions.defaultMode` rows whose
- * effective value matches a cataloged mode (the 6 documented modes,
- * not the experimental `delegate` enum value). Returns null for
- * undocumented values, non-string values, and any other keyPath, so
- * the drawer renders nothing rather than mislead.
+ * Fires for keyPaths whose enum values have a structured per-value
+ * source upstream: `permissions.defaultMode` joins to the permissions
+ * catalog's `modes` array; `effortLevel` joins to the model-config
+ * catalog's `effortLevels` array. Returns null for undocumented values,
+ * non-string values, and any other keyPath, so the drawer renders
+ * nothing rather than mislead.
  */
 export function resolveValueAnnotation(row: Row): string | null {
-  if (row.keyPath === "permissions.defaultMode" && typeof row.value === "string") {
+  if (typeof row.value !== "string") return null;
+  if (row.keyPath === "permissions.defaultMode") {
     const mode = findPermissionMode(row.value);
     if (mode) return mode.description;
+  }
+  if (row.keyPath === "effortLevel") {
+    const level = findEffortLevel(row.value);
+    if (level) return level.description;
   }
   return null;
 }

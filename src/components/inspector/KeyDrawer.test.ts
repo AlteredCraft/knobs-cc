@@ -262,4 +262,50 @@ describe("resolveValueAnnotation", () => {
     expect(anno).not.toBeNull();
     expect(anno!.length).toBeGreaterThan(40);
   });
+
+  test("returns the cataloged effort-level description for effortLevel when the value is documented", () => {
+    // The test setup hydrates the real model-config catalog. `xhigh`
+    // is a stable anchor and the recommended default on Opus 4.7;
+    // assert structurally — the prose drifts.
+    const row = rowWithKey("effortLevel", { value: "xhigh" });
+    const anno = resolveValueAnnotation(row);
+    expect(anno).not.toBeNull();
+    expect(anno).toMatch(/coding|agentic|recommended/i);
+  });
+
+  test("fires for each documented effort level (low/medium/high/xhigh/max)", () => {
+    // Smoke-test that every level the upstream docs publish gets a
+    // non-empty annotation — catches a sync regression that drops one.
+    for (const value of ["low", "medium", "high", "xhigh", "max"]) {
+      const anno = resolveValueAnnotation(rowWithKey("effortLevel", { value }));
+      expect(anno, `expected annotation for effortLevel=${value}`).not.toBeNull();
+      expect(anno!.length).toBeGreaterThan(0);
+    }
+  });
+
+  test("returns null for effortLevel when the value is undocumented", () => {
+    // Settings JSON Schema enums can drift ahead of the docs; render
+    // nothing rather than misleading prose.
+    const row = rowWithKey("effortLevel", { value: "ludicrous" });
+    expect(resolveValueAnnotation(row)).toBeNull();
+  });
+
+  test("fires for unset effortLevel rows whose value is the catalog default", () => {
+    // Unset rows carry value from `catalog.default` (see rows.ts). The
+    // annotation should help users understand the default behaviour
+    // without needing to set the knob first.
+    const row = rowWithKey("effortLevel", {
+      value: "high",
+      state: "unset",
+      catalog: { key: "effortLevel", default: "high" },
+    });
+    const anno = resolveValueAnnotation(row);
+    expect(anno).not.toBeNull();
+    expect(anno!.length).toBeGreaterThan(0);
+  });
+
+  test("returns null for non-string effortLevel values", () => {
+    const row = rowWithKey("effortLevel", { value: 3 as unknown });
+    expect(resolveValueAnnotation(row)).toBeNull();
+  });
 });
