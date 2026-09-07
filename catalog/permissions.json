@@ -1,31 +1,31 @@
 {
   "source": "https://code.claude.com/docs/en/permissions.md",
-  "fetchedAt": "2026-05-18T12:34:59.743Z",
+  "fetchedAt": "2026-09-07T14:52:54.880Z",
   "count": 6,
   "modes": [
     {
       "name": "acceptEdits",
-      "description": "Automatically accepts file edits and common filesystem commands (`mkdir`, `touch`, `mv`, `cp`, etc.) for paths in the working directory or `additionalDirectories`"
+      "description": "Automatically accepts file edits and common filesystem commands such as `mkdir`, `touch`, `mv`, and `cp` for paths in the working directory or `additionalDirectories`"
     },
     {
       "name": "auto",
-      "description": "Auto-approves tool calls with background safety checks that verify actions align with your request. Currently a research preview"
+      "description": "Auto-approves tool calls with background safety checks that verify actions align with your request"
     },
     {
       "name": "bypassPermissions",
-      "description": "Skips all permission prompts. Root and home directory removals such as `rm -rf /` still prompt as a circuit breaker"
+      "description": "Skips permission prompts, except for the [actions no mode auto-approves](/docs/en/permission-modes#actions-no-mode-auto-approves)"
     },
     {
       "name": "default",
-      "description": "Standard behavior: prompts for permission on first use of each tool"
+      "description": "Prompts for permission on first use of each tool. Labeled Manual in the CLI, the VS Code and JetBrains extensions, and the desktop app, and Claude Code accepts `manual` as an alias. The label and alias require Claude Code v2.1.200 or later. The desktop app's label doesn't depend on your CLI version"
     },
     {
       "name": "dontAsk",
-      "description": "Auto-denies tools unless pre-approved via `/permissions` or `permissions.allow` rules"
+      "description": "Auto-denies tools unless pre-approved via `/permissions` or `permissions.allow` rules. `AskUserQuestion`, MCP tools marked [`requiresUserInteraction`](/docs/en/mcp#require-approval-for-a-specific-tool), and connector tools [your organization set to `ask`](/docs/en/mcp#organization-controls-on-connector-tools) in sessions where that setting reaches Claude Code are denied even if you've allowed them"
     },
     {
       "name": "plan",
-      "description": "Plan Mode: Claude reads files and runs read-only shell commands to explore but does not edit your source files"
+      "description": "Claude reads files and runs read-only shell commands to explore but doesn't edit your source files; with [auto mode](/docs/en/permission-modes#eliminate-prompts-with-auto-mode) available, classifier-approved commands also run. Labeled Plan in the CLI and the VS Code extension"
     }
   ]
 }
