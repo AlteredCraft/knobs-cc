@@ -1,8 +1,8 @@
 {
   "source": "https://code.claude.com/docs/en/cli-reference.md",
-  "fetchedAt": "2026-05-18T12:35:00.301Z",
-  "commandCount": 25,
-  "flagCount": 64,
+  "fetchedAt": "2026-09-07T14:52:55.527Z",
+  "commandCount": 34,
+  "flagCount": 78,
   "commands": [
     {
       "name": "cat file | claude -p \"query\"",
@@ -41,12 +41,12 @@
     },
     {
       "name": "claude agents",
-      "description": "Open [agent view](/en/agent-view) to monitor and dispatch parallel background sessions. Use `--cwd <path>` to show only sessions started under that directory",
-      "example": "`claude agents`"
+      "description": "Open [agent view](/docs/en/agent-view) to monitor and dispatch parallel background sessions. Use `--cwd <path>` to show only sessions started under that directory, or `--json` to print active sessions as a JSON array for scripting (`--json --all` also includes completed background sessions). Pass `--permission-mode`, `--model`, `--effort`, or `--agent` to set [defaults for dispatched sessions](/docs/en/agent-view#permission-mode-model-and-effort). Accepts `--settings`, `--add-dir`, `--plugin-dir`, and `--mcp-config` like the top-level `claude` command. Opening agent view requires an interactive terminal",
+      "example": "`claude agents --json`"
     },
     {
       "name": "claude attach <id>",
-      "description": "Attach to a [background session](/en/agent-view#manage-sessions-from-the-shell) in this terminal",
+      "description": "Attach to a [background session](/docs/en/agent-view#manage-sessions-from-the-shell) in this terminal",
       "example": "`claude attach 7c5dcf5d`"
     },
     {
@@ -66,62 +66,107 @@
     },
     {
       "name": "claude auto-mode defaults",
-      "description": "Print the built-in [auto mode](/en/permission-modes#eliminate-prompts-with-auto-mode) classifier rules as JSON. Use `claude auto-mode config` to see your effective config with settings applied",
-      "example": "`claude auto-mode defaults > rules.json`"
+      "description": "Print the built-in [auto mode](/docs/en/permission-modes#eliminate-prompts-with-auto-mode) classifier rules as JSON. Use `claude auto-mode config` to see your effective config with settings applied. `--label <prefix>` prints only the rules whose label starts with that prefix, matched case-insensitively. Requires Claude Code v2.1.208 or later",
+      "example": "`claude auto-mode defaults --label 'Git Destructive'`"
+    },
+    {
+      "name": "claude auto-mode reset",
+      "description": "Restore the default [auto mode](/docs/en/permission-modes#eliminate-prompts-with-auto-mode) configuration by removing the `autoMode` section from your user settings file. Prompts for confirmation before writing; pass `-y`/`--yes` to skip the prompt. Rules from [managed settings](/docs/en/server-managed-settings) or the `--settings` flag still apply. Requires Claude Code v2.1.212 or later. See [Inspect the defaults and your effective config](/docs/en/auto-mode-config#inspect-the-defaults-and-your-effective-config)",
+      "example": "`claude auto-mode reset --yes`"
+    },
+    {
+      "name": "claude daemon status",
+      "description": "Print the background-session [supervisor's](/docs/en/agent-view#the-supervisor-process) state, version, socket directory, and worker count for diagnostics. Exits 1 if the supervisor isn't running",
+      "example": "`claude daemon status`"
+    },
+    {
+      "name": "claude daemon stop --any",
+      "description": "Stop the background-session [supervisor](/docs/en/agent-view#the-supervisor-process) and the sessions it hosts. Pass `--keep-workers` to leave background sessions running so the next supervisor reconnects to them. `--any` confirms stopping an on-demand supervisor, which is the default. Use this to recover from an [unresponsive supervisor](/docs/en/agent-view#agent-view-says-the-background-service-did-not-respond)",
+      "example": "`claude daemon stop --any --keep-workers`"
+    },
+    {
+      "name": "claude doctor",
+      "description": "Print read-only installation and settings diagnostics from the terminal without starting a session, including install health, settings-file validation errors, and Remote Control eligibility. For the in-session setup checkup that can also apply fixes, run [`/doctor`](/docs/en/commands#all-commands)",
+      "example": "`claude doctor`"
+    },
+    {
+      "name": "claude gateway",
+      "description": "Start the self-hosted [Claude apps gateway](/docs/en/claude-apps-gateway) server, for administrators deploying SSO and policy in front of Claude Code on Amazon Bedrock, Google Cloud's Agent Platform, or Microsoft Foundry. Requires `--config` pointing at a [`gateway.yaml`](/docs/en/claude-apps-gateway-config). Available in Claude Code v2.1.195 and later.",
+      "example": "`claude gateway --config gateway.yaml`"
+    },
+    {
+      "name": "claude import [codex|gemini]",
+      "description": "Start an interactive session that runs [`/import`](/docs/en/commands#all-commands) to bring configuration from other coding agents into Claude Code. Accepts the same `--dry-run` and `--yes` options as the command. Not available on Amazon Bedrock, Google Cloud's Agent Platform, Microsoft Foundry, or Claude Platform on AWS. Also unavailable when you turn off [feature-flag fetching](/docs/en/env-vars#features-that-need-feature-flag-fetching). Requires Claude Code v2.1.213 or later",
+      "example": "`claude import codex --dry-run`"
     },
     {
       "name": "claude install [version]",
-      "description": "Install or reinstall the native binary. Accepts a version like `2.1.118`, or `stable` or `latest`. See [Install a specific version](/en/setup#install-a-specific-version)",
+      "description": "Install or reinstall the native binary. Accepts a version like `2.1.118`, or `stable` or `latest`. See [Install a specific version](/docs/en/setup#install-a-specific-version)",
       "example": "`claude install stable`"
     },
     {
       "name": "claude logs <id>",
-      "description": "Print recent output from a [background session](/en/agent-view#manage-sessions-from-the-shell)",
+      "description": "Print recent output from a [background session](/docs/en/agent-view#manage-sessions-from-the-shell)",
       "example": "`claude logs 7c5dcf5d`"
     },
     {
       "name": "claude mcp",
       "description": "Configure Model Context Protocol (MCP) servers",
-      "example": "See the [Claude Code MCP documentation](/en/mcp)."
+      "example": "See the [Claude Code MCP documentation](/docs/en/mcp)."
+    },
+    {
+      "name": "claude mcp login <name>",
+      "description": "Run a configured MCP server's OAuth flow without opening the interactive `/mcp` panel. Works for HTTP, SSE, and claude.ai connector servers. Add `--no-browser` over SSH to print the authorization URL instead of opening a browser, then paste the redirect URL back at the prompt. Requires Claude Code v2.1.186 or later. See [Authenticate from the command line](/docs/en/mcp#authenticate-from-the-command-line)",
+      "example": "`claude mcp login sentry`"
+    },
+    {
+      "name": "claude mcp logout <name>",
+      "description": "Clear stored OAuth credentials for an MCP server. Requires Claude Code v2.1.186 or later",
+      "example": "`claude mcp logout sentry`"
     },
     {
       "name": "claude plugin",
-      "description": "Manage Claude Code [plugins](/en/plugins). Alias: `claude plugins`. See [plugin reference](/en/plugins-reference#cli-commands-reference) for subcommands",
+      "description": "Manage Claude Code [plugins](/docs/en/plugins). Alias: `claude plugins`. See [plugin reference](/docs/en/plugins-reference#cli-commands-reference) for subcommands",
       "example": "`claude plugin install code-review@claude-plugins-official`"
     },
     {
       "name": "claude project purge [path]",
-      "description": "Delete all local Claude Code state for a project: transcripts, task lists, debug logs, file-edit history, prompt history lines, and the project's entry in `~/.claude.json`. Omit `[path]` to pick from an interactive list. Flags: `--dry-run` to preview, `-y`/`--yes` to skip confirmation, `-i`/`--interactive` to confirm each item, `--all` for every project. See [Clear local data](/en/claude-directory#clear-local-data)",
+      "description": "Delete all local Claude Code state for a project: transcripts, task lists, debug logs, file-edit history, prompt history lines, and the project's entry in `~/.claude.json`. Omit `[path]` to pick from an interactive list. Flags: `--dry-run` to preview, `-y`/`--yes` to skip confirmation, `-i`/`--interactive` to confirm each item, `--all` for every project. See [Clear local data](/docs/en/claude-directory#clear-local-data)",
       "example": "`claude project purge ~/work/repo --dry-run`"
     },
     {
       "name": "claude remote-control",
-      "description": "Start a [Remote Control](/en/remote-control) server to control Claude Code from Claude.ai or the Claude app. Runs in server mode (no local interactive session). See [Server mode flags](/en/remote-control#start-a-remote-control-session)",
+      "description": "Start a [Remote Control](/docs/en/remote-control) server to control Claude Code from Claude.ai or the Claude app. Runs in server mode (no local interactive session). See [Server mode flags](/docs/en/remote-control#start-a-remote-control-session). After you stop the server, you can bring back the sessions it was serving. See [Resume sessions after stopping the server](/docs/en/remote-control#resume-sessions-after-stopping-the-server)",
       "example": "`claude remote-control --name \"My Project\"`"
     },
     {
       "name": "claude respawn <id>",
-      "description": "Restart a stopped [background session](/en/agent-view#manage-sessions-from-the-shell) with its conversation intact. Use `--all` to restart every stopped session",
+      "description": "Restart a [background session](/docs/en/agent-view#manage-sessions-from-the-shell), running or stopped, with its conversation intact. Use `--all` to restart every running session, e.g. to pick up an updated Claude Code binary",
       "example": "`claude respawn 7c5dcf5d`"
     },
     {
       "name": "claude rm <id>",
-      "description": "Remove a [background session](/en/agent-view#manage-sessions-from-the-shell) from the list",
+      "description": "Remove a [background session](/docs/en/agent-view#manage-sessions-from-the-shell) from the list. The conversation transcript stays on your local machine, available through `claude --resume`",
       "example": "`claude rm 7c5dcf5d`"
     },
     {
+      "name": "claude self-hosted-runner",
+      "description": "Start a runner process that registers this machine or container with a [self-hosted environment](/docs/en/self-hosted-environments) and hosts Claude Code cloud sessions on your infrastructure. Run `claude self-hosted-runner setup` for a guided operator walkthrough, `claude self-hosted-runner doctor` to [diagnose a deployed runner](/docs/en/self-hosted-environments-deploy#troubleshooting), and `claude self-hosted-runner orchestrator` to spawn [on-demand runners](/docs/en/self-hosted-environments-configuration#on-demand-runners). Requires Claude Code v2.1.224 or later",
+      "example": "`claude self-hosted-runner setup`"
+    },
+    {
       "name": "claude setup-token",
-      "description": "Generate a long-lived OAuth token for CI and scripts. Prints the token to the terminal without saving it. Requires a Claude subscription. See [Generate a long-lived token](/en/authentication#generate-a-long-lived-token)",
+      "description": "Generate a long-lived OAuth token for CI and scripts. Prints the token to the terminal without saving it. Requires a Claude subscription. See [Generate a long-lived token](/docs/en/authentication#generate-a-long-lived-token)",
       "example": "`claude setup-token`"
     },
     {
       "name": "claude stop <id>",
-      "description": "Stop a [background session](/en/agent-view#manage-sessions-from-the-shell). Also accepts `claude kill`",
+      "description": "Stop a [background session](/docs/en/agent-view#manage-sessions-from-the-shell). Also accepts `claude kill`",
       "example": "`claude stop 7c5dcf5d`"
     },
     {
       "name": "claude ultrareview [target]",
-      "description": "Run [ultrareview](/en/ultrareview#run-ultrareview-non-interactively) non-interactively. Prints findings to stdout and exits 0 on success or 1 on failure. Use `--json` for the raw payload and `--timeout <minutes>` to override the 30-minute default",
+      "description": "Run [ultrareview](/docs/en/ultrareview#run-ultrareview-non-interactively) non-interactively. Prints findings to stdout and exits 0 on success or 1 on failure. Use `--json` for the raw payload and `--timeout <minutes>` to override the 30-minute default. Use `--post` on a `github.com` pull request target to post the finished findings to the PR as one plain comment from your GitHub account. `--no-post` is the default. Requires Claude Code v2.1.227 or later. See [Post findings to the pull request](/docs/en/ultrareview#post-findings-to-the-pull-request)",
       "example": "`claude ultrareview 1234 --json`"
     },
     {
@@ -133,8 +178,13 @@
   "flags": [
     {
       "name": "--add-dir",
-      "description": "Add additional working directories for Claude to read and edit files. Grants file access; most `.claude/` configuration is [not discovered](/en/permissions#additional-directories-grant-file-access-not-configuration) from these directories. Validates each path exists as a directory. To persist these directories across sessions, set [`permissions.additionalDirectories`](/en/settings#permission-settings) in settings",
+      "description": "Add additional working directories for Claude to read and edit files. Grants file access; Claude Code [doesn't discover](/docs/en/permissions#additional-directories-grant-file-access-not-configuration) most `.claude/` configuration from these directories. Validates that each path exists as a directory. You can't add most [network paths](/docs/en/errors#working-directory-is-a-network-path), such as `\\\\server\\share`. To persist these directories across sessions, set [`permissions.additionalDirectories`](/docs/en/settings-reference#permissions-additionaldirectories) in settings",
       "example": "`claude --add-dir ../apps ../lib`"
+    },
+    {
+      "name": "--advisor <model>",
+      "description": "Enable the server-side [advisor tool](/docs/en/advisor) for this session with a model alias, `fable`, `opus`, or `sonnet`, or a full model ID. Takes precedence over the `advisorModel` setting for the session. `fable` requires [Fable access](/docs/en/advisor#choose-an-advisor-model)",
+      "example": "`claude --advisor opus`"
     },
     {
       "name": "--agent",
@@ -143,18 +193,23 @@
     },
     {
       "name": "--agents",
-      "description": "Define custom subagents dynamically via JSON. Uses the same field names as subagent [frontmatter](/en/sub-agents#supported-frontmatter-fields), plus a `prompt` field for the agent's instructions",
+      "description": "Define custom subagents dynamically via JSON. Accepts the [fields listed for CLI-defined subagents](/docs/en/sub-agents#choose-the-subagent-scope). Claude Code validates the JSON at startup and exits on an invalid value; see [`Invalid --agents configuration`](/docs/en/errors#invalid-agents-configuration) for the message and for the flags and environment variable that skip the validation. Validation requires Claude Code v2.1.242 or later",
       "example": "`claude --agents '{\"reviewer\":{\"description\":\"Reviews code\",\"prompt\":\"You are a code reviewer\"}}'`"
     },
     {
       "name": "--allow-dangerously-skip-permissions",
-      "description": "Add `bypassPermissions` to the `Shift+Tab` mode cycle without starting in it. Lets you begin in a different mode like `plan` and switch to `bypassPermissions` later. See [permission modes](/en/permission-modes#skip-all-checks-with-bypasspermissions-mode)",
+      "description": "Add `bypassPermissions` to the `Shift+Tab` mode cycle without starting in it. Lets you begin in a different mode like `plan` and switch to `bypassPermissions` later. See [permission modes](/docs/en/permission-modes#skip-all-checks-with-bypasspermissions-mode)",
       "example": "`claude --permission-mode plan --allow-dangerously-skip-permissions`"
     },
     {
-      "name": "--allowedTools",
-      "description": "Tools that execute without prompting for permission. See [permission rule syntax](/en/settings#permission-rule-syntax) for pattern matching. To restrict which tools are available, use `--tools` instead",
-      "example": "`\"Bash(git log *)\" \"Bash(git diff *)\" \"Read\"`"
+      "name": "--append-subagent-system-prompt",
+      "description": "Append custom text to the end of every [subagent](/docs/en/sub-agents)'s system prompt, nested subagents included, apart from a [forked subagent](/docs/en/sub-agents#fork-the-current-conversation), which reuses the conversation's own prompt. Only applies in non-interactive mode with `-p`. Requires Claude Code v2.1.205 or later",
+      "example": "`claude -p --append-subagent-system-prompt \"Cite file paths in every answer\" \"query\"`"
+    },
+    {
+      "name": "--append-subagent-system-prompt-file",
+      "description": "Load text from a file and append it to [subagent](/docs/en/sub-agents) system prompts. An alternative to `--append-subagent-system-prompt` for text too long to pass on the command line. The two flags can't be combined. Only applies in non-interactive mode with `-p`. Requires Claude Code v2.1.261 or later",
+      "example": "`claude -p --append-subagent-system-prompt-file ./subagent-rules.txt \"query\"`"
     },
     {
       "name": "--append-system-prompt",
@@ -167,8 +222,18 @@
       "example": "`claude --append-system-prompt-file ./extra-rules.txt`"
     },
     {
+      "name": "--autocompact <auto|tokens>",
+      "description": "Set the [auto-compact window](/docs/en/model-config#set-the-auto-compact-window) for this session without changing your saved settings. Accepts the same values as `/autocompact`; that section covers the value forms and what overrides the flag. Requires Claude Code v2.1.221 or later",
+      "example": "`claude --autocompact 500k`"
+    },
+    {
+      "name": "--ax-screen-reader",
+      "description": "Render screen-reader friendly output: flat text without decorative borders or animations. Forces the classic renderer, so the [`tui`](/docs/en/settings-reference#tui) setting has no effect; attached [background sessions](/docs/en/agent-view) still render fullscreen. Takes precedence over [`CLAUDE_AX_SCREEN_READER`](/docs/en/env-vars) and the [`axScreenReader`](/docs/en/settings-reference#axscreenreader) setting. Requires Claude Code v2.1.181 or later",
+      "example": "`claude --ax-screen-reader`"
+    },
+    {
       "name": "--bare",
-      "description": "Minimal mode: skip auto-discovery of hooks, skills, plugins, MCP servers, auto memory, and CLAUDE.md so scripted calls start faster. Claude has access to Bash, file read, and file edit tools. Sets [`CLAUDE_CODE_SIMPLE`](/en/env-vars). See [bare mode](/en/headless#start-faster-with-bare-mode)",
+      "description": "Minimal mode: skip auto-discovery of hooks, skills, custom commands, subagents, plugins, MCP servers, auto memory, and CLAUDE.md so scripted calls start faster. Skills in a directory you pass with `--add-dir` still load. Claude has access to Bash, file read, and file edit tools. Sets [`CLAUDE_CODE_SIMPLE`](/docs/en/env-vars). See [bare mode](/docs/en/headless#start-faster-with-bare-mode)",
       "example": "`claude --bare -p \"query\"`"
     },
     {
@@ -177,34 +242,34 @@
       "example": "`claude --betas interleaved-thinking`"
     },
     {
-      "name": "--bg",
-      "description": "Start the session as a [background agent](/en/agent-view) and return immediately. Prints the session ID and management commands. Combine with `--agent` to run a specific subagent",
-      "example": "`claude --bg \"investigate the flaky test\"`"
-    },
-    {
       "name": "--channels",
-      "description": "(Research preview) MCP servers whose [channel](/en/channels) notifications Claude should listen for in this session. Space-separated list of `plugin:<name>@<marketplace>` entries. Requires Claude.ai authentication",
+      "description": "(Research preview) MCP servers whose [channel](/docs/en/channels) notifications Claude should listen for in this session. Space-separated list of `plugin:<name>@<marketplace>` entries. Requires Anthropic authentication through claude.ai or a Console API key",
       "example": "`claude --channels plugin:my-notifier@my-marketplace`"
     },
     {
       "name": "--chrome",
-      "description": "Enable [Chrome browser integration](/en/chrome) for web automation and testing",
+      "description": "Enable [Chrome browser integration](/docs/en/chrome) for web automation and testing",
       "example": "`claude --chrome`"
     },
     {
+      "name": "--cloud",
+      "description": "With a task description, create a new [web session](/docs/en/claude-code-on-the-web) on claude.ai. With a session ID (`session_...` or `cse_...`) or a claude.ai/code URL, queue a message into that existing session instead, with `-p`. See [send a follow-up message](/docs/en/claude-code-on-the-web#send-follow-ups-from-the-cli).",
+      "example": "`claude --cloud \"Fix the login bug\"`"
+    },
+    {
       "name": "--dangerously-load-development-channels",
-      "description": "Enable [channels](/en/channels-reference#test-during-the-research-preview) that are not on the approved allowlist, for local development. Accepts `plugin:<name>@<marketplace>` and `server:<name>` entries. Prompts for confirmation",
+      "description": "Enable [channels](/docs/en/channels-reference#test-during-the-research-preview) that are not on the approved allowlist, for local development. Accepts `plugin:<name>@<marketplace>` and `server:<name>` entries. Prompts for confirmation",
       "example": "`claude --dangerously-load-development-channels server:webhook`"
     },
     {
       "name": "--dangerously-skip-permissions",
-      "description": "Skip permission prompts. Equivalent to `--permission-mode bypassPermissions`. See [permission modes](/en/permission-modes#skip-all-checks-with-bypasspermissions-mode) for what this does and does not skip",
+      "description": "Skip permission prompts. Equivalent to `--permission-mode bypassPermissions`. See [permission modes](/docs/en/permission-modes#skip-all-checks-with-bypasspermissions-mode) for what this does and does not skip. For sessions started with `--bg`, the mode [persists when the supervisor restarts the session](/docs/en/agent-view#permission-mode-model-and-effort)",
       "example": "`claude --dangerously-skip-permissions`"
     },
     {
       "name": "--debug",
-      "description": "Enable debug mode with optional category filtering (for example, `\"api,hooks\"` or `\"!statsig,!file\"`)",
-      "example": "`claude --debug \"api,mcp\"`"
+      "description": "Enable debug mode with optional category filtering, such as `--debug='mcp,startup'` or `--debug='!1p'`. The filter binds only in the `=` form; a space-separated filter enables debug mode without filtering",
+      "example": "`claude --debug='mcp,startup'`"
     },
     {
       "name": "--debug-file <path>",
@@ -217,19 +282,19 @@
       "example": "`claude --disable-slash-commands`"
     },
     {
-      "name": "--disallowedTools",
-      "description": "Tools that are removed from the model's context and cannot be used",
-      "example": "`\"Bash(git log *)\" \"Bash(git diff *)\" \"Edit\"`"
-    },
-    {
       "name": "--effort",
-      "description": "Set the [effort level](/en/model-config#adjust-effort-level) for the current session. Options: `low`, `medium`, `high`, `xhigh`, `max`; available levels depend on the model. Overrides the [`effortLevel`](/en/settings#available-settings) setting for this session and does not persist",
+      "description": "Set the [effort level](/docs/en/model-config#adjust-effort-level) for the current session. Options: `low`, `medium`, `high`, `xhigh`, `max`, or `ultracode`. Available levels depend on the model. `ultracode` starts the session at `xhigh` effort with [ultracode](/docs/en/workflows#let-claude-decide-with-ultracode) turned on, and requires Claude Code v2.1.203 or later. Overrides the [`modelSettings`](/docs/en/settings-reference#modelsettings) and [`effortLevel`](/docs/en/settings-reference#effortlevel) settings for this session and does not persist",
       "example": "`claude --effort high`"
     },
     {
       "name": "--enable-auto-mode",
-      "description": "{/* max-version: 2.1.110 */}Removed in v2.1.111. Auto mode is now in the `Shift+Tab` cycle by default; use `--permission-mode auto` to start in it",
+      "description": "Removed in v2.1.111. Auto mode is now in the `Shift+Tab` cycle by default; use `--permission-mode auto` to start in it",
       "example": "`claude --permission-mode auto`"
+    },
+    {
+      "name": "--environment <environment-id>",
+      "description": "Create a new cloud session that runs on the [self-hosted environment](/docs/en/self-hosted-environments) with the given ID. Environment IDs start with `ccpool_`. See [`--environment` dispatch behavior](/docs/en/self-hosted-environments-testing#environment-dispatch-behavior) for dispatch behavior and the flag combinations it rejects. Requires Claude Code v2.1.224 or later",
+      "example": "`claude -p \"Fix the login bug\" --environment ccpool_abc123`"
     },
     {
       "name": "--exclude-dynamic-system-prompt-sections",
@@ -237,9 +302,14 @@
       "example": "`claude -p --exclude-dynamic-system-prompt-sections \"query\"`"
     },
     {
+      "name": "--exec",
+      "description": "Run a shell command as a PTY-backed background job instead of starting a Claude session. Use with `--bg` to launch from the shell",
+      "example": "`claude --bg --exec 'pytest -x'`"
+    },
+    {
       "name": "--fallback-model",
-      "description": "Enable automatic fallback to specified model when default model is overloaded (print mode only)",
-      "example": "`claude -p --fallback-model sonnet \"query\"`"
+      "description": "Enable automatic fallback to the specified model(s) when the primary model is overloaded or not available, for example a retired model. Accepts a comma-separated list tried in order. See [Fallback model chains](/docs/en/model-config#fallback-model-chains). To persist a chain across sessions, use the [`fallbackModel` setting](/docs/en/settings-reference#fallbackmodel), which this flag overrides",
+      "example": "`claude --fallback-model sonnet,haiku`"
     },
     {
       "name": "--fork-session",
@@ -247,8 +317,13 @@
       "example": "`claude --resume abc123 --fork-session`"
     },
     {
+      "name": "--forward-subagent-text",
+      "description": "Emit [subagent](/docs/en/sub-agents) text and thinking blocks in the output stream as `assistant` and `user` messages with `parent_tool_use_id` set, so you can reconstruct each subagent's transcript. Without this flag, Claude Code emits only subagent `tool_use` and `tool_result` blocks. Requires `--print` and `--output-format stream-json`. Claude Code also forwards messages from [nested subagents](/docs/en/sub-agents#let-subagents-spawn-their-own-subagents), setting `parent_tool_use_id` to the ID of the Agent tool call that spawned each one; this requires Claude Code v2.1.219 or later. The [`CLAUDE_CODE_FORWARD_SUBAGENT_TEXT`](/docs/en/env-vars) environment variable enables the same behavior. Requires Claude Code v2.1.211 or later",
+      "example": "`claude -p --output-format stream-json --verbose --forward-subagent-text \"query\"`"
+    },
+    {
       "name": "--from-pr",
-      "description": "Resume sessions linked to a specific pull request. Accepts a PR number, a GitHub or GitHub Enterprise PR URL, a GitLab merge request URL, or a Bitbucket pull request URL. Sessions are linked automatically when Claude creates the pull request",
+      "description": "Open the session picker filtered to sessions linked to a specific pull request. Accepts a PR number, a GitHub or GitHub Enterprise PR URL, a GitLab merge request URL, or a Bitbucket pull request URL. Sessions are linked automatically when Claude creates the pull request",
       "example": "`claude --from-pr 123`"
     },
     {
@@ -258,22 +333,22 @@
     },
     {
       "name": "--include-hook-events",
-      "description": "Include all hook lifecycle events in the output stream. Requires `--output-format stream-json`",
-      "example": "`claude -p --output-format stream-json --include-hook-events \"query\"`"
+      "description": "Include hook lifecycle events in the output stream. `SessionStart` and `Setup` hook events are always included and don't need this flag. Some hook events, such as `Notification`, `SessionEnd`, `PreCompact`, and `PostCompact`, never produce a `hook_started` event, even with this flag. For those events, Claude Code still emits `hook_progress` while a command hook that runs for more than a second produces output, and emits `hook_response` only when a [hook that runs in the background](/docs/en/hooks#run-hooks-in-the-background) finishes. Requires `--output-format stream-json`",
+      "example": "`claude -p --output-format stream-json --verbose --include-hook-events \"query\"`"
     },
     {
       "name": "--include-partial-messages",
       "description": "Include partial streaming events in output. Requires `--print` and `--output-format stream-json`",
-      "example": "`claude -p --output-format stream-json --include-partial-messages \"query\"`"
+      "example": "`claude -p --output-format stream-json --verbose --include-partial-messages \"query\"`"
     },
     {
       "name": "--init",
-      "description": "Run [Setup hooks](/en/hooks#setup) with the `init` matcher before the session (print mode only)",
+      "description": "Run [Setup hooks](/docs/en/hooks#setup) with the `init` matcher before the session (print mode only)",
       "example": "`claude -p --init \"query\"`"
     },
     {
       "name": "--init-only",
-      "description": "Run [Setup](/en/hooks#setup) and `SessionStart` hooks, then exit without starting a conversation",
+      "description": "Run [Setup](/docs/en/hooks#setup) and `SessionStart` hooks, then exit without starting a conversation",
       "example": "`claude --init-only`"
     },
     {
@@ -283,42 +358,42 @@
     },
     {
       "name": "--json-schema",
-      "description": "Get validated JSON output matching a JSON Schema after agent completes its workflow (print mode only, see [structured outputs](/en/agent-sdk/structured-outputs))",
+      "description": "Get validated JSON output matching a JSON Schema after the agent completes its workflow (print mode only). See [structured outputs](/docs/en/agent-sdk/structured-outputs). Claude Code exits with an error on an invalid schema and accepts the `format` keyword as an annotation without client-side validation",
       "example": "`claude -p --json-schema '{\"type\":\"object\",\"properties\":{...}}' \"query\"`"
     },
     {
       "name": "--maintenance",
-      "description": "Run [Setup hooks](/en/hooks#setup) with the `maintenance` matcher before the session (print mode only)",
+      "description": "Run [Setup hooks](/docs/en/hooks#setup) with the `maintenance` matcher before the session (print mode only)",
       "example": "`claude -p --maintenance \"query\"`"
     },
     {
       "name": "--max-budget-usd",
-      "description": "Maximum dollar amount to spend on API calls before stopping (print mode only)",
+      "description": "Maximum dollar amount to spend on API calls before stopping (print mode only). Spend from [subagents](/docs/en/sub-agents) counts toward the cap. Once spend reaches the cap, spawning another subagent fails with `Budget limit reached`, and Claude Code stops background subagents that are still running; the cap-enforcement behaviors require Claude Code v2.1.217 or later",
       "example": "`claude -p --max-budget-usd 5.00 \"query\"`"
     },
     {
       "name": "--max-turns",
-      "description": "Limit the number of agentic turns (print mode only). Exits with an error when the limit is reached. No limit by default",
+      "description": "Limit the number of agentic turns (print mode only). Exits with an error when the limit is reached. No limit by default. With `--input-format stream-json`, a message still queued when the limit ends a turn stays queued and starts a new turn with its own limit",
       "example": "`claude -p --max-turns 3 \"query\"`"
     },
     {
       "name": "--mcp-config",
-      "description": "Load MCP servers from JSON files or strings (space-separated)",
+      "description": "Load MCP servers from JSON files or strings (space-separated). When you pass this flag with `-p`, Claude Code waits for still-pending servers to connect before running the first turn, up to the [`MCP_TIMEOUT`](/docs/en/env-vars) startup timeout, 30 seconds by default; a server with a [cached tool list](/docs/en/mcp#managing-your-servers) skips the wait and connects on first use. The wait requires Claude Code v2.1.221 or later",
       "example": "`claude --mcp-config ./mcp.json`"
     },
     {
       "name": "--model",
-      "description": "Sets the model for the current session with an alias for the latest model (`sonnet` or `opus`) or a model's full name. Overrides the [`model`](/en/settings#available-settings) setting and [`ANTHROPIC_MODEL`](/en/model-config#environment-variables)",
-      "example": "`claude --model claude-sonnet-4-6`"
+      "description": "Sets the model for the current session with a [model alias](/docs/en/model-config#model-aliases) such as `sonnet`, `opus`, `haiku`, or `fable`, or a model's full name. Overrides the [`model`](/docs/en/settings-reference#model) setting and [`ANTHROPIC_MODEL`](/docs/en/model-config#environment-variables)",
+      "example": "`claude --model claude-sonnet-5`"
     },
     {
       "name": "--no-chrome",
-      "description": "Disable [Chrome browser integration](/en/chrome) for this session",
+      "description": "Disable [Chrome browser integration](/docs/en/chrome) for this session",
       "example": "`claude --no-chrome`"
     },
     {
       "name": "--no-session-persistence",
-      "description": "Disable session persistence so sessions are not saved to disk and cannot be resumed. Print mode only. The [`CLAUDE_CODE_SKIP_PROMPT_HISTORY`](/en/env-vars) environment variable does the same in any mode",
+      "description": "Disable session persistence so sessions are not saved to disk and cannot be resumed. Print mode only. The [`CLAUDE_CODE_SKIP_PROMPT_HISTORY`](/docs/en/env-vars) environment variable does the same in any mode",
       "example": "`claude -p --no-session-persistence \"query\"`"
     },
     {
@@ -328,13 +403,18 @@
     },
     {
       "name": "--permission-mode",
-      "description": "Begin in a specified [permission mode](/en/permission-modes). Accepts `default`, `acceptEdits`, `plan`, `auto`, `dontAsk`, or `bypassPermissions`. Overrides `defaultMode` from settings files",
+      "description": "Begin in a specified [permission mode](/docs/en/permission-modes). Accepts `default`, `acceptEdits`, `plan`, `auto`, `dontAsk`, `bypassPermissions`, or `manual` as an alias for `default`. The `manual` alias selects the permission mode the UI labels Manual and requires Claude Code v2.1.200 or later; `claude --help` lists it in place of `default`, and both values work. Overrides `defaultMode` from settings files. Without this flag or `--dangerously-skip-permissions`, a new session starts in the permission mode described in [which permission mode a session starts in](/docs/en/permission-modes#which-mode-a-session-starts-in). For `-p`, that's `default` when nothing is configured",
       "example": "`claude --permission-mode plan`"
     },
     {
       "name": "--permission-prompt-tool",
-      "description": "Specify an MCP tool to handle permission prompts in non-interactive mode",
+      "description": "Specify an MCP tool to handle permission prompts in non-interactive mode. Claude Code waits for that tool's MCP server to connect before running the first turn, up to the [`MCP_TIMEOUT`](/docs/en/env-vars) startup timeout, 30 seconds by default. <br /><br />The prompt tool can't approve an MCP tool marked as [requiring user interaction](/docs/en/mcp#require-approval-for-a-specific-tool): Claude Code converts an `allow` result for one to a deny. This restriction requires Claude Code v2.1.199 or later",
       "example": "`claude -p --permission-prompt-tool mcp_auth_tool \"query\"`"
+    },
+    {
+      "name": "--permission-prompts",
+      "description": "Set who answers permission prompts in print mode. With the default `host`, Claude Code sends them to the Agent SDK host or the `--permission-prompt-tool` tool. Pass `none` when nobody can answer, and Claude Code denies them instead. See [Turn off permission prompts in unattended runs](/docs/en/headless#turn-off-permission-prompts-in-unattended-runs). Requires Claude Code v2.1.259 or later",
+      "example": "`claude -p --permission-prompts none \"query\"`"
     },
     {
       "name": "--plugin-dir",
@@ -347,19 +427,39 @@
       "example": "`claude --plugin-url https://example.com/plugin.zip`"
     },
     {
+      "name": "--prompt-suggestions",
+      "description": "Emit a `prompt_suggestion` message with a predicted next user prompt after each turn that generates one; very short conversations can produce none. Requires `--print`, `--output-format stream-json`, and `--verbose`. See [Prompt suggestions](/docs/en/interactive-mode#prompt-suggestions)",
+      "example": "`claude -p --prompt-suggestions --output-format stream-json --verbose \"query\"`"
+    },
+    {
+      "name": "--ref <branch>",
+      "description": "With `--environment`, base the new session's checkout on a named ref instead of local `HEAD`",
+      "example": "`claude -p \"Run the smoke test\" --environment ccpool_abc123 --ref main`"
+    },
+    {
       "name": "--remote",
-      "description": "Create a new [web session](/en/claude-code-on-the-web) on claude.ai with the provided task description",
+      "description": "Deprecated alias for `--cloud`, including the existing-session form",
       "example": "`claude --remote \"Fix the login bug\"`"
     },
     {
       "name": "--remote-control-session-name-prefix <prefix>",
-      "description": "Prefix for auto-generated [Remote Control](/en/remote-control) session names when no explicit name is set. Defaults to your machine's hostname, producing names like `myhost-graceful-unicorn`. Set `CLAUDE_REMOTE_CONTROL_SESSION_NAME_PREFIX` for the same effect",
+      "description": "Prefix for auto-generated [Remote Control](/docs/en/remote-control) session names when no explicit name is set. Defaults to your machine's hostname, producing names like `myhost-graceful-unicorn`. Set `CLAUDE_REMOTE_CONTROL_SESSION_NAME_PREFIX` for the same effect",
       "example": "`claude remote-control --remote-control-session-name-prefix dev-box`"
     },
     {
       "name": "--replay-user-messages",
       "description": "Re-emit user messages from stdin back on stdout for acknowledgment. Requires `--input-format stream-json` and `--output-format stream-json`",
-      "example": "`claude -p --input-format stream-json --output-format stream-json --replay-user-messages`"
+      "example": "`claude -p --input-format stream-json --output-format stream-json --verbose --replay-user-messages`"
+    },
+    {
+      "name": "--restricted",
+      "description": "Start in restricted mode. Use it when an evaluation harness drives `claude` on a shared machine and Claude Code must not run commands or read that machine's user and project settings. Claude Code removes the built-in tools that run commands or code, and WebFetch, unless you name them individually in `--tools`, not through the `default` preset. It also confines the built-in file tools to the [working directories](/docs/en/permissions#working-directories), loads only [managed settings](/docs/en/managed-settings) and `--settings`, refuses [`bypassPermissions`](/docs/en/permission-modes#skip-all-checks-with-bypasspermissions-mode), and [refuses to create cloud sessions](/docs/en/errors#cloud-sessions-cannot-be-created-from-a-restricted-session). Requires Claude Code v2.1.248 or later",
+      "example": "`claude --restricted -p \"query\"`"
+    },
+    {
+      "name": "--safe-mode",
+      "description": "Start with all customizations disabled to troubleshoot a broken configuration: CLAUDE.md, skills, plugins, hooks, MCP servers, custom commands and agents, output styles, workflows, custom themes, custom keybindings, status line and file-suggestion commands, LSP servers, and auto memory do not load. Authentication, model selection, built-in tools, and permissions work normally, which differs from [`--bare`](/docs/en/headless#start-faster-with-bare-mode). Managed settings policy still applies, including policy-configured hooks, status line, and file-suggestion commands; managed plugins, managed skills, managed CLAUDE.md, and policy-configured MCP servers do not. Useful for checking whether a customization is what triggers [automatic model fallback](/docs/en/model-config#automatic-model-fallback). Sets [`CLAUDE_CODE_SAFE_MODE`](/docs/en/env-vars)",
+      "example": "`claude --safe-mode`"
     },
     {
       "name": "--session-id",
@@ -373,12 +473,12 @@
     },
     {
       "name": "--settings",
-      "description": "Path to a settings JSON file or an inline JSON string. Values you set here override the same keys in your `settings.json` files for this session. Keys you omit keep their file-based values. See [settings precedence](/en/settings#settings-precedence)",
+      "description": "Path to a settings JSON file or an inline JSON string. Values you set here override the same keys in your `settings.json` files for this session. Keys you omit keep their file-based values. The file must be a regular file no larger than 2 MiB. See [settings precedence](/docs/en/settings#settings-precedence)",
       "example": "`claude --settings ./settings.json`"
     },
     {
       "name": "--strict-mcp-config",
-      "description": "Only use MCP servers from `--mcp-config`, ignoring all other MCP configurations",
+      "description": "Only use MCP servers from `--mcp-config`, ignoring all other MCP configurations. See [Exclusive control with managed-mcp.json](/docs/en/managed-mcp#exclusive-control-with-managed-mcp-json) for what the flag does under a managed MCP file",
       "example": "`claude --strict-mcp-config --mcp-config ./mcp.json`"
     },
     {
@@ -393,12 +493,12 @@
     },
     {
       "name": "--teammate-mode",
-      "description": "Set how [agent team](/en/agent-teams) teammates display: `auto` (default), `in-process`, or `tmux`. Overrides the [`teammateMode`](/en/settings#available-settings) setting for this session. See [Choose a display mode](/en/agent-teams#choose-a-display-mode)",
-      "example": "`claude --teammate-mode in-process`"
+      "description": "Set how [agent team](/docs/en/agent-teams) teammates display: `in-process` (default), `auto`, `tmux`, or `iterm2` (added in v2.1.186). Overrides the [`teammateMode`](/docs/en/settings-reference#teammatemode) setting for this session. See [Choose a display mode](/docs/en/agent-teams#choose-a-display-mode)",
+      "example": "`claude --teammate-mode auto`"
     },
     {
       "name": "--teleport",
-      "description": "Resume a [web session](/en/claude-code-on-the-web) in your local terminal",
+      "description": "Resume a [web session](/docs/en/claude-code-on-the-web) in your local terminal",
       "example": "`claude --teleport`"
     },
     {
@@ -408,37 +508,52 @@
     },
     {
       "name": "--tools",
-      "description": "Restrict which built-in tools Claude can use. Use `\"\"` to disable all, `\"default\"` for all, or tool names like `\"Bash,Edit,Read\"`",
+      "description": "Restrict which built-in tools Claude can use. Use `\"\"` to disable all, `\"default\"` for all, or tool names like `\"Bash,Edit,Read\"`. If you name one of the [task-tracking tools](/docs/en/tools-reference#task-tool-availability) here, Claude Code also opts the session in. The flag doesn't affect MCP tools; to deny those too, use `--disallowedTools \"mcp__*\"`. A list that omits [`EndConversation`](/docs/en/tools-reference#endconversation-tool-behavior) doesn't remove it; `\"\"` removes it only when no MCP tools remain",
       "example": "`claude --tools \"Bash,Edit,Read\"`"
     },
     {
       "name": "--verbose",
-      "description": "Enable verbose logging, shows full turn-by-turn output. Overrides the [`viewMode`](/en/settings#available-settings) setting for this session",
+      "description": "Enable verbose logging, shows full turn-by-turn output. Overrides the [`viewMode`](/docs/en/settings-reference#viewmode) setting for this session",
       "example": "`claude --verbose`"
     },
     {
+      "name": "`--allowedTools`, `--allowed-tools`",
+      "description": "Tools that execute without prompting for permission. See [permission rule syntax](/docs/en/settings-reference#permission-rule-syntax) for pattern matching. To restrict which tools are available, use `--tools` instead. If you name one of the [task-tracking tools](/docs/en/tools-reference#task-tool-availability) here, Claude Code also opts the session in",
+      "example": "`\"Bash(git log *)\" \"Bash(git diff *)\" \"Read\"`"
+    },
+    {
+      "name": "`--bg`, `--background`",
+      "description": "Start the session as a [background agent](/docs/en/agent-view) and return immediately. Prints the session ID and management commands. Combine with `--exec` to run a shell command as a background job instead of a Claude session, or with `--agent` to run a specific subagent. Cannot be combined with `-p`/`--print`; see the [error reference](/docs/en/errors#command-line-errors)",
+      "example": "`claude --bg \"investigate the flaky test\"`"
+    },
+    {
       "name": "`--continue`, `-c`",
-      "description": "Load the most recent conversation in the current directory. Includes sessions that added this directory with `/add-dir`",
+      "description": "Load the most recent conversation in the current directory, skipping [background sessions, sessions created with `claude -p` or the Agent SDK, and sessions whose first prompt was `/loop`](/docs/en/sessions#resume-a-session). `claude -p --continue` includes `-p`, SDK, and `/loop` sessions. Includes sessions that added this directory with `/add-dir`",
       "example": "`claude --continue`"
     },
     {
+      "name": "`--disallowedTools`, `--disallowed-tools`",
+      "description": "Deny rules. A bare tool name removes the matching tools from Claude's context: `\"Edit\"` removes Edit, `\"*\"` removes every tool, and `\"mcp__*\"` removes every MCP tool. A scoped rule such as `Bash(rm *)` leaves the tool available and denies only matching calls. A rule naming [`EndConversation`](/docs/en/tools-reference#endconversation-tool-behavior) can't remove it while any other tool remains",
+      "example": "`\"Bash(git log *)\" \"Bash(git diff *)\" \"Edit\"`"
+    },
+    {
       "name": "`--name`, `-n`",
-      "description": "Set a display name for the session, shown in `/resume` and the terminal title. You can resume a named session with `claude --resume <name>`. <br /><br />[`/rename`](/en/commands) changes the name mid-session and also shows it on the prompt bar",
+      "description": "Set a display name for the session, shown in `/resume` and the terminal title. You can resume a named session with `claude --resume <name>`. In an interactive session, if another live session on this machine already uses the name, Claude Code applies [a variant of it](/docs/en/sessions#name-your-sessions) instead. <br /><br />[`/rename`](/docs/en/commands) changes the name mid-session and also shows it on the prompt bar",
       "example": "`claude -n \"my-feature-work\"`"
     },
     {
       "name": "`--print`, `-p`",
-      "description": "Print response without interactive mode (see [Agent SDK documentation](/en/agent-sdk/overview) for programmatic usage details)",
+      "description": "Print response without interactive mode (see [Agent SDK documentation](/docs/en/agent-sdk/overview) for programmatic usage details)",
       "example": "`claude -p \"query\"`"
     },
     {
       "name": "`--remote-control`, `--rc`",
-      "description": "Start an interactive session with [Remote Control](/en/remote-control#start-a-remote-control-session) enabled so you can also control it from claude.ai or the Claude app. Optionally pass a name for the session",
+      "description": "Start an interactive session with [Remote Control](/docs/en/remote-control#start-a-remote-control-session) enabled so you can also control it from claude.ai or the Claude app. Optionally pass a name for the session",
       "example": "`claude --remote-control \"My Project\"`"
     },
     {
       "name": "`--resume`, `-r`",
-      "description": "Resume a specific session by ID or name, or show an interactive picker to choose a session. Includes sessions that added this directory with `/add-dir`",
+      "description": "Resume a specific session by ID or name, or show an interactive picker to choose a session. The picker and name search include sessions that added this directory with `/add-dir`. When you pass a session ID, Claude Code searches the current project directory and its git worktrees, then every other project on this machine. Before v2.1.223, the ID search covered only the current project directory and its git worktrees. [Background sessions](/docs/en/agent-view) appear in the picker marked with `bg`",
       "example": "`claude --resume auth-refactor`"
     },
     {
@@ -448,7 +563,7 @@
     },
     {
       "name": "`--worktree`, `-w`",
-      "description": "Start Claude in an isolated [git worktree](/en/worktrees) at `<repo>/.claude/worktrees/<name>`. If no name is given, one is auto-generated. Pass `#<number>` or a GitHub pull request URL to fetch that PR from `origin` and branch the worktree from it",
+      "description": "Start Claude in an isolated [git worktree](/docs/en/worktrees) at `<repo>/.claude/worktrees/<name>`. If you don't give a name, Claude Code generates one. Pass `#<number>`, a GitHub pull request URL, or a GitLab merge request URL to [fetch that PR or MR from `origin` and branch the worktree from it](/docs/en/worktrees#branch-from-a-pull-request). Branching from a GitLab merge request requires Claude Code v2.1.233 or later",
       "example": "`claude -w feature-auth`"
     }
   ]

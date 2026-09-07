@@ -1,6 +1,6 @@
 {
   "source": "https://code.claude.com/docs/en/keybindings.md",
-  "fetchedAt": "2026-05-18T12:35:00.020Z",
+  "fetchedAt": "2026-09-07T14:52:55.240Z",
   "count": 20,
   "contexts": [
     {
@@ -24,12 +24,12 @@
       "description": "Diff viewer navigation"
     },
     {
-      "name": "Doctor",
-      "description": "`/doctor` diagnostics screen"
+      "name": "DiffPanel",
+      "description": "The [diff panel](/docs/en/interactive-mode#diff-panel) is open"
     },
     {
       "name": "Footer",
-      "description": "Footer indicator navigation (tasks, teams, diff)"
+      "description": "Footer indicator navigation (tasks, teams, diff, artifacts)"
     },
     {
       "name": "Global",

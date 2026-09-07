@@ -1,11 +1,11 @@
 {
   "source": "https://code.claude.com/docs/en/model-config.md",
-  "fetchedAt": "2026-05-22T14:01:08.197Z",
-  "count": 5,
+  "fetchedAt": "2026-09-07T14:52:56.312Z",
+  "count": 6,
   "effortLevels": [
     {
       "name": "high",
-      "description": "Balances token usage and intelligence. Use as a minimum for intelligence-sensitive work, or to reduce token spend relative to `xhigh`"
+      "description": "Balances token usage and intelligence. The default on every model except Opus 4.7"
     },
     {
       "name": "low",
@@ -20,8 +20,12 @@
       "description": "Reduces token usage for cost-sensitive work that can trade off some intelligence"
     },
     {
+      "name": "ultracode",
+      "description": "A Claude Code setting that plans a [dynamic workflow](/docs/en/workflows) for each substantive task with `xhigh` per-message reasoning"
+    },
+    {
       "name": "xhigh",
-      "description": "Best results for most coding and agentic tasks. Recommended default on Opus 4.7"
+      "description": "Deeper reasoning at higher token spend. The default on Opus 4.7"
     }
   ]
 }
